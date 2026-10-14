@@ -1,0 +1,9 @@
+export const ROLES = {
+  SUPER_ADMIN: "SUPER_ADMIN",
+  SCHOOL_ADMIN: "SCHOOL_ADMIN",
+  TEACHER: "teacher",
+  ACCOUNTANT: "ACCOUNTANT",
+  HR: "HR",
+  STUDENT: "STUDENT",
+  PARENT: "PARENT",
+};
