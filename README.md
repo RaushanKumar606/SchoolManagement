@@ -1,4 +1,6 @@
 # School Management System
+![Uploading School Management System Banner.png…]()
+
 
 A full-stack School Management System built using Django REST Framework, React.js, and PostgreSQL to manage school operations through role-based dashboards.
 
