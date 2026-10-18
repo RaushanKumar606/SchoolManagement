@@ -1,363 +1,7 @@
 
-// import { useState } from "react";
-// import {
-//   createFeeOnlineOrder,
-//   verifyFeeOnlinePayment,
-//   getMyFeeInvoice,
-//   getMyFeePayments,
-// } from "../../services/studentService";
-
-//  import "./Student.css";
-
-// function StudentFees() {
-//   const [loading, setLoading] = useState(false);
-
-//   const [invoice, setInvoice] = useState(null);
-//   const [payments, setPayments] = useState([]);
-
-//   // =========================
-//   // GET INVOICE
-//   // =========================
-
-//   const handleInvoice = async () => {
-//     try {
-//       setLoading(true);
-
-//       const res = await getMyFeeInvoice();
-
-//       console.log("Invoice:", res);
-
-//       setInvoice(res);
-//     } catch (error) {
-//       console.error("Invoice Error:", error);
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   // =========================
-//   // PAYMENT HISTORY
-//   // =========================
-
-//   const handlePayments = async () => {
-//     try {
-//       setLoading(true);
-
-//       const res = await getMyFeePayments();
-
-//       console.log("Payments:", res);
-
-//       setPayments(res?.results || res || []);
-//     } catch (error) {
-//       console.error("Payments Error:", error);
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   // =========================
-//   // CREATE ONLINE ORDER
-//   // =========================
-
-//   const handlePayNow = async () => {
-//     try {
-//       setLoading(true);
-
-//       const res = await createFeeOnlineOrder({
-//         amount: 5000,
-//       });
-
-//       console.log("Online Order:", res);
-
-//       // Razorpay integration yahan hogi
-
-//     } catch (error) {
-//       console.error("Payment Order Error:", error);
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   return (
-//     <div className="student-fees-page">
-
-//       {/* ================= HEADER ================= */}
-
-//       <div className="fees-page-header">
-
-//         <div>
-//           <h1>Fees & Payments</h1>
-
-//           <p>
-//             Manage your school fees, invoices and payments
-//           </p>
-//         </div>
-
-//         <div className="academic-badge">
-//           📅 Academic Year 2026-27
-//         </div>
-
-//       </div>
-
-
-//       {/* ================= SUMMARY ================= */}
-
-//       <div className="fees-summary-grid">
-
-//         <div className="fee-summary-card total">
-
-//           <div className="fee-icon">
-//             ₹
-//           </div>
-
-//           <div>
-//             <span>Total Fees</span>
-//             <h2>₹45,000</h2>
-//           </div>
-
-//         </div>
-
-
-//         <div className="fee-summary-card paid">
-
-//           <div className="fee-icon">
-//             ✓
-//           </div>
-
-//           <div>
-//             <span>Paid Amount</span>
-//             <h2>₹30,000</h2>
-//           </div>
-
-//         </div>
-
-
-//         <div className="fee-summary-card pending">
-
-//           <div className="fee-icon">
-//             !
-//           </div>
-
-//           <div>
-//             <span>Pending Amount</span>
-//             <h2>₹15,000</h2>
-//           </div>
-
-//         </div>
-
-//       </div>
-
-
-//       {/* ================= ACTION CARDS ================= */}
-
-//       <div className="fees-section">
-
-//         <div className="section-title">
-//           <h2>Fee Services</h2>
-
-//           <p>
-//             Select an option to manage your fees
-//           </p>
-//         </div>
-
-
-//         <div className="fee-services-grid">
-
-
-//           {/* INVOICE */}
-
-//           <div className="fee-service-card">
-
-//             <div className="service-icon invoice-icon">
-//               📄
-//             </div>
-
-//             <div className="service-content">
-
-//               <h3>Fee Invoice</h3>
-
-//               <p>
-//                 View your current fee invoice
-//                 and payment details.
-//               </p>
-
-//               <button
-//                 className="secondary-btn"
-//                 onClick={handleInvoice}
-//                 disabled={loading}
-//               >
-//                 {loading
-//                   ? "Loading..."
-//                   : "View Invoice"}
-//               </button>
-
-//             </div>
-
-//           </div>
-
-
-//           {/* PAYMENT HISTORY */}
-
-//           <div className="fee-service-card">
-
-//             <div className="service-icon payment-icon">
-//               💳
-//             </div>
-
-//             <div className="service-content">
-
-//               <h3>Payment History</h3>
-
-//               <p>
-//                 Check your previous fee
-//                 payments and transactions.
-//               </p>
-
-//               <button
-//                 className="secondary-btn"
-//                 onClick={handlePayments}
-//                 disabled={loading}
-//               >
-//                 {loading
-//                   ? "Loading..."
-//                   : "View Payments"}
-//               </button>
-
-//             </div>
-
-//           </div>
-
-
-//           {/* ONLINE PAYMENT */}
-
-//           <div className="fee-service-card pay-card">
-
-//             <div className="service-icon online-icon">
-//               💰
-//             </div>
-
-//             <div className="service-content">
-
-//               <h3>Pay Fees Online</h3>
-
-//               <p>
-//                 Pay your pending school fees
-//                 securely online.
-//               </p>
-
-//               <button
-//                 className="primary-btn"
-//                 onClick={handlePayNow}
-//                 disabled={loading}
-//               >
-//                 {loading
-//                   ? "Processing..."
-//                   : "Pay Now →"}
-//               </button>
-
-//             </div>
-
-//           </div>
-
-//         </div>
-
-//       </div>
-
-
-//       {/* ================= INVOICE RESULT ================= */}
-
-//       {invoice && (
-//         <div className="fees-result-card">
-
-//           <div className="result-header">
-
-//             <h2>Fee Invoice</h2>
-
-//             <button
-//               onClick={() => setInvoice(null)}
-//             >
-//               ✕
-//             </button>
-
-//           </div>
-
-//           <pre>
-//             {JSON.stringify(invoice, null, 2)}
-//           </pre>
-
-//         </div>
-//       )}
-
-
-//       {/* ================= PAYMENTS RESULT ================= */}
-
-//       {payments.length > 0 && (
-//         <div className="fees-result-card">
-
-//           <div className="result-header">
-
-//             <h2>Payment History</h2>
-
-//             <button
-//               onClick={() => setPayments([])}
-//             >
-//               ✕
-//             </button>
-
-//           </div>
-
-//           <div className="payment-list">
-
-//             {payments.map((payment, index) => (
-
-//               <div
-//                 className="payment-row"
-//                 key={payment.id || index}
-//               >
-
-//                 <div>
-//                   <strong>
-//                     Payment #{payment.id || index + 1}
-//                   </strong>
-
-//                   <span>
-//                     {payment.payment_date ||
-//                       payment.created_at ||
-//                       "Payment"}
-//                   </span>
-//                 </div>
-
-//                 <strong>
-//                   ₹{payment.amount || 0}
-//                 </strong>
-
-//                 <span className="payment-success">
-//                   ✓ Paid
-//                 </span>
-
-//               </div>
-
-//             ))}
-
-//           </div>
-
-//         </div>
-//       )}
-
-//     </div>
-//   );
-// }
-
-// export default StudentFees;
-
-
-
-
-
-
-
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
+  getMyFeeStructure,
   getMyFeeInvoice,
   getMyFeePayments,
   createFeeOnlineOrder,
@@ -365,9 +9,13 @@ import {
 } from "../../services/studentService";
 
 function StudentFees() {
-  // ==============================
+  // =====================================
   // STATE
-  // ==============================
+  // =====================================
+
+  const [feeStructure, setFeeStructure] = useState(null);
+  const [structureLoading, setStructureLoading] = useState(true);
+  const [structureError, setStructureError] = useState("");
 
   const [invoice, setInvoice] = useState([]);
   const [payments, setPayments] = useState([]);
@@ -375,14 +23,114 @@ function StudentFees() {
   const [activeSection, setActiveSection] = useState(null);
 
   const [invoiceLoading, setInvoiceLoading] = useState(false);
+  const [summaryLoading, setSummaryLoading] = useState(true);
   const [paymentsLoading, setPaymentsLoading] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
 
   const [error, setError] = useState("");
 
-  // ==============================
-  // CALCULATE FEES
-  // ==============================
+  // =====================================
+  // NORMALIZE API RESPONSE
+  // =====================================
+
+  const getArrayData = (res) => {
+    if (Array.isArray(res?.data)) return res.data;
+    if (Array.isArray(res?.data?.results)) return res.data.results;
+    if (Array.isArray(res?.results)) return res.results;
+    return [];
+  };
+
+  // =====================================
+  // LOAD FEE STRUCTURE
+  // =====================================
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadFeeStructure = async () => {
+      try {
+        setStructureLoading(true);
+        setStructureError("");
+
+        const res = await getMyFeeStructure();
+
+        if (!res?.success) {
+          throw new Error(
+            res?.message || "Unable to load fee structure."
+          );
+        }
+
+        if (!cancelled) {
+          setFeeStructure(res.data || null);
+        }
+      } catch (err) {
+        console.error("Fee Structure Error:", err);
+
+        if (!cancelled) {
+          setStructureError(
+            err.message || "Failed to load fee structure."
+          );
+        }
+      } finally {
+        if (!cancelled) setStructureLoading(false);
+      }
+    };
+
+    loadFeeStructure();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // =====================================
+  // LOAD INVOICES AUTOMATICALLY
+  // SUMMARY CARDS WILL UPDATE ON PAGE LOAD
+  // =====================================
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadInvoiceSummary = async () => {
+      try {
+        setSummaryLoading(true);
+
+        const res = await getMyFeeInvoice();
+
+        console.log("Initial Invoice Summary:", res);
+
+        if (!res?.success) {
+          throw new Error(
+            res?.message || "Unable to load invoice summary."
+          );
+        }
+
+        if (!cancelled) {
+          setInvoice(getArrayData(res));
+        }
+      } catch (err) {
+        console.error("Invoice Summary Error:", err);
+
+        if (!cancelled) {
+          setError(
+            err.message || "Failed to load invoice summary."
+          );
+        }
+      } finally {
+        if (!cancelled) setSummaryLoading(false);
+      }
+    };
+
+    loadInvoiceSummary();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // =====================================
+  // DYNAMIC INVOICE CALCULATIONS
+  // =====================================
 
   const totalFees = invoice.reduce(
     (total, item) => total + Number(item.amount || 0),
@@ -399,41 +147,91 @@ function StudentFees() {
     0
   );
 
-  // ==============================
-  // VIEW INVOICE
-  // ==============================
+  // =====================================
+  // FORMAT DATE
+  // =====================================
+
+  const formatDate = (date) => {
+    if (!date) return "-";
+
+    const parsedDate = new Date(date);
+
+    if (Number.isNaN(parsedDate.getTime())) return "-";
+
+    return parsedDate.toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  // =====================================
+  // FORMAT MONEY
+  // =====================================
+
+  const formatMoney = (amount) =>
+    Number(amount || 0).toLocaleString("en-IN", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+
+  // =====================================
+  // FEE STRUCTURE TOTAL
+  // =====================================
+
+  const structureTotal =
+    feeStructure?.total_annual_fee ??
+    (
+      Number(feeStructure?.yearly_fee || 0) +
+      Number(feeStructure?.admission_fee || 0) +
+      Number(feeStructure?.exam_fee || 0) +
+      Number(feeStructure?.transport_fee || 0) +
+      Number(feeStructure?.other_fee || 0)
+    );
+
+  // =====================================
+  // REFRESH INVOICES
+  // =====================================
+
+  const refreshInvoices = async () => {
+    const res = await getMyFeeInvoice();
+
+    if (!res?.success) {
+      throw new Error(
+        res?.message || "Unable to refresh invoices."
+      );
+    }
+
+    const rows = getArrayData(res);
+    setInvoice(rows);
+
+    return rows;
+  };
+
+  // =====================================
+  // VIEW INVOICES
+  // =====================================
 
   const handleInvoice = async () => {
     try {
       setInvoiceLoading(true);
       setError("");
 
-      const res = await getMyFeeInvoice();
+      await refreshInvoices();
 
-      console.log("My Invoice:", res);
-
-      if (!res?.success) {
-        throw new Error(
-          res?.message || "Unable to load invoice"
-        );
-      }
-
-      setInvoice(res.data || []);
       setActiveSection("invoice");
-    } catch (error) {
-      console.error("Invoice Error:", error);
+    } catch (err) {
+      console.error("Invoice Error:", err);
 
-      setError(
-        error.message || "Failed to load invoice"
-      );
+      setError(err.message || "Failed to load invoices.");
     } finally {
       setInvoiceLoading(false);
     }
   };
 
-  // ==============================
+  // =====================================
   // PAYMENT HISTORY
-  // ==============================
+  // =====================================
 
   const handlePayments = async () => {
     try {
@@ -446,26 +244,26 @@ function StudentFees() {
 
       if (!res?.success) {
         throw new Error(
-          res?.message || "Unable to load payments"
+          res?.message || "Unable to load payment history."
         );
       }
 
-      setPayments(res.data || []);
+      setPayments(getArrayData(res));
       setActiveSection("payments");
-    } catch (error) {
-      console.error("Payments Error:", error);
+    } catch (err) {
+      console.error("Payments Error:", err);
 
       setError(
-        error.message || "Failed to load payment history"
+        err.message || "Failed to load payment history."
       );
     } finally {
       setPaymentsLoading(false);
     }
   };
 
-  // ==============================
-  // PAY ONLINE
-  // ==============================
+  // =====================================
+  // PAY ONLINE WITH RAZORPAY
+  // =====================================
 
   const handlePayNow = async (selectedInvoice) => {
     try {
@@ -482,57 +280,41 @@ function StudentFees() {
       setPaymentLoading(true);
       setError("");
 
-      // --------------------------------
-      // STEP 1: CREATE RAZORPAY ORDER
-      // --------------------------------
-
-      const res = await createFeeOnlineOrder(
-        selectedInvoice.id
-      );
+      const res = await createFeeOnlineOrder(selectedInvoice.id);
 
       console.log("Razorpay Order Response:", res);
 
       if (!res?.success) {
         throw new Error(
-          res?.message ||
-            "Unable to create payment order"
+          res?.message || "Unable to create payment order."
         );
       }
 
       const order = res.data;
 
-      console.log("Order ID:", order.order_id);
-      console.log("Amount:", order.amount);
-      console.log("Key ID:", order.key_id);
-
-      // --------------------------------
-      // CHECK RAZORPAY SCRIPT
-      // --------------------------------
-
-      if (!window.Razorpay) {
+      if (!order?.order_id || !order?.key_id || !order?.amount) {
         throw new Error(
-          "Razorpay SDK is not loaded. Please add Razorpay script."
+          "Invalid Razorpay order details received."
         );
       }
 
-      // --------------------------------
-      // RAZORPAY CHECKOUT OPTIONS
-      // --------------------------------
+      if (!window.Razorpay) {
+        throw new Error(
+          "Razorpay SDK is not loaded. Please add the Razorpay checkout script."
+        );
+      }
 
       const options = {
         key: order.key_id,
-
         amount: order.amount,
-
         currency: order.currency || "INR",
-
         name: "Data Click Education",
-
-        description: `Fee Payment - ${order.invoice?.invoice_number || ""}`,
-
+        description: `Fee Payment - ${
+          order.invoice?.invoice_number || ""
+        }`,
         order_id: order.order_id,
 
-        handler: async function (response) {
+        handler: async (response) => {
           await verifyPayment(response);
         },
 
@@ -541,13 +323,9 @@ function StudentFees() {
         },
 
         notes: {
-          invoice_id: String(
-            order.invoice?.id || ""
-          ),
-          invoice_number:
-            order.invoice?.invoice_number || "",
-          student_id:
-            order.student?.student_id || "",
+          invoice_id: String(order.invoice?.id || ""),
+          invoice_number: order.invoice?.invoice_number || "",
+          student_id: order.student?.student_id || "",
         },
 
         theme: {
@@ -555,201 +333,116 @@ function StudentFees() {
         },
 
         modal: {
-          ondismiss: function () {
+          ondismiss: () => {
             setPaymentLoading(false);
           },
         },
       };
 
-      // --------------------------------
-      // OPEN RAZORPAY
-      // --------------------------------
-
       const razorpay = new window.Razorpay(options);
 
-      razorpay.on(
-        "payment.failed",
-        function (response) {
-          console.error(
-            "Razorpay Payment Failed:",
-            response
-          );
+      razorpay.on("payment.failed", (response) => {
+        console.error("Razorpay Payment Failed:", response);
 
-          setError(
-            response?.error?.description ||
-              "Payment failed. Please try again."
-          );
+        setError(
+          response?.error?.description ||
+            "Payment failed. Please try again."
+        );
 
-          setPaymentLoading(false);
-        }
-      );
+        setPaymentLoading(false);
+      });
 
       razorpay.open();
-    } catch (error) {
-      console.error(
-        "Create Payment Order Error:",
-        error
-      );
+    } catch (err) {
+      console.error("Create Payment Order Error:", err);
 
       setError(
-        error.message ||
-          "Unable to start online payment"
+        err.message || "Unable to start online payment."
       );
 
       setPaymentLoading(false);
     }
   };
 
-  // ==============================
-  // VERIFY PAYMENT
-  // ==============================
+  // =====================================
+  // VERIFY PAYMENT AND REFRESH DATA
+  // =====================================
 
   const verifyPayment = async (response) => {
     try {
       setError("");
 
-      console.log(
-        "Razorpay Success Response:",
-        response
-      );
+      const paymentResponse = await verifyFeeOnlinePayment({
+        razorpay_order_id: response.razorpay_order_id,
+        razorpay_payment_id: response.razorpay_payment_id,
+        razorpay_signature: response.razorpay_signature,
+      });
 
-      const paymentResponse =
-        await verifyFeeOnlinePayment({
-          razorpay_order_id:
-            response.razorpay_order_id,
-
-          razorpay_payment_id:
-            response.razorpay_payment_id,
-
-          razorpay_signature:
-            response.razorpay_signature,
-        });
-
-      console.log(
-        "Payment Verification:",
-        paymentResponse
-      );
+      console.log("Payment Verification:", paymentResponse);
 
       if (!paymentResponse?.success) {
         throw new Error(
           paymentResponse?.message ||
-            "Payment verification failed"
+            "Payment verification failed."
         );
       }
 
-      // --------------------------------
-      // PAYMENT SUCCESS
-      // --------------------------------
-
-      alert(
+      window.alert(
         "Payment successful! Your fee payment has been verified."
       );
 
-      setPaymentLoading(false);
+      // Summary cards update using refreshed invoices.
+      await refreshInvoices();
 
-      // Refresh invoice data ONLY after
-      // successful payment.
-      const invoiceResponse =
-        await getMyFeeInvoice();
-
-      if (invoiceResponse?.success) {
-        setInvoice(
-          invoiceResponse.data || []
-        );
-      }
-
-      // Refresh payment history ONLY after
-      // successful payment.
-      const paymentHistoryResponse =
-        await getMyFeePayments();
+      // Refresh payment history.
+      const paymentHistoryResponse = await getMyFeePayments();
 
       if (paymentHistoryResponse?.success) {
-        setPayments(
-          paymentHistoryResponse.data || []
-        );
+        setPayments(getArrayData(paymentHistoryResponse));
       }
 
       setActiveSection("payments");
-    } catch (error) {
-      console.error(
-        "Payment Verification Error:",
-        error
-      );
+    } catch (err) {
+      console.error("Payment Verification Error:", err);
 
       setError(
-        error.message ||
-          "Payment verification failed"
+        err.message || "Payment verification failed."
       );
-
+    } finally {
       setPaymentLoading(false);
     }
   };
 
-  // ==============================
-  // FORMAT DATE
-  // ==============================
-
-  const formatDate = (date) => {
-    if (!date) return "-";
-
-    return new Date(date).toLocaleDateString(
-      "en-IN",
-      {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      }
-    );
-  };
-
-  // ==============================
-  // FORMAT MONEY
-  // ==============================
-
-  const formatMoney = (amount) => {
-    return Number(amount || 0).toLocaleString(
-      "en-IN",
-      {
-        maximumFractionDigits: 2,
-      }
-    );
-  };
-
-  // ==============================
+  // =====================================
   // RENDER
-  // ==============================
+  // =====================================
 
   return (
     <div className="student-fees-page">
-
-      {/* =================================
-          PAGE HEADER
-      ================================= */}
+      {/* PAGE HEADER */}
 
       <div className="fees-header">
         <div>
-          <h1>Fees & Payments</h1>
-
-          <p>
-            Manage your school fees,
-            invoices and payments
-          </p>
+          <h1>Fees &amp; Payments</h1>
+          <p>Manage your school fees, invoices and payments</p>
         </div>
 
         <div className="academic-year">
-          Academic Year
+          {feeStructure?.academic_year_name ||
+            feeStructure?.academic_year?.name ||
+            "Academic Year"}
         </div>
       </div>
 
-      {/* =================================
-          ERROR
-      ================================= */}
+      {/* ERROR MESSAGE */}
 
       {error && (
-        <div className="fees-error">
-          {error}
+        <div className="fees-error" role="alert">
+          <span>{error}</span>
 
           <button
+            type="button"
+            aria-label="Close error"
             onClick={() => setError("")}
           >
             ×
@@ -757,371 +450,367 @@ function StudentFees() {
         </div>
       )}
 
-      {/* =================================
-          SUMMARY CARDS
-      ================================= */}
+      {/* DYNAMIC INVOICE SUMMARY CARDS */}
 
       <div className="fee-summary-grid">
-
-        {/* TOTAL */}
-
         <div className="fee-summary-card total">
-          <div className="fee-card-icon">
-            ₹
-          </div>
+          <div className="fee-card-icon">₹</div>
 
           <div>
-            <span>Total Fees</span>
-
+            <span>Total Invoiced Fees</span>
             <h2>
-              ₹{formatMoney(totalFees)}
+              {summaryLoading
+                ? "Loading..."
+                : `₹${formatMoney(totalFees)}`}
             </h2>
           </div>
         </div>
 
-        {/* PAID */}
-
         <div className="fee-summary-card paid">
-          <div className="fee-card-icon">
-            ✓
-          </div>
+          <div className="fee-card-icon">✓</div>
 
           <div>
             <span>Paid Fees</span>
-
             <h2>
-              ₹{formatMoney(paidFees)}
+              {summaryLoading
+                ? "Loading..."
+                : `₹${formatMoney(paidFees)}`}
             </h2>
           </div>
         </div>
 
-        {/* PENDING */}
-
         <div className="fee-summary-card pending">
-          <div className="fee-card-icon">
-            !
-          </div>
+          <div className="fee-card-icon">!</div>
 
           <div>
             <span>Pending Fees</span>
-
             <h2>
-              ₹{formatMoney(pendingFees)}
+              {summaryLoading
+                ? "Loading..."
+                : `₹${formatMoney(pendingFees)}`}
             </h2>
           </div>
         </div>
-
       </div>
 
-      {/* =================================
-          ACTION CARDS
-      ================================= */}
+      {/* ADMIN-CREATED FEE STRUCTURE */}
+
+      <div className="fees-section fee-structure-section">
+        <div className="section-header">
+          <div>
+            <h2>My Class Fee Structure</h2>
+            <p>Fees configured by your school administrator</p>
+          </div>
+
+          {feeStructure?.is_active && (
+            <span className="status-badge paid">Active</span>
+          )}
+        </div>
+
+        {structureLoading ? (
+          <div className="empty-state">
+            Loading your class fee structure...
+          </div>
+        ) : structureError ? (
+          <div className="fees-error" role="alert">
+            <span>{structureError}</span>
+
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  setStructureLoading(true);
+                  setStructureError("");
+
+                  const res = await getMyFeeStructure();
+
+                  if (!res?.success) {
+                    throw new Error(
+                      res?.message ||
+                        "Unable to load fee structure."
+                    );
+                  }
+
+                  setFeeStructure(res.data || null);
+                } catch (err) {
+                  setStructureError(
+                    err.message ||
+                      "Failed to load fee structure."
+                  );
+                } finally {
+                  setStructureLoading(false);
+                }
+              }}
+            >
+              Retry
+            </button>
+          </div>
+        ) : !feeStructure ? (
+          <div className="empty-state">
+            <div>🧾</div>
+            <h3>No Fee Structure Found</h3>
+            <p>
+              Please contact your school administrator to configure
+              fees for your class and academic year.
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="invoice-details">
+              <div>
+                <span>Academic Year</span>
+                <strong>
+                  {feeStructure.academic_year_name ||
+                    feeStructure.academic_year?.name ||
+                    "-"}
+                </strong>
+              </div>
+
+              <div>
+                <span>Class</span>
+                <strong>
+                  {feeStructure.class_name ||
+                    feeStructure.school_class?.name ||
+                    "-"}
+                </strong>
+              </div>
+            </div>
+
+            <div className="invoice-amounts fee-structure-amounts">
+              <div>
+                <span>Monthly Fee</span>
+                <strong>
+                  ₹{formatMoney(feeStructure.monthly_fee)}
+                </strong>
+              </div>
+
+              <div>
+                <span>Yearly Tuition</span>
+                <strong>
+                  ₹{formatMoney(feeStructure.yearly_fee)}
+                </strong>
+              </div>
+
+              <div>
+                <span>Admission Fee</span>
+                <strong>
+                  ₹{formatMoney(feeStructure.admission_fee)}
+                </strong>
+              </div>
+
+              <div>
+                <span>Exam Fee</span>
+                <strong>
+                  ₹{formatMoney(feeStructure.exam_fee)}
+                </strong>
+              </div>
+
+              <div>
+                <span>Transport Fee</span>
+                <strong>
+                  ₹{formatMoney(feeStructure.transport_fee)}
+                </strong>
+              </div>
+
+              <div>
+                <span>Other Charges</span>
+                <strong>
+                  ₹{formatMoney(feeStructure.other_fee)}
+                </strong>
+              </div>
+            </div>
+
+            <div className="fee-structure-total">
+              <span>Total Annual Fee</span>
+              <h2>₹{formatMoney(structureTotal)}</h2>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* ACTION CARDS */}
 
       <div className="fees-actions-grid">
-
-        {/* VIEW INVOICE */}
-
         <div className="fee-action-card">
-
-          <div className="action-icon invoice-icon">
-            🧾
-          </div>
+          <div className="action-icon invoice-icon">🧾</div>
 
           <div className="action-content">
             <h3>Fee Invoice</h3>
-
-            <p>
-              View your fee invoices
-              and pending amounts.
-            </p>
+            <p>View your fee invoices and pending amounts.</p>
 
             <button
+              type="button"
               className="primary-btn"
               onClick={handleInvoice}
               disabled={invoiceLoading}
             >
-              {invoiceLoading
-                ? "Loading..."
-                : "View Invoice"}
+              {invoiceLoading ? "Loading..." : "View Invoice"}
             </button>
           </div>
-
         </div>
 
-        {/* PAYMENT HISTORY */}
-
         <div className="fee-action-card">
-
-          <div className="action-icon payment-icon">
-            💳
-          </div>
+          <div className="action-icon payment-icon">💳</div>
 
           <div className="action-content">
             <h3>Payment History</h3>
-
-            <p>
-              View all your previous
-              fee payments.
-            </p>
+            <p>View your previous fee payments.</p>
 
             <button
+              type="button"
               className="secondary-btn"
               onClick={handlePayments}
               disabled={paymentsLoading}
             >
-              {paymentsLoading
-                ? "Loading..."
-                : "Payment History"}
+              {paymentsLoading ? "Loading..." : "Payment History"}
             </button>
           </div>
-
         </div>
 
-        {/* PAY ONLINE */}
-
         <div className="fee-action-card">
-
-          <div className="action-icon online-icon">
-            ⚡
-          </div>
+          <div className="action-icon online-icon">⚡</div>
 
           <div className="action-content">
             <h3>Pay Fees Online</h3>
-
-            <p>
-              Pay your pending fees
-              securely online.
-            </p>
+            <p>Pay your pending fees securely online.</p>
 
             <button
+              type="button"
               className="success-btn"
               onClick={handleInvoice}
               disabled={invoiceLoading}
             >
-              {invoiceLoading
-                ? "Loading..."
-                : "View Pending Fees"}
+              {invoiceLoading ? "Loading..." : "View Pending Fees"}
             </button>
           </div>
-
         </div>
-
       </div>
 
-      {/* =================================
-          INVOICE SECTION
-      ================================= */}
+      {/* INVOICE LIST */}
 
       {activeSection === "invoice" && (
         <div className="fees-section">
-
           <div className="section-header">
             <div>
               <h2>My Fee Invoices</h2>
-
-              <p>
-                Your complete fee details
-              </p>
+              <p>Your complete fee details</p>
             </div>
           </div>
 
           {invoice.length === 0 ? (
             <div className="empty-state">
               <div>🧾</div>
-
               <h3>No Invoice Found</h3>
-
-              <p>
-                No fee invoice is available
-                for your account.
-              </p>
+              <p>No fee invoice is available for your account.</p>
             </div>
           ) : (
             <div className="invoice-list">
-
-
-
               {invoice.map((item) => (
-                <div
-                  className="invoice-card"
-                  key={item.id}
-                >
-
+                <div className="invoice-card" key={item.id}>
                   <div className="invoice-top">
-
                     <div>
                       <span className="invoice-label">
                         Invoice Number
                       </span>
 
                       <h3>
-                        {item.invoice_number ||
-                          `INV-${item.id}`}
+                        {item.invoice_number || `INV-${item.id}`}
                       </h3>
                     </div>
 
                     <span
-                      className={`status-badge ${
-                        (
-                          item.status ||
-                          ""
-                        ).toLowerCase()
-                      }`}
+                      className={`status-badge ${(
+                        item.status || "pending"
+                      ).toLowerCase()}`}
                     >
                       {item.status || "PENDING"}
                     </span>
-
                   </div>
 
                   <div className="invoice-details">
-
                     <div>
                       <span>Student</span>
-                      <strong>
-                        {item.student_name ||
-                          "-"}
-                      </strong>
+                      <strong>{item.student_name || "-"}</strong>
                     </div>
 
                     <div>
                       <span>Class</span>
-                      <strong>
-                        {item.class_name ||
-                          "-"}
-                      </strong>
+                      <strong>{item.class_name || "-"}</strong>
                     </div>
 
                     <div>
                       <span>Section</span>
-                      <strong>
-                        {item.section_name ||
-                          "-"}
-                      </strong>
+                      <strong>{item.section_name || "-"}</strong>
                     </div>
 
                     <div>
                       <span>Due Date</span>
-                      <strong>
-                        {formatDate(
-                          item.due_date
-                        )}
-                      </strong>
+                      <strong>{formatDate(item.due_date)}</strong>
                     </div>
-
                   </div>
 
                   <div className="invoice-amounts">
-
                     <div>
                       <span>Total</span>
-
-                      <strong>
-                        ₹
-                        {formatMoney(
-                          item.amount
-                        )}
-                      </strong>
+                      <strong>₹{formatMoney(item.amount)}</strong>
                     </div>
 
                     <div>
                       <span>Paid</span>
-
                       <strong className="paid-text">
-                        ₹
-                        {formatMoney(
-                          item.paid_amount
-                        )}
+                        ₹{formatMoney(item.paid_amount)}
                       </strong>
                     </div>
 
                     <div>
                       <span>Pending</span>
-
                       <strong className="pending-text">
-                        ₹
-                        {formatMoney(
-                          item.due_amount
-                        )}
+                        ₹{formatMoney(item.due_amount)}
                       </strong>
                     </div>
-
                   </div>
 
-                  {/* PAY BUTTON */}
-
-                  {Number(
-                    item.due_amount || 0
-                  ) > 0 && (
+                  {Number(item.due_amount || 0) > 0 && (
                     <div className="invoice-footer">
-
                       <button
+                        type="button"
                         className="pay-now-btn"
-                        onClick={() =>
-                          handlePayNow(item)
-                        }
-                        disabled={
-                          paymentLoading
-                        }
+                        onClick={() => handlePayNow(item)}
+                        disabled={paymentLoading}
                       >
                         {paymentLoading
                           ? "Processing..."
-                          : `Pay ₹${formatMoney(
-                              item.due_amount
-                            )}`}
+                          : `Pay ₹${formatMoney(item.due_amount)}`}
                       </button>
-
                     </div>
                   )}
-
                 </div>
               ))}
-
             </div>
           )}
-
         </div>
       )}
 
-      {/* =================================
-          PAYMENT HISTORY SECTION
-      ================================= */}
+      {/* PAYMENT HISTORY */}
 
       {activeSection === "payments" && (
         <div className="fees-section">
-
           <div className="section-header">
-
             <div>
               <h2>Payment History</h2>
-
-              <p>
-                Your previous fee
-                payment transactions
-              </p>
+              <p>Your previous fee payment transactions</p>
             </div>
-
           </div>
 
           {payments.length === 0 ? (
             <div className="empty-state">
-
               <div>💳</div>
-
-              <h3>
-                No Payments Found
-              </h3>
-
-              <p>
-                You have not made any
-                fee payments yet.
-              </p>
-
+              <h3>No Payments Found</h3>
+              <p>You have not made any fee payments yet.</p>
             </div>
           ) : (
             <div className="payment-table-wrapper">
-
               <table className="payment-table">
-
                 <thead>
                   <tr>
                     <th>Receipt</th>
@@ -1134,99 +823,58 @@ function StudentFees() {
                 </thead>
 
                 <tbody>
-
                   {payments.map((payment) => (
                     <tr key={payment.id}>
-
                       <td>
                         <strong>
-                          {payment.receipt_number ||
-                            "-"}
+                          {payment.receipt_number || "-"}
                         </strong>
                       </td>
 
-                      <td>
-                        {payment.invoice_number ||
-                          "-"}
-                      </td>
+                      <td>{payment.invoice_number || "-"}</td>
 
-                      <td>
-                        ₹
-                        {formatMoney(
-                          payment.amount
-                        )}
-                      </td>
+                      <td>₹{formatMoney(payment.amount)}</td>
 
                       <td>
                         <span className="method-badge">
-                          {payment.payment_method ||
-                            "-"}
+                          {payment.payment_method || "-"}
                         </span>
                       </td>
 
-                      <td>
-                        {formatDate(
-                          payment.payment_date
-                        )}
-                      </td>
+                      <td>{formatDate(payment.payment_date)}</td>
 
                       <td>
-
                         <span
-                          className={`payment-status ${
-                            (
-                              payment.payment_status ||
-                              ""
-                            ).toLowerCase()
-                          }`}
+                          className={`payment-status ${(
+                            payment.payment_status || ""
+                          ).toLowerCase()}`}
                         >
-                          {payment.payment_status ||
-                            "-"}
+                          {payment.payment_status || "-"}
                         </span>
-
                       </td>
-
                     </tr>
                   ))}
-
                 </tbody>
-
               </table>
-
             </div>
           )}
-
         </div>
       )}
 
-      {/* =================================
-          PAYMENT LOADING OVERLAY
-      ================================= */}
+      {/* PAYMENT PROCESSING OVERLAY */}
 
       {paymentLoading && (
         <div className="payment-processing">
-
           <div className="processing-box">
-
             <div className="processing-spinner"></div>
 
-            <h3>
-              Processing Payment
-            </h3>
-
-            <p>
-              Please complete the payment
-              in Razorpay.
-            </p>
-
+            <h3>Processing Payment</h3>
+            <p>Please complete the payment in Razorpay.</p>
           </div>
-
         </div>
       )}
-
     </div>
   );
 }
 
 export default StudentFees;
-

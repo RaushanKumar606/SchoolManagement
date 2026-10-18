@@ -48,23 +48,17 @@ function StudentTimetable() {
      GROUP BY DAY
   ========================= */
 
-  const groupedTimetable = timetable.reduce(
-    (groups, item) => {
-      const day =
-        item.day ||
-        item.day_name ||
-        "OTHER";
+ const groupedTimetable = timetable.reduce((groups, item) => {
+  const rawDay = item.day || item.day_name || "OTHER";
+  const day = String(rawDay).trim().toUpperCase();
 
-      if (!groups[day]) {
-        groups[day] = [];
-      }
+  if (!groups[day]) {
+    groups[day] = [];
+  }
 
-      groups[day].push(item);
-
-      return groups;
-    },
-    {}
-  );
+  groups[day].push(item);
+  return groups;
+}, {});
 
   const days = [
     "MONDAY",

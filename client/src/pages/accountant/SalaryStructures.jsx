@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import accountantService from "../../services/accountantService";
-import "./SalaryStructure.css";
+// import "./SalaryStructure.css";
 
 function SalaryStructure() {
   const navigate = useNavigate();
@@ -85,7 +85,7 @@ function SalaryStructure() {
   const handleFilterChange = (value) => {
     if (
       value === "STAFF" ||
-      value === "HR"
+      value === "HR" ||value === "TEACHER"
     ) {
       setComingSoonType(value);
       setShowComingSoon(true);

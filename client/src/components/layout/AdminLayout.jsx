@@ -81,6 +81,23 @@ function AdminLayout() {
             📝 New Admission
           </NavLink>
 
+           <NavLink
+            to="/admin/academics"
+            className={({ isActive }) =>
+              `nav-item ${isActive ? "active" : ""}`
+            }
+          >
+            📝 AcademicManagement
+          </NavLink>
+          <NavLink
+            to="/admin/teacherAssigment"
+            className={({ isActive }) =>
+              `nav-item ${isActive ? "active" : ""}`
+            }
+          >
+            📝 TeacherAssignment 
+          </NavLink>
+
 
           {/* FEES */}
           <p className="nav-heading">FEES</p>
@@ -191,51 +208,15 @@ function AdminLayout() {
           {/* ================= ACCOUNTANT ================= */}
 
   <p className="nav-heading">FINANCE</p>
-
   <NavLink
-    to="/admin/accountant"
-    className={({ isActive }) =>
-      `nav-item ${isActive ? "active" : ""}`
-    }
-  >
-    💰 Accountant
-  </NavLink>
+            to="/admin/accountants/register"
+            className={({ isActive }) =>
+              `nav-item ${isActive ? "active" : ""}`
+            }
+          >
+            💰 Accountant
+          </NavLink>
 
-  <NavLink
-    to="/admin/accountant/employees"
-    className={({ isActive }) =>
-      `nav-sub-item ${isActive ? "active" : ""}`
-    }
-  >
-    👥 Employees
-  </NavLink>
-
-  <NavLink
-    to="/admin/accountant/salary-structure"
-    className={({ isActive }) =>
-      `nav-sub-item ${isActive ? "active" : ""}`
-    }
-  >
-    💵 Salary Structure
-  </NavLink>
-
-  <NavLink
-    to="/admin/accountant/salary-slips"
-    className={({ isActive }) =>
-      `nav-sub-item ${isActive ? "active" : ""}`
-    }
-  >
-    📄 Salary Slips
-  </NavLink>
-
-  <NavLink
-    to="/admin/accountant/fees-invoice"
-    className={({ isActive }) =>
-      `nav-sub-item ${isActive ? "active" : ""}`
-    }
-  >
-    🧾 Fees Invoice
-  </NavLink>
           {/* SYSTEM */}
           <p className="nav-heading">SYSTEM</p>
 

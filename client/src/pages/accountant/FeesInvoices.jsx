@@ -1,172 +1,88 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import accountantService from "../../services/accountantService";
-import "./FeesInvoice.css";
+// import "./FeesInvoice.css";
 
 function FeesInvoice() {
   const navigate = useNavigate();
 
   const [invoices, setInvoices] = useState([]);
-
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
-
-  const [selectedInvoice, setSelectedInvoice] =
-    useState(null);
-
-  const [showDetails, setShowDetails] =
-    useState(false);
-
-  // =====================================================
-  // LOAD INVOICES
-  // API CALL ONLY WHEN PAGE OPENS
-  // =====================================================
+  const [selectedInvoice, setSelectedInvoice] = useState(null);
+  const [showDetails, setShowDetails] = useState(false);
 
   useEffect(() => {
     fetchInvoices();
   }, []);
 
+  // --------------------------------------------------
+  // LOAD INVOICES
+  // --------------------------------------------------
   const fetchInvoices = async () => {
     try {
       setLoading(true);
       setError("");
 
-      /*
-       * IMPORTANT:
-       * Is function ko accountantService ke
-       * Fees Invoice API se connect karenge.
-       */
+      const response = await accountantService.getFeeInvoices();
 
-      const response =
-        await accountantService.getFeesInvoices();
+      console.log("FEES INVOICE API RESPONSE:", response);
 
-      if (response?.success) {
-        setInvoices(response.data || []);
-      } else {
-        setError(
+      // Supports common Django REST Framework response formats.
+      const invoiceList = Array.isArray(response)
+        ? response
+        : Array.isArray(response?.data)
+          ? response.data
+          : Array.isArray(response?.results)
+            ? response.results
+            : Array.isArray(response?.data?.results)
+              ? response.data.results
+              : Array.isArray(response?.data?.data)
+                ? response.data.data
+                : null;
+
+      if (invoiceList === null) {
+        throw new Error(
           response?.message ||
-            "Unable to load fees invoices."
+          "Invoice response format is incorrect. Check the console."
         );
       }
-    } catch (err) {
-      console.error(
-        "Fees Invoice API Error:",
-        err
-      );
 
-      setError(
-        err?.message ||
-          "Something went wrong while loading fees invoices."
-      );
+      setInvoices(invoiceList);
+    } catch (err) {
+      console.error("Fees Invoice API Error:", err);
+      setInvoices([]);
+      setError(err?.message || "Unable to load fee invoices.");
     } finally {
       setLoading(false);
     }
   };
 
-  // =====================================================
-  // SEARCH
-  // =====================================================
+  // --------------------------------------------------
+  // HELPERS
+  // --------------------------------------------------
+  const formatDate = (dateValue) => {
+    if (!dateValue || dateValue === "N/A") return "N/A";
 
-  const filteredInvoices = invoices.filter(
-    (invoice) => {
-      const searchText =
-        search.toLowerCase().trim();
+    const date = new Date(dateValue);
 
-      const studentName = String(
-        invoice.student_name ||
-          invoice.student?.name ||
-          invoice.student?.username ||
-          ""
-      ).toLowerCase();
+    if (Number.isNaN(date.getTime())) return "N/A";
 
-      const studentUsername = String(
-        invoice.student_username ||
-          invoice.student?.username ||
-          ""
-      ).toLowerCase();
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
 
-      const invoiceNumber = String(
-        invoice.invoice_number ||
-          invoice.invoice_no ||
-          invoice.id ||
-          ""
-      ).toLowerCase();
-
-      const matchesSearch =
-        !searchText ||
-        studentName.includes(searchText) ||
-        studentUsername.includes(searchText) ||
-        invoiceNumber.includes(searchText);
-
-      const invoiceStatus =
-        String(
-          invoice.status || ""
-        ).toUpperCase();
-
-      const matchesStatus =
-        statusFilter === "ALL" ||
-        invoiceStatus === statusFilter;
-
-      return (
-        matchesSearch &&
-        matchesStatus
-      );
-    }
-  );
-
-  // =====================================================
-  // VIEW INVOICE
-  // =====================================================
-
-  const handleView = async (invoice) => {
-    try {
-      setError("");
-
-      /*
-       * Agar detail API available hai to use karo.
-       * Filhaal selected invoice ka data show karenge.
-       */
-
-      if (invoice.id) {
-        const response =
-          await accountantService.getFeesInvoice(
-            invoice.id
-          );
-
-        if (response?.success) {
-          setSelectedInvoice(
-            response.data
-          );
-          setShowDetails(true);
-          return;
-        }
-      }
-
-      setSelectedInvoice(invoice);
-      setShowDetails(true);
-
-    } catch (err) {
-      console.error(
-        "Invoice Detail Error:",
-        err
-      );
-
-      setError(
-        err?.message ||
-          "Unable to load invoice details."
-      );
-    }
+    return `${day}-${month}-${year}`;
   };
 
-  // =====================================================
-  // MONEY FORMAT
-  // =====================================================
 
   const formatMoney = (value) => {
-    return Number(value || 0).toLocaleString(
+    const amount = Number(value ?? 0);
+
+    return (Number.isFinite(amount) ? amount : 0).toLocaleString(
       "en-IN",
       {
         minimumFractionDigits: 2,
@@ -175,102 +91,165 @@ function FeesInvoice() {
     );
   };
 
-  // =====================================================
-  // STATUS CLASS
-  // =====================================================
+  const getInvoiceAmount = (invoice) =>
+    Number(
+      invoice?.amount ??
+      invoice?.total_amount ??
+      invoice?.total ??
+      0
+    );
+
+  const getPaidAmount = (invoice) =>
+    Number(invoice?.paid_amount ?? 0);
+
+  const getDueAmount = (invoice) =>
+    Number(
+      invoice?.due_amount ??
+      Math.max(getInvoiceAmount(invoice) - getPaidAmount(invoice), 0)
+    );
+
+  const getStudentName = (invoice) =>
+    invoice?.student_name ||
+    invoice?.student?.name ||
+    invoice?.student?.full_name ||
+    invoice?.student?.username ||
+    "N/A";
+
+  const getStudentUsername = (invoice) =>
+    invoice?.student_username ||
+    invoice?.student?.username ||
+    invoice?.student_id ||
+    "";
+
+  const getInvoiceNumber = (invoice) =>
+    invoice?.invoice_number ||
+    invoice?.invoice_no ||
+    `INV-${invoice?.id ?? "N/A"}`;
+
+  const getInvoiceDate = (invoice) =>
+    invoice?.invoice_date ||
+    invoice?.date ||
+    invoice?.created_at ||
+    "N/A";
 
   const getStatusClass = (status) => {
-    switch (
-      String(status || "").toUpperCase()
-    ) {
+    switch (String(status || "").toUpperCase()) {
       case "PAID":
         return "invoice-status-paid";
-
       case "PENDING":
         return "invoice-status-pending";
-
       case "PARTIAL":
         return "invoice-status-partial";
-
       case "OVERDUE":
         return "invoice-status-overdue";
-
       case "CANCELLED":
         return "invoice-status-cancelled";
-
       default:
         return "invoice-status-default";
     }
   };
 
-  // =====================================================
-  // BACK
-  // =====================================================
+  // --------------------------------------------------
+  // SEARCH + STATUS FILTER
+  // --------------------------------------------------
+  const filteredInvoices = invoices.filter((invoice) => {
+    const searchText = search.toLowerCase().trim();
+
+    const matchesSearch =
+      !searchText ||
+      String(getStudentName(invoice)).toLowerCase().includes(searchText) ||
+      String(getStudentUsername(invoice)).toLowerCase().includes(searchText) ||
+      String(getInvoiceNumber(invoice)).toLowerCase().includes(searchText);
+
+    const status = String(invoice?.status || "").toUpperCase();
+
+    const matchesStatus =
+      statusFilter === "ALL" || status === statusFilter;
+
+    return matchesSearch && matchesStatus;
+  });
+
+  // --------------------------------------------------
+  // VIEW INVOICE DETAILS
+  // --------------------------------------------------
+  const handleView = async (invoice) => {
+    setError("");
+
+    // Show the available invoice data immediately.
+    setSelectedInvoice(invoice);
+    setShowDetails(true);
+
+    // Fetch detail only if the service method exists.
+    if (!invoice?.id || typeof accountantService.getFeesInvoice !== "function") {
+      return;
+    }
+
+    try {
+      const response = await accountantService.getFeeInvoices(invoice.id);
+
+      console.log("INVOICE DETAIL RESPONSE:", response);
+
+      const detail =
+        response?.data?.data ??
+        response?.data ??
+        response?.invoice ??
+        response;
+
+      if (detail && typeof detail === "object" && !Array.isArray(detail)) {
+        setSelectedInvoice((previous) => ({
+          ...previous,
+          ...detail,
+        }));
+      }
+    } catch (err) {
+      console.error("Invoice Detail Error:", err);
+      // Keep the invoice list data visible if detail API fails.
+    }
+  };
 
   const handleBack = () => {
     navigate("/accountant/dashboard");
   };
 
-  // =====================================================
-  // RETRY
-  // =====================================================
-
-  const handleRetry = () => {
-    fetchInvoices();
-  };
-
-  // =====================================================
+  // --------------------------------------------------
   // SUMMARY
-  // =====================================================
+  // --------------------------------------------------
+  const totalInvoices = invoices.length;
 
-  const totalInvoices =
-    invoices.length;
+  const paidInvoices = invoices.filter(
+    (invoice) =>
+      String(invoice?.status || "").toUpperCase() === "PAID"
+  ).length;
 
-  const paidInvoices =
-    invoices.filter(
-      (invoice) =>
-        String(
-          invoice.status || ""
-        ).toUpperCase() === "PAID"
-    ).length;
+  const pendingInvoices = invoices.filter(
+    (invoice) =>
+      String(invoice?.status || "").toUpperCase() === "PENDING"
+  ).length;
 
-  const pendingInvoices =
-    invoices.filter(
-      (invoice) =>
-        String(
-          invoice.status || ""
-        ).toUpperCase() === "PENDING"
-    ).length;
+  const totalAmount = invoices.reduce(
+    (total, invoice) => total + getInvoiceAmount(invoice),
+    0
+  );
 
-  const totalAmount =
-    invoices.reduce(
-      (total, invoice) =>
-        total +
-        Number(
-          invoice.total_amount ||
-            invoice.amount ||
-            invoice.total ||
-            0
-        ),
-      0
-    );
+  const totalPaid = invoices.reduce(
+    (total, invoice) => total + getPaidAmount(invoice),
+    0
+  );
 
-  // =====================================================
+  const totalDue = invoices.reduce(
+    (total, invoice) => total + getDueAmount(invoice),
+    0
+  );
+
+  // --------------------------------------------------
   // RENDER
-  // =====================================================
-
+  // --------------------------------------------------
   return (
     <div className="fees-invoice-page">
-
-      {/* =================================================
-          HEADER
-      ================================================= */}
-
       <header className="fees-invoice-header">
-
         <div className="header-left">
-
           <button
+            type="button"
             className="back-button"
             onClick={handleBack}
             title="Back to Dashboard"
@@ -279,653 +258,294 @@ function FeesInvoice() {
           </button>
 
           <div>
-            <h1>
-              Fees Invoice
-            </h1>
-
-            <p>
-              Manage student fees invoices
-            </p>
+            <h1>Fees Invoice</h1>
+            <p>Manage student fee invoices and payments</p>
           </div>
-
         </div>
 
         <button
+          type="button"
           className="refresh-button"
-          onClick={handleRetry}
+          onClick={fetchInvoices}
           disabled={loading}
         >
-          {loading
-            ? "Loading..."
-            : "Refresh"}
+          {loading ? "Loading..." : "Refresh"}
         </button>
-
       </header>
 
-      {/* =================================================
-          CONTENT
-      ================================================= */}
-
       <main className="fees-invoice-content">
-
-        {/* =================================================
-            SUMMARY CARDS
-        ================================================= */}
-
+        {/* SUMMARY CARDS */}
         <section className="invoice-summary">
-
           <div className="invoice-summary-card">
-
-            <span>
-              Total Invoices
-            </span>
-
-            <strong>
-              {loading
-                ? "..."
-                : totalInvoices}
-            </strong>
-
+            <span>Total Invoices</span>
+            <strong>{loading ? "..." : totalInvoices}</strong>
           </div>
 
           <div className="invoice-summary-card">
-
-            <span>
-              Paid
-            </span>
-
-            <strong>
-              {loading
-                ? "..."
-                : paidInvoices}
-            </strong>
-
+            <span>Paid Invoices</span>
+            <strong>{loading ? "..." : paidInvoices}</strong>
           </div>
 
           <div className="invoice-summary-card">
-
-            <span>
-              Pending
-            </span>
-
-            <strong>
-              {loading
-                ? "..."
-                : pendingInvoices}
-            </strong>
-
+            <span>Pending Invoices</span>
+            <strong>{loading ? "..." : pendingInvoices}</strong>
           </div>
 
           <div className="invoice-summary-card">
-
-            <span>
-              Total Amount
-            </span>
-
+            <span>Total Amount</span>
             <strong>
-              ₹{" "}
-              {loading
-                ? "..."
-                : formatMoney(
-                    totalAmount
-                  )}
+              {loading ? "..." : `₹ ${formatMoney(totalAmount)}`}
             </strong>
-
+            <small className="invoice-payment-breakdown">
+              Paid: ₹ {formatMoney(totalPaid)}
+              {" | "}
+              Due: ₹ {formatMoney(totalDue)}
+            </small>
           </div>
-
         </section>
 
-        {/* =================================================
-            ERROR
-        ================================================= */}
-
+        {/* ERROR */}
         {error && (
-
-          <div className="invoice-error">
-
+          <div className="invoice-error" role="alert">
             <div>
-              <strong>
-                Error
-              </strong>
-
-              <span>
-                {error}
-              </span>
+              <strong>Error</strong>
+              <span>{error}</span>
             </div>
 
-            <button
-              onClick={handleRetry}
-            >
+            <button type="button" onClick={fetchInvoices}>
               Retry
             </button>
-
           </div>
-
         )}
 
-        {/* =================================================
-            FILTERS
-        ================================================= */}
-
+        {/* FILTERS */}
         <section className="invoice-filter-card">
-
           <div className="search-box">
-
-            <label>
-              Search
-            </label>
-
+            <label htmlFor="invoice-search">Search</label>
             <input
+              id="invoice-search"
               type="text"
               placeholder="Search student or invoice number..."
               value={search}
-              onChange={(e) =>
-                setSearch(
-                  e.target.value
-                )
-              }
+              onChange={(event) => setSearch(event.target.value)}
             />
-
           </div>
 
           <div className="status-filter">
-
-            <label>
-              Status
-            </label>
-
+            <label htmlFor="invoice-status">Status</label>
             <select
+              id="invoice-status"
               value={statusFilter}
-              onChange={(e) =>
-                setStatusFilter(
-                  e.target.value
-                )
-              }
+              onChange={(event) => setStatusFilter(event.target.value)}
             >
-
-              <option value="ALL">
-                All
-              </option>
-
-              <option value="PAID">
-                Paid
-              </option>
-
-              <option value="PENDING">
-                Pending
-              </option>
-
-              <option value="PARTIAL">
-                Partial
-              </option>
-
-              <option value="OVERDUE">
-                Overdue
-              </option>
-
-              <option value="CANCELLED">
-                Cancelled
-              </option>
-
+              <option value="ALL">All</option>
+              <option value="PAID">Paid</option>
+              <option value="PENDING">Pending</option>
+              <option value="PARTIAL">Partial</option>
+              <option value="OVERDUE">Overdue</option>
+              <option value="CANCELLED">Cancelled</option>
             </select>
-
           </div>
-
         </section>
 
-        {/* =================================================
-            LOADING
-        ================================================= */}
-
+        {/* INVOICE TABLE */}
         {loading ? (
-
           <div className="invoice-loading">
-
-            <div className="loader-spinner"></div>
-
-            <p>
-              Loading fees invoices...
-            </p>
-
+            <div className="loader-spinner" />
+            <p>Loading fee invoices...</p>
           </div>
-
         ) : (
-
-          /* =================================================
-             TABLE
-          ================================================= */
-
           <section className="invoice-table-card">
-
             <div className="table-header">
-
               <div>
-
-                <h2>
-                  Student Fees Invoices
-                </h2>
-
+                <h2>Student Fees Invoices</h2>
                 <p>
                   {filteredInvoices.length} invoice
-                  {filteredInvoices.length !==
-                  1
-                    ? "s"
-                    : ""}
+                  {filteredInvoices.length !== 1 ? "s" : ""}
                 </p>
-
               </div>
-
             </div>
 
             <div className="table-wrapper">
-
               <table>
-
                 <thead>
-
                   <tr>
-
-                    <th>
-                      #
-                    </th>
-
-                    <th>
-                      Invoice
-                    </th>
-
-                    <th>
-                      Student
-                    </th>
-
-                    <th>
-                      Date
-                    </th>
-
-                    <th>
-                      Due Date
-                    </th>
-
-                    <th>
-                      Amount
-                    </th>
-
-                    <th>
-                      Status
-                    </th>
-
-                    <th>
-                      Action
-                    </th>
-
+                    <th>#</th>
+                    <th>Invoice</th>
+                    <th>Student</th>
+                    <th>Date</th>
+                    <th>Due Date</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Action</th>
                   </tr>
-
                 </thead>
 
                 <tbody>
-
-                  {filteredInvoices.length ===
-                  0 ? (
-
+                  {filteredInvoices.length === 0 ? (
                     <tr>
-
-                      <td
-                        colSpan="8"
-                        className="empty-row"
-                      >
-                        No fees invoices found.
+                      <td colSpan={8} className="empty-row">
+                        No fee invoices found.
                       </td>
-
                     </tr>
-
                   ) : (
+                    filteredInvoices.map((invoice, index) => (
+                      <tr key={invoice.id ?? index}>
+                        <td>{index + 1}</td>
 
-                    filteredInvoices.map(
-                      (
-                        invoice,
-                        index
-                      ) => (
+                        <td>
+                          <strong>{getInvoiceNumber(invoice)}</strong>
+                        </td>
 
-                        <tr
-                          key={
-                            invoice.id ||
-                            index
-                          }
-                        >
-
-                          {/* NUMBER */}
-
-                          <td>
-                            {index + 1}
-                          </td>
-
-                          {/* INVOICE */}
-
-                          <td>
-
-                            <strong>
-                              {invoice.invoice_number ||
-                                invoice.invoice_no ||
-                                `INV-${invoice.id}`}
-                            </strong>
-
-                          </td>
-
-                          {/* STUDENT */}
-
-                          <td>
-
-                            <div className="student-cell">
-
-                              <div className="student-avatar">
-
-                                {String(
-                                  invoice.student_name ||
-                                    invoice.student?.name ||
-                                    invoice.student?.username ||
-                                    "S"
-                                )
-                                  .charAt(0)
-                                  .toUpperCase()}
-
-                              </div>
-
-                              <div>
-
-                                <strong>
-                                  {invoice.student_name ||
-                                    invoice.student?.name ||
-                                    invoice.student?.username ||
-                                    "N/A"}
-                                </strong>
-
-                                <small>
-                                  {invoice.student_username ||
-                                    invoice.student?.username ||
-                                    ""}
-                                </small>
-
-                              </div>
-
+                        <td>
+                          <div className="student-cell">
+                            <div className="student-avatar">
+                              {String(getStudentName(invoice))
+                                .charAt(0)
+                                .toUpperCase()}
                             </div>
 
-                          </td>
+                            <div>
+                              <strong>{getStudentName(invoice)}</strong>
+                              <small>{getStudentUsername(invoice)}</small>
+                            </div>
+                          </div>
+                        </td>
 
-                          {/* DATE */}
+                        <td>{formatDate(getInvoiceDate(invoice))}</td>
 
-                          <td>
-                            {invoice.invoice_date ||
-                              invoice.date ||
-                              "N/A"}
-                          </td>
+                        <td>{formatDate(invoice.due_date)}</td>
 
-                          {/* DUE DATE */}
+                        <td>
+                          <strong>
+                            ₹ {formatMoney(getInvoiceAmount(invoice))}
+                          </strong>
+                          <small className="invoice-payment-breakdown">
+                            Paid: ₹ {formatMoney(getPaidAmount(invoice))}
+                            {" | "}
+                            Due: ₹ {formatMoney(getDueAmount(invoice))}
+                          </small>
+                        </td>
 
-                          <td>
-                            {invoice.due_date ||
-                              "N/A"}
-                          </td>
+                        <td>
+                          <span
+                            className={`invoice-status ${getStatusClass(
+                              invoice.status
+                            )}`}
+                          >
+                            {invoice.status || "N/A"}
+                          </span>
+                        </td>
 
-                          {/* AMOUNT */}
-
-                          <td>
-
-                            <strong>
-                              ₹{" "}
-                              {formatMoney(
-                                invoice.total_amount ||
-                                  invoice.amount ||
-                                  invoice.total
-                              )}
-                            </strong>
-
-                          </td>
-
-                          {/* STATUS */}
-
-                          <td>
-
-                            <span
-                              className={`invoice-status ${getStatusClass(
-                                invoice.status
-                              )}`}
-                            >
-                              {invoice.status ||
-                                "N/A"}
-                            </span>
-
-                          </td>
-
-                          {/* ACTION */}
-
-                          <td>
-
-                            <button
-                              className="view-invoice-button"
-                              onClick={() =>
-                                handleView(
-                                  invoice
-                                )
-                              }
-                            >
-                              View
-                            </button>
-
-                          </td>
-
-                        </tr>
-
-                      )
-                    )
-
+                        <td>
+                          <button
+                            type="button"
+                            className="view-invoice-button"
+                            onClick={() => handleView(invoice)}
+                          >
+                            View
+                          </button>
+                        </td>
+                      </tr>
+                    ))
                   )}
-
                 </tbody>
-
               </table>
-
             </div>
-
           </section>
-
         )}
-
       </main>
 
-      {/* =================================================
-          DETAILS MODAL
-      ================================================= */}
-
-      {showDetails &&
-        selectedInvoice && (
-
+      {/* INVOICE DETAILS MODAL */}
+      {showDetails && selectedInvoice && (
+        <div
+          className="modal-overlay"
+          onClick={() => setShowDetails(false)}
+        >
           <div
-            className="modal-overlay"
-            onClick={() =>
-              setShowDetails(false)
-            }
+            className="invoice-details-modal"
+            onClick={(event) => event.stopPropagation()}
           >
-
-            <div
-              className="invoice-details-modal"
-              onClick={(e) =>
-                e.stopPropagation()
-              }
-            >
-
-              <div className="modal-header">
-
-                <div>
-
-                  <h2>
-                    Invoice Details
-                  </h2>
-
-                  <p>
-                    {selectedInvoice.invoice_number ||
-                      selectedInvoice.invoice_no ||
-                      `INV-${selectedInvoice.id}`}
-                  </p>
-
-                </div>
-
-                <button
-                  onClick={() =>
-                    setShowDetails(false)
-                  }
-                >
-                  ×
-                </button>
-
+            <div className="modal-header">
+              <div>
+                <h2>Invoice Details</h2>
+                <p>{getInvoiceNumber(selectedInvoice)}</p>
               </div>
 
-              <div className="invoice-details">
-
-                <div className="detail-item">
-
-                  <span>
-                    Invoice Number
-                  </span>
-
-                  <strong>
-                    {selectedInvoice.invoice_number ||
-                      selectedInvoice.invoice_no ||
-                      `INV-${selectedInvoice.id}`}
-                  </strong>
-
-                </div>
-
-                <div className="detail-item">
-
-                  <span>
-                    Student
-                  </span>
-
-                  <strong>
-                    {selectedInvoice.student_name ||
-                      selectedInvoice.student?.name ||
-                      selectedInvoice.student?.username ||
-                      "N/A"}
-                  </strong>
-
-                </div>
-
-                <div className="detail-item">
-
-                  <span>
-                    Invoice Date
-                  </span>
-
-                  <strong>
-                    {selectedInvoice.invoice_date ||
-                      selectedInvoice.date ||
-                      "N/A"}
-                  </strong>
-
-                </div>
-
-                <div className="detail-item">
-
-                  <span>
-                    Due Date
-                  </span>
-
-                  <strong>
-                    {selectedInvoice.due_date ||
-                      "N/A"}
-                  </strong>
-
-                </div>
-
-                <div className="detail-item">
-
-                  <span>
-                    Amount
-                  </span>
-
-                  <strong>
-                    ₹{" "}
-                    {formatMoney(
-                      selectedInvoice.total_amount ||
-                        selectedInvoice.amount ||
-                        selectedInvoice.total
-                    )}
-                  </strong>
-
-                </div>
-
-                <div className="detail-item">
-
-                  <span>
-                    Status
-                  </span>
-
-                  <strong>
-                    {selectedInvoice.status ||
-                      "N/A"}
-                  </strong>
-
-                </div>
-
-                {selectedInvoice.payment_method && (
-
-                  <div className="detail-item">
-
-                    <span>
-                      Payment Method
-                    </span>
-
-                    <strong>
-                      {
-                        selectedInvoice.payment_method
-                      }
-                    </strong>
-
-                  </div>
-
-                )}
-
-                {selectedInvoice.payment_reference && (
-
-                  <div className="detail-item">
-
-                    <span>
-                      Payment Reference
-                    </span>
-
-                    <strong>
-                      {
-                        selectedInvoice.payment_reference
-                      }
-                    </strong>
-
-                  </div>
-
-                )}
-
-                {selectedInvoice.remarks && (
-
-                  <div className="detail-item detail-full">
-
-                    <span>
-                      Remarks
-                    </span>
-
-                    <strong>
-                      {selectedInvoice.remarks}
-                    </strong>
-
-                  </div>
-
-                )}
-
-              </div>
-
+              <button
+                type="button"
+                onClick={() => setShowDetails(false)}
+                aria-label="Close invoice details"
+              >
+                ×
+              </button>
             </div>
 
+            <div className="invoice-details">
+              <div className="detail-item">
+                <span>Invoice Number</span>
+                <strong>{getInvoiceNumber(selectedInvoice)}</strong>
+              </div>
+
+              <div className="detail-item">
+                <span>Student</span>
+                <strong>{getStudentName(selectedInvoice)}</strong>
+              </div>
+
+              <div className="detail-item">
+                <span>Invoice Date</span>
+                <strong>{getInvoiceDate(selectedInvoice)}</strong>
+              </div>
+
+              <div className="detail-item">
+                <span>Due Date</span>
+                <strong>{selectedInvoice.due_date || "N/A"}</strong>
+              </div>
+
+              <div className="detail-item">
+                <span>Total Amount</span>
+                <strong>₹ {formatMoney(getInvoiceAmount(selectedInvoice))}</strong>
+              </div>
+
+              <div className="detail-item">
+                <span>Paid Amount</span>
+                <strong>₹ {formatMoney(getPaidAmount(selectedInvoice))}</strong>
+              </div>
+
+              <div className="detail-item">
+                <span>Due Amount</span>
+                <strong>₹ {formatMoney(getDueAmount(selectedInvoice))}</strong>
+              </div>
+
+              <div className="detail-item">
+                <span>Status</span>
+                <strong>{selectedInvoice.status || "N/A"}</strong>
+              </div>
+
+              {selectedInvoice.payment_method && (
+                <div className="detail-item">
+                  <span>Payment Method</span>
+                  <strong>{selectedInvoice.payment_method}</strong>
+                </div>
+              )}
+
+              {selectedInvoice.payment_reference && (
+                <div className="detail-item">
+                  <span>Payment Reference</span>
+                  <strong>{selectedInvoice.payment_reference}</strong>
+                </div>
+              )}
+
+              {selectedInvoice.remarks && (
+                <div className="detail-item detail-full">
+                  <span>Remarks</span>
+                  <strong>{selectedInvoice.remarks}</strong>
+                </div>
+              )}
+            </div>
           </div>
-
-        )}
-
+        </div>
+      )}
     </div>
   );
 }

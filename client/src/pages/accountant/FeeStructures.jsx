@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import accountantService from "../../services/accountantService";
-import "./FeesStructure.css";
+// import "./FeesStructure.css";
 
 function FeesStructure() {
   const navigate = useNavigate();
