@@ -1,6 +1,6 @@
 // admissionService.js
 
-const API_URL = "http://127.0.0.1:8000/api";
+const API_URL = "http://127.0.0.1:8000/api/auth";
 
 export async function submitAdmission(applicationData) {
   const response = await fetch(

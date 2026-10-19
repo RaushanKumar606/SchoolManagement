@@ -203,7 +203,7 @@ export default function TeacherDashboard() {
           <button
             style={styles.actionButton}
             onClick={() =>
-              navigate("/teacher/classes")
+              navigate("/teacher/my-courses")
             }
           >
             <span style={styles.actionIcon}>

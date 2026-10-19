@@ -66,12 +66,11 @@ export default function TeacherLayout() {
           >
             My Profile
           </Link>
-
           <Link
-            to="/teacher/classes"
+            to="/teacher/my-courses/"
             style={navLinkStyle}
           >
-            My Classes
+            Teacher Classes
           </Link>
 
           <Link

@@ -1,22 +1,28 @@
 from django.contrib.auth import authenticate
 from django.contrib.auth import get_user_model
 
-from rest_framework import generics, status
+from django.contrib.auth import get_user_model
+from django.db import IntegrityError, transaction
+
+from rest_framework import generics, serializers, status
+from rest_framework.response import Response
+
+User = get_user_model()
+
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 from .UserSignupSerializer import UserSignupSerializer
+from teacher.models import Teacher
+
 
 from .serializers import (
     AdminSchoolClassSerializer,
     AdminSectionSerializer,
     CustomTokenObtainPairSerializer,
 )
-
-
-
 from .models import User
 from academics.models import SchoolClass, Section
 
@@ -255,6 +261,16 @@ class ChangePasswordView(APIView):
 
         user.set_password(new_password)
         user.save(update_fields=["password"])
+        if user.role == "teacher":
+            try:
+                 teacher = Teacher.objects.get(user=user)
+                 if teacher.must_change_password:
+                     teacher.must_change_password = False
+                     teacher.save(update_fields=["must_change_password"])
+
+            except Teacher.DoesNotExist:
+                pass         
+
 
         return Response(
             {
@@ -263,3 +279,58 @@ class ChangePasswordView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+
+
+class AccountantCreateSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(
+        write_only=True,
+        min_length=8,
+        trim_whitespace=False,
+    )
+
+    class Meta:
+        model = User
+        fields = [
+            "username",
+            "password",
+            "email",
+            "first_name",
+            "last_name",
+            "phone",
+        ]
+
+    def validate_username(self, value):
+        if User.objects.filter(username__iexact=value).exists():
+            raise serializers.ValidationError(
+                "This username is already taken."
+            )
+        return value
+
+    def create(self, validated_data):
+        password = validated_data.pop("password")
+
+        return User.objects.create_user(
+            **validated_data,
+            password=password,
+            role=User.Role.ACCOUNTANT,
+        )
+
+
+class AccountantCreateView(generics.CreateAPIView):
+    serializer_class = AccountantCreateSerializer
+    permission_classes = [IsAuthenticated]
+
+    def create(self, request, *args, **kwargs):
+        if request.user.role not in [
+            User.Role.SCHOOL_ADMIN,
+            User.Role.SUPER_ADMIN,
+        ]:
+            return Response(
+                {
+                    "success": False,
+                    "message": "Only school admins can create accountant accounts.",
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        return super().create(request, *args, **kwargs)    

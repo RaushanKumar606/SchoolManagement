@@ -1,85 +1,13 @@
 
-const API_BASE_URL =
-  "http://127.0.0.1:8000/api/auth/teacher";
+const API_BASE_URL ="http://127.0.0.1:8000/api/auth/teacher";
+import { apiRequest } from "../utils/apiRequest";
 
-
-const getToken = () => {
-  return localStorage.getItem("access_token");
-};
-
-
-const parseResponse = async (response) => {
-  const contentType =
-    response.headers.get("content-type") || "";
-
-  const text = await response.text();
-
-  if (!contentType.includes("application/json")) {
-    console.error(
-      "Non-JSON response:",
-      response.status,
-      text
-    );
-
-    throw new Error(
-      `Server returned HTML instead of JSON. Status: ${response.status}`
-    );
-  }
-
-  let data;
-
-  try {
-    data = JSON.parse(text);
-  } catch (error) {
-    throw new Error(
-      "Invalid JSON response from server."
-    );
-  }
-
-  if (!response.ok) {
-    throw new Error(
-      data.detail ||
-        data.message ||
-        data.error ||
-        `Request failed: ${response.status}`
-    );
-  }
-
-  return data;
-};
-
-
-const authenticatedFetch = async (
-  url,
-  options = {}
-) => {
-  const token = getToken();
-
-  if (!token) {
-    throw new Error(
-      "Access token not found. Please login again."
-    );
-  }
-
-  const headers = {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${token}`,
-    ...(options.headers || {}),
-  };
-
-  const response = await fetch(url, {
-    ...options,
-    headers,
-  });
-
-  return await parseResponse(response);
-};
 
 export const teacherService = {
 
   register: async (formData) => {
-    const response = await fetch(
-      `${API_BASE_URL}/register/`,
+    return await apiRequest(
+      `/teacher/register/`,
       {
         method: "POST",
         headers: {
@@ -88,15 +16,12 @@ export const teacherService = {
         body: JSON.stringify(formData),
       }
     );
-
-    return await parseResponse(response);
   },
 
-
-  login: async (credentials) => {
-    const response = await fetch(
-      `${API_BASE_URL}/login/`,
-      {
+  
+login: async (credentials) => {
+  const data = await apiRequest("/teacher/login/",
+   {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -104,146 +29,100 @@ export const teacherService = {
         body: JSON.stringify(credentials),
       }
     );
-
-    const data = await parseResponse(response);
-
-
-    // Save Access Token
-    if (data.access) {
-      localStorage.setItem(
-        "access_token",
-        data.access
-      );
-    }
-
-
-    // Save Refresh Token
-    if (data.refresh) {
-      localStorage.setItem(
-        "refresh_token",
-        data.refresh
-      );
-    }
-
-
-    // Save User ID
-    if (data.user_id) {
-      localStorage.setItem(
-        "user_id",
-        data.user_id
-      );
-    }
-
-
-    // Save Username
-    if (data.username) {
-      localStorage.setItem(
-        "username",
-        data.username
-      );
-    }
-
-
-    // Save Employee ID
-    if (data.employee_id) {
-      localStorage.setItem(
-        "employee_id",
-        data.employee_id
-      );
-    }
-
-
-    // Save Role
-    if (data.role) {
-      localStorage.setItem(
-        "role",
-        data.role
-      );
-    }
-
-
-    console.log(
-      "EMPLOYEE ID SAVED:",
-      localStorage.getItem("employee_id")
+  if (!data?.access || !data?.refresh) {
+    throw new Error(
+      "Login response is missing access or refresh token."
     );
+  }
 
-    return data;
-  },
+  localStorage.setItem("access_token", data.access);
+  localStorage.setItem("refresh_token", data.refresh);
+
+  if (data.user_id != null) {
+    localStorage.setItem("user_id", data.user_id);
+  }
+
+  if (data.username) {
+    localStorage.setItem("username", data.username);
+  }
+
+  if (data.employee_id) {
+    localStorage.setItem("employee_id", data.employee_id);
+  } else {
+    localStorage.setItem("employee_id", employeeId);
+  }
+
+  if (data.role) {
+    localStorage.setItem("role", data.role);
+  }
+
+  return data;
+},
 
 
+//  TEACHER DETAILS,  
   getTeacherDetails: async (employeeId) => {
-
     if (!employeeId) {
-      throw new Error(
-        "Employee ID not found."
-      );
+      throw new Error("Employee ID not found.");
     }
 
-    return await authenticatedFetch(
-      `${API_BASE_URL}/${encodeURIComponent(
-        employeeId
-      )}/`
+    return await apiRequest(
+      `/teacher/${encodeURIComponent(employeeId)}/`,
+      {
+        method: "GET",
+      }
     );
   },
 
+// DASHBOARD,
 
   getTeacherDashboard: async (employeeId) => {
-
     if (!employeeId) {
-      throw new Error(
-        "Employee ID not found."
-      );
+      throw new Error("Employee ID not found.");
     }
 
-    return await authenticatedFetch(
-      `${API_BASE_URL}/${encodeURIComponent(
-        employeeId
-      )}/dashboard/`
+    return await apiRequest(
+      `/teacher/${encodeURIComponent(employeeId)}/dashboard/`,
+      {
+        method: "GET",
+      }
     );
   },
 
-
+ // TIMETABLE, 
   getTeacherTimetable: async (employeeId) => {
-
     if (!employeeId) {
-      throw new Error(
-        "Employee ID not found."
-      );
+      throw new Error("Employee ID not found.");
+    }
+    return await apiRequest(
+      `/teacher/${encodeURIComponent(employeeId)}/timetable/`,
+      {
+        method: "GET",
+      }
+    );
+  },
+
+  // CLASS STUDENTS
+  getClassStudents: async (employeeId, className, section) => {
+    if (!employeeId) {
+      throw new Error("Employee ID not found.");
     }
 
-    return await authenticatedFetch(
-      `${API_BASE_URL}/${encodeURIComponent(
-        employeeId
-      )}/timetable/`
+    if (!className || !section) {
+      throw new Error("Class name or section is missing.");
+    }
+
+    return await apiRequest(
+      `/teacher/${encodeURIComponent(employeeId)}/class/${encodeURIComponent(className)}/${encodeURIComponent(section)}/students/`,
+      {
+        method: "GET",
+      }
     );
   },
 
 
-  getClassStudents: async (
-    employeeId,
-    className,
-    section,
-    page = 1
-  ) => {
 
-    if (!employeeId) {
-      throw new Error(
-        "Employee ID not found."
-      );
-    }
-
-    return await authenticatedFetch(
-      `${API_BASE_URL}/${encodeURIComponent(
-        employeeId
-      )}/class/${encodeURIComponent(
-        className
-      )}/${encodeURIComponent(
-        section
-      )}/students/?page=${page}`
-    );
-  },
-
-
+ // SUBJECT 
 
   getSubjectStudents: async (
     employeeId,
@@ -264,26 +143,32 @@ export const teacherService = {
       );
     }
 
-    return await authenticatedFetch(
-      `${API_BASE_URL}/${encodeURIComponent(
-        employeeId
-      )}/class/${classId}/${sectionId}/subject/${subjectId}/students/`
+    return await apiRequest(
+      `/teacher/${encodeURIComponent(employeeId)}/class/${classId}/${sectionId}/subject/${subjectId}/students/`,
+      {
+        method: "GET",
+      }
     );
   },
-
+   
+ getMyCourses: async () => {
+  return await apiRequest("/teacher/my-courses/", {
+    method: "GET",
+  });
+},
   getSubjectAllocations: async () => {
 
-    return await authenticatedFetch(
-      `${API_BASE_URL}/subject-allocations/`
+    return await apiRequest(
+      `/teacher/subject-allocations/`
     );
   },
-
+// ALLOCATIONS
   createSubjectAllocation: async (
     allocationData
   ) => {
 
-    return await authenticatedFetch(
-      `${API_BASE_URL}/subject-allocations/`,
+    return await apiRequest(
+      `/teacher/subject-allocations/`,
       {
         method: "POST",
         body: JSON.stringify(
@@ -293,10 +178,12 @@ export const teacherService = {
     );
   },
 
+  //  , MARKS,
+
   addMarks: async (marksData) => {
 
-    return await authenticatedFetch(
-      `${API_BASE_URL}/marks/add/`,
+    return await apiRequest(
+      `/teacher/marks/add/`,
       {
         method: "POST",
         body: JSON.stringify(
@@ -310,8 +197,8 @@ export const teacherService = {
     marksData
   ) => {
 
-    return await authenticatedFetch(
-      `${API_BASE_URL}/marks/add-bulk/`,
+    return await apiRequest(
+      `/teacher/marks/add-bulk/`,
       {
         method: "POST",
         body: JSON.stringify(
@@ -334,36 +221,38 @@ export const teacherService = {
       );
     }
 
-    return await authenticatedFetch(
-      `${API_BASE_URL}/${encodeURIComponent(
+    return await apiRequest(
+      `/teacher/${encodeURIComponent(
         employeeId
       )}/exam-marks/${classId}/${sectionId}/${subjectId}/`
     );
   },
 
-  markBulkAttendance: async ({
-    employee_id,
-    class_name,
-    section,
-    date,
-    attendance,
-  }) => {
-
-    return await authenticatedFetch(
-      `${API_BASE_URL}/attendance/mark-bulk/`,
-      {
-        method: "POST",
-        body: JSON.stringify({
-          employee_id,
-          class_name,
-          section,
-          date,
-          attendance,
-        }),
-      }
-    );
-  },
-
+ // MARK BULK ATTENDANCE
+markBulkAttendance: async ({
+  employeeId,
+  classId,
+  sectionId,
+  subjectId,
+  date,
+  attendance,
+}) => {
+  return await apiRequest("/teacher/attendance/mark-bulk/", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      employeeId,
+      classId,
+      sectionId,
+      subjectId,
+      date,
+      attendance,
+    }),
+  });
+},
+// ATTENDANCE,
   getClassAttendance: async (
     employeeId,
     classId,
@@ -378,8 +267,8 @@ export const teacherService = {
       );
     }
 
-    return await authenticatedFetch(
-      `${API_BASE_URL}/attendance/${encodeURIComponent(
+    return await apiRequest(
+      `/teacher/attendance/${encodeURIComponent(
         employeeId
       )}/${classId}/${sectionId}/${subjectId}/?date=${encodeURIComponent(
         date
@@ -400,13 +289,14 @@ export const teacherService = {
       );
     }
 
-    return await authenticatedFetch(
-      `${API_BASE_URL}/attendance-history/${encodeURIComponent(
+    return await apiRequest(
+      `/teacher/attendance-history/${encodeURIComponent(
         employeeId
       )}/${classId}/${sectionId}/${subjectId}/`
     );
   },
 
+   //ASSIGNMENTS
   createAssignment: async ({
     employee_id,
     class_name,
@@ -417,8 +307,8 @@ export const teacherService = {
     due_date,
   }) => {
 
-    return await authenticatedFetch(
-      `${API_BASE_URL}/assignment/create/`,
+    return await apiRequest(
+      `teacher/assignment/create/`,
       {
         method: "POST",
         body: JSON.stringify({
@@ -445,8 +335,8 @@ export const teacherService = {
       );
     }
 
-    return await authenticatedFetch(
-      `${API_BASE_URL}/${encodeURIComponent(
+    return await apiRequest(
+      `/teacher/${encodeURIComponent(
         employeeId
       )}/assignments/`
     );
@@ -469,8 +359,8 @@ export const teacherService = {
       );
     }
 
-    return await authenticatedFetch(
-      `${API_BASE_URL}/${encodeURIComponent(
+    return await apiRequest(
+      `/teacher/${encodeURIComponent(
         employeeId
       )}/assignments/${assignmentId}/submissions/`
     );
@@ -489,8 +379,8 @@ export const teacherService = {
       );
     }
 
-    return await authenticatedFetch(
-      `${API_BASE_URL}/${encodeURIComponent(
+    return await apiRequest(
+      `/teacher/${encodeURIComponent(
         employeeId
       )}/assignments/${assignmentId}/submissions/${submissionId}/review/`,
       {
@@ -509,8 +399,8 @@ export const teacherService = {
 
   getPendingTeachers: async () => {
 
-    return await authenticatedFetch(
-      `${API_BASE_URL}/admin/pending-teacher/`
+    return await apiRequest(
+      `/teacher/admin/pending-teacher/`
     );
   },
 
@@ -521,8 +411,8 @@ export const teacherService = {
 
   getTeachers: async () => {
 
-    return await authenticatedFetch(
-      `${API_BASE_URL}/admin/teachers/`
+    return await apiRequest(
+      `/teacher/admin/teachers/`
     );
   },
 
@@ -541,8 +431,8 @@ export const teacherService = {
       );
     }
 
-    return await authenticatedFetch(
-      `${API_BASE_URL}/admin/teachers/${encodeURIComponent(
+    return await apiRequest(
+      `/teacher/admin/teachers/${encodeURIComponent(
         employeeId
       )}/`
     );
@@ -564,8 +454,8 @@ export const teacherService = {
       );
     }
 
-    return await authenticatedFetch(
-      `${API_BASE_URL}/admin/teachers/${encodeURIComponent(
+    return await apiRequest(
+      `/teacher/admin/teachers/${encodeURIComponent(
         employeeId
       )}/update/`,
       {
@@ -590,8 +480,8 @@ export const teacherService = {
       );
     }
 
-    return await authenticatedFetch(
-      `${API_BASE_URL}/admin/approve-teacher/${teacherId}/`,
+    return await apiRequest(
+      `/teacher/admin/approve-teacher/${encodeURIComponent(teacherId)}/`,
       {
         method: "POST",
       }

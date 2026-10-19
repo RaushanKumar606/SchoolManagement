@@ -9,7 +9,9 @@ from .views import (
     verify_fee_online_payment,
     FeeDashboardView,
     MyFeeInvoiceView,
-    MyFeePaymentsView
+    MyFeePaymentsView,
+    MyFeeStructureView,
+    FeeDashboardView
 )
 
 
@@ -30,6 +32,8 @@ urlpatterns = [
         FeeStructureDetailView.as_view(),
         name="fee-structure-detail",
     ),
+
+    path("dashboard/", FeeDashboardView.as_view(), name="fee-dashboard"),
 
     # -----------------------------------------
     # Fee Invoices
@@ -76,5 +80,11 @@ urlpatterns = [
     ),
 
     path("my-invoice/", MyFeeInvoiceView.as_view(), name="my-fee-invoice"),
-path("my-payments/", MyFeePaymentsView.as_view(), name="my-fee-payments"),
+    path("my-payments/", MyFeePaymentsView.as_view(), name="my-fee-payments"),
+
+path(
+    "my-structure/",
+    MyFeeStructureView.as_view(),
+    name="my-fee-structure",
+),
 ]

@@ -24,6 +24,9 @@ from .views import (
     teacher_attendance_history_api,
     teacher_dashboard_api,
     my_teacher_timetable_api,
+
+    
+    teacher_my_courses_api,
 )
 
 
@@ -108,6 +111,11 @@ urlpatterns = [
         name="my-teacher-timetable",
     ),
 
+     path(
+    "my-courses/",
+    teacher_my_courses_api,
+    name="teacher-my-courses",
+),
 
     # =====================================================
     # TEACHER STUDENTS

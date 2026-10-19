@@ -6,11 +6,71 @@ from .views import (
     ClassSubjectListCreateView,
     AcademicYearListAPIView,
     SchoolClassListAPIView,
-    SectionListAPIView,
+   
 )
 
 
+
+from .admin_views import (
+    AdminAcademicYearView,
+    AdminAcademicYearDetailView,
+    AdminSchoolClassView,
+    AdminSchoolClassDetailView,
+    AdminSectionView,
+    AdminSectionDetailView,
+    AdminSubjectView,
+    AdminSubjectDetailView,
+    AdminClassSubjectView,
+    AdminClassSubjectDetailView,
+    AdminTeacherSubjectAllocationView,
+    AdminTeacherSubjectAllocationDetailView,
+    AdminBulkTeacherSubjectAllocationView
+)
+
+
+
 urlpatterns = [
+
+
+
+    
+# Separate School Admin CRUD APIs
+path("admin/years/", AdminAcademicYearView.as_view()),
+path("admin/years/<int:pk>/", AdminAcademicYearDetailView.as_view()),
+
+path("admin/classes/", AdminSchoolClassView.as_view()),
+path("admin/classes/<int:pk>/", AdminSchoolClassDetailView.as_view()),
+
+path("admin/sections/", AdminSectionView.as_view()),
+path("admin/sections/<int:pk>/", AdminSectionDetailView.as_view()),
+
+path("admin/subjects/", AdminSubjectView.as_view()),
+path("admin/subjects/<int:pk>/", AdminSubjectDetailView.as_view()),
+
+path("admin/class-subjects/", AdminClassSubjectView.as_view()),
+path("admin/class-subjects/<int:pk>/", AdminClassSubjectDetailView.as_view()),
+
+path(
+    "admin/teacher-allocations/",
+    AdminTeacherSubjectAllocationView.as_view(),
+),
+
+# path(
+#     "admin/teacher-allocations/bulk/",
+#     AdminBulkTeacherSubjectAllocationView.as_view(),
+#     name="admin-bulk-teacher-subject-allocations",
+# ),
+
+path(
+    "admin/teacher-allocations/<int:pk>/",
+    AdminTeacherSubjectAllocationDetailView.as_view(),
+),
+
+path(
+    "admin/teacher-allocations/bulk/",
+    AdminBulkTeacherSubjectAllocationView.as_view(),
+    name="admin-bulk-teacher-subject-allocations",
+),
 
     # Subject Master
     path(
@@ -28,11 +88,6 @@ urlpatterns = [
                 SchoolClassListAPIView.as_view(),
                 name="class-list-create",
             ),
-    path(
-                    "section/",
-                    SectionListAPIView.as_view(),
-                    name="section-list-create",
-                ),
 
     # Assign Subject to Class
     path(

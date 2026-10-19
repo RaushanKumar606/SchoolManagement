@@ -81,6 +81,7 @@ class FeeInvoiceSerializer(serializers.ModelSerializer):
         source="status",
         read_only=True,
     )
+    fee_particulars = serializers.SerializerMethodField()
 
     class_name = serializers.CharField(
         source="student.school_class.name",
@@ -105,6 +106,7 @@ class FeeInvoiceSerializer(serializers.ModelSerializer):
             "section_name",
             "academic_year",
             "fee_structure",
+            "fee_particulars",
             "month",
             "year",
             "amount",
@@ -143,7 +145,14 @@ class FeeInvoiceSerializer(serializers.ModelSerializer):
         )
 
         return name.strip()    
+    
+    def get_fee_particulars(self, obj):
+     remarks = (obj.remarks or "").strip()
 
+     if remarks:
+        return remarks
+
+     return "School Fees"
 
 class FeePaymentSerializer(serializers.ModelSerializer):
 

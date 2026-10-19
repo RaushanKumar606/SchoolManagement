@@ -4,13 +4,16 @@ from rest_framework.response import Response
 from students.models import Student
 from rest_framework import generics
 
-from .serializers import SubjectSerializer, ClassSubjectSerializer
+
+from .permissions import IsSchoolAdminOrSuperAdmin
+
+from .serializers import SubjectSerializer, ClassSubjectSerializer,SectionSerializer,BulkTeacherSubjectAllocationSerializer
 
 from .models import ( AcademicYear, SchoolClass, Section, Subject, ClassSubject, Timetable, )
 from .serializers import ( AcademicYearSerializer, SchoolClassSerializer, SectionSerializer, SubjectSerializer, ClassSubjectSerializer, )
 
 from .timetable_serializers import TimetableSerializer
-
+from teacher.models import TeacherSubjectAllocation
 
 class AcademicYearListAPIView(generics.ListAPIView):
      permission_classes = [IsAuthenticated] 
@@ -29,13 +32,26 @@ class SchoolClassListAPIView(generics.ListAPIView):
         return queryset.order_by( "display_order", "name", )
 
 
-class SectionListAPIView(generics.ListAPIView): 
-    permission_classes = [IsAuthenticated] 
-    serializer_class = SectionSerializer 
-    def get_queryset(self): 
-        queryset = ( Section.objects .select_related( "school_class", "school_class__academic_year", ) .all() ) 
-        school_class = self.request.query_params.get( "school_class" ) 
-        if school_class: queryset = queryset.filter( school_class_id=school_class ) 
+class AdminSectionView(generics.ListCreateAPIView):
+    permission_classes = [
+        IsAuthenticated,
+        IsSchoolAdminOrSuperAdmin,
+    ]
+    serializer_class = SectionSerializer
+
+    def get_queryset(self):
+        queryset = Section.objects.select_related(
+            "school_class",
+            "school_class__academic_year",
+        ).all()
+
+        school_class = self.request.query_params.get("school_class")
+
+        if school_class:
+            queryset = queryset.filter(
+                school_class_id=school_class
+            )
+
         return queryset.order_by("name")
 
 
@@ -62,7 +78,8 @@ class MyStudentSubjectsView(generics.GenericAPIView):
                 status=404,
             )
 
-        # 👇 YAHAN
+        
+        
         class_subjects = (
             ClassSubject.objects
             .filter(
@@ -70,7 +87,31 @@ class MyStudentSubjectsView(generics.GenericAPIView):
                 subject__is_active=True,
             )
             .select_related("subject")
+            .order_by("subject__name")
         )
+
+        allocations = (
+            TeacherSubjectAllocation.objects
+            .filter(
+                school_class=student.school_class,
+                section=student.section,
+            )
+            .select_related("teacher", "subject")
+        )
+
+        # Subject ID ke according teacher names group karo
+        teacher_map = {}
+
+        for allocation in allocations:
+            teacher_name = getattr(
+                allocation.teacher,
+                "name",
+                None,
+            ) or str(allocation.teacher)
+
+            teacher_map.setdefault(
+                allocation.subject_id, []
+            ).append(teacher_name)
 
         subjects = []
 
@@ -80,16 +121,11 @@ class MyStudentSubjectsView(generics.GenericAPIView):
                 "name": item.subject.name,
                 "code": item.subject.code,
                 "is_optional": item.is_optional,
+                "teachers": sorted(
+                    set(teacher_map.get(item.subject_id, []))
+                ),
             })
 
-        return Response({
-            "success": True,
-            "student_id": student.student_id,
-            "academic_year": student.academic_year.name,
-            "class": student.school_class.name,
-            "section": student.section.name,
-            "subjects": subjects,
-        })
 
 
 class SubjectListCreateView(generics.ListCreateAPIView):
@@ -193,6 +229,37 @@ class AdminTimetableDetailView(
             "teacher",
         )
     )
+
+class AdminBulkTeacherSubjectAllocationView(generics.GenericAPIView):
+    serializer_class = BulkTeacherSubjectAllocationSerializer
+    permission_classes = [
+        IsAuthenticated,
+        IsSchoolAdminOrSuperAdmin,
+    ]
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        allocations = serializer.save()
+
+        return Response(
+            {
+                "message": "Subjects assigned successfully.",
+                "count": len(allocations),
+                "allocations": [
+                    {
+                        "id": allocation.id,
+                        "teacher": allocation.teacher_id,
+                        "school_class": allocation.school_class_id,
+                        "section": allocation.section_id,
+                        "subject": allocation.subject_id,
+                    }
+                    for allocation in allocations
+                ],
+            },
+            status=status.HTTP_201_CREATED,
+        )
 
 class ClassSubjectListCreateView(generics.ListCreateAPIView):
     serializer_class = ClassSubjectSerializer

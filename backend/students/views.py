@@ -10,9 +10,8 @@ from .serializers import (
 from rest_framework.permissions import IsAuthenticated, BasePermission
 
 from rest_framework.response import Response
-from academics.models import ClassSubject
-from academics.models import Timetable
-from teacher.models import Assignment, AssignmentSubmission,ExamMark,Attendance
+from academics.models import Timetable,ClassSubject
+from teacher.models import Assignment, AssignmentSubmission,ExamMark,Attendance,TeacherSubjectAllocation
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.utils import timezone
@@ -21,18 +20,170 @@ from rest_framework.decorators import (
     permission_classes,
     parser_classes,
 )
+from rest_framework.exceptions import NotFound
+
+from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
+from rest_framework import status
+
+from students.models import Student
+
+
+from datetime import date
+
+from django.utils import timezone
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+
+from students.models import Student
+from .models import Student
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def student_daily_attendance_api(request):
+    """
+    Logged-in student ki selected date ki attendance return karta hai.
+    GET ?date=YYYY-MM-DD
+    """
+
+    student = Student.objects.filter(
+        user=request.user,
+        is_active=True,
+    ).first()
+
+    if not student:
+        return Response(
+            {
+                "success": False,
+                "error": "Student profile nahi mila.",
+            },
+            status=404,
+        )
+
+    date_value = request.query_params.get("date")
+    attendance_date = timezone.localdate()
+
+    if date_value:
+        try:
+            attendance_date = date.fromisoformat(date_value)
+        except ValueError:
+            return Response(
+                {
+                    "success": False,
+                    "error": "Date format YYYY-MM-DD hona chahiye.",
+                },
+                status=400,
+            )
+
+    records = (
+        Attendance.objects.filter(
+            student=student,
+            date=attendance_date,
+        )
+        .select_related("subject", "teacher")
+        .order_by("subject__name")
+    )
+
+    attendance_list = [
+        {
+            "id": record.id,
+            "date": record.date.isoformat(),
+            "status": record.status,
+            "subjectId": record.subject_id,
+            "subject": str(record.subject),
+            "teacher": str(record.teacher),
+        }
+        for record in records
+    ]
+
+    return Response(
+        {
+            "success": True,
+            "studentId": student.student_id,
+            "date": attendance_date.isoformat(),
+            "count": len(attendance_list),
+            "attendance": attendance_list,
+        }
+    )
+
+
+class MySubjectsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            # Logged-in student ka profile
+            student = Student.objects.select_related(
+                "school_class",
+                "section",
+                "academic_year",
+            ).get(
+                user=request.user,
+                is_active=True,
+            )
+
+        except Student.DoesNotExist:
+            return Response(
+                {"detail": "Student profile not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # Sirf student ki class aur section ke assignments
+        allocations = (
+            TeacherSubjectAllocation.objects
+            .filter(
+                school_class=student.school_class,
+                section=student.section,
+                school_class__academic_year=student.academic_year,
+            )
+            .select_related(
+                "teacher",
+                "school_class",
+                "section",
+                "subject",
+            )
+            .order_by("subject__name", "teacher__name")
+        )
+
+        subjects = [
+            {
+                "id": item.subject_id,
+                "name": item.subject.name,
+                "code": getattr(item.subject, "code", ""),
+                "teacher": item.teacher.name,
+                "class_name": item.school_class.name,
+                "section": item.section.name,
+            }
+            for item in allocations
+        ]
+
+        return Response(subjects)
 
 class MyStudentProfileView(generics.RetrieveAPIView):
-
     serializer_class = StudentProfileSerializer
     permission_classes = [IsAuthenticated]
 
     def get_object(self):
-        return Student.objects.select_related(
-            "academic_year",
-            "school_class",
-            "section",
-        ).get(user=self.request.user)
+        student = (
+            Student.objects.select_related(
+                "academic_year",
+                "school_class",
+                "section",
+            )
+            .filter(user=self.request.user)
+            .first()
+        )
+
+        if student is None:
+            raise NotFound(
+                "Student profile not found for this user. "
+                "Please contact the school administrator."
+            )
+
+        return student
+
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
@@ -1529,6 +1680,8 @@ class AdminStudentDetailView(generics.RetrieveUpdateDestroyAPIView):
 
         instance.delete()
 
+
+# Without allocation teacher subjects, students will not be able to see their subjects in the dashboard.
 
 class MyStudentSubjectsView(generics.ListAPIView):
 

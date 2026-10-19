@@ -1,643 +1,526 @@
 
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { teacherService } from "../../services/teacherService";
+import "./TeacherAttendance.css";
 
-function Attendence() {
-  const navigate = useNavigate();
+function getLocalDate() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
 
-  const [allocations, setAllocations] = useState([]);
+  return `${year}-${month}-${day}`;
+}
+
+function getResponseData(response) {
+  return response?.data ?? response;
+}
+
+function getCourses(response) {
+  const data = getResponseData(response);
+  if (Array.isArray(data)) return data;
+  return data?.courses ?? data?.results ?? [];
+}
+
+function getStudents(response) {
+  const data = getResponseData(response);
+  if (Array.isArray(data)) return data;
+  return data?.students ?? data?.results ?? [];
+}
+
+function getAttendanceRecords(response) {
+  const data = getResponseData(response);
+  if (Array.isArray(data)) return data;
+  return data?.attendance ?? data?.records ?? [];
+}
+
+function getStudentId(record) {
+  // Backend attendance response mein studentId database primary key hai.
+  return record?.studentId ?? record?.student_id ?? null;
+}
+
+export default function TeacherAttendance() {
+  const employeeId = localStorage.getItem("employee_id");
+
+  const [courses, setCourses] = useState([]);
+  const [selectedCourseId, setSelectedCourseId] = useState("");
+  const [attendanceDate, setAttendanceDate] = useState(getLocalDate());
+
   const [students, setStudents] = useState([]);
+  const [statuses, setStatuses] = useState({});
 
-  const [selectedAllocation, setSelectedAllocation] = useState(null);
-  const [selectedDate, setSelectedDate] = useState(
-    new Date().toISOString().split("T")[0]
-  );
-
-  const [attendance, setAttendance] = useState({});
-
-  const [loading, setLoading] = useState(true);
-  const [studentsLoading, setStudentsLoading] = useState(false);
+  const [loadingCourses, setLoadingCourses] = useState(true);
+  const [loadingStudents, setLoadingStudents] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [message, setMessage] = useState("");
 
-  const employeeId = localStorage.getItem("employee_id");
+  const selectedCourse = useMemo(
+    () =>
+      courses.find(
+        (course) => String(course.id) === String(selectedCourseId)
+      ) ?? null,
+    [courses, selectedCourseId]
+  );
 
-  // ==========================================
-  // Load Teacher Allocations
-  // ==========================================
-  useEffect(() => {
-    if (!employeeId) {
-      navigate("/login");
-      return;
-    }
-
-    fetchAllocations();
-  }, [employeeId, navigate]);
-
-  const fetchAllocations = async () => {
-    try {
-      setLoading(true);
-      setError("");
-
-      const res = await teacherService.getSubjectAllocations();
-
-      if (res.success) {
-        const data =
-          res.data?.results ||
-          res.data ||
-          res.results ||
-          [];
-
-        setAllocations(
-          Array.isArray(data) ? data : []
-        );
-      } else {
-        setError(
-          res.message ||
-            "Unable to load teacher allocations."
-        );
-      }
-    } catch (err) {
-      console.error(err);
-      setError("Failed to load teacher allocations.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ==========================================
-  // Select Class / Section / Subject
-  // ==========================================
-  const handleSelectAllocation = async (allocation) => {
-    setSelectedAllocation(allocation);
-    setStudents([]);
-    setAttendance({});
-    setSuccess("");
+  const loadCourses = useCallback(async () => {
+    setLoadingCourses(true);
     setError("");
 
-    const schoolClass =
-      allocation.school_class ||
-      allocation.schoolClass ||
-      allocation.class;
+    try {
+      if (!employeeId) {
+        throw new Error(
+          "Employee ID nahi mila. Logout karke teacher login dobara karein."
+        );
+      }
 
-    const section = allocation.section;
-    const subject = allocation.subject;
+      const response = await teacherService.getMyCourses();
+      const list = getCourses(response);
 
-    if (!schoolClass || !section || !subject) {
-      setError(
-        "Invalid class, section or subject allocation."
-      );
+      setCourses(list);
+
+      setSelectedCourseId((previous) => {
+        if (list.some((course) => String(course.id) === String(previous))) {
+          return previous;
+        }
+
+        return list.length ? String(list[0].id) : "";
+      });
+    } catch (err) {
+      setError(err.message || "Assigned courses load nahi ho sake.");
+    } finally {
+      setLoadingCourses(false);
+    }
+  }, [employeeId]);
+
+  useEffect(() => {
+    loadCourses();
+  }, [loadCourses]);
+
+  const loadAttendance = useCallback(async () => {
+    if (!selectedCourse || !attendanceDate || !employeeId) {
+      setStudents([]);
+      setStatuses({});
       return;
     }
 
+    setLoadingStudents(true);
+    setError("");
+
     try {
-      setStudentsLoading(true);
+      const className = selectedCourse.class_name;
+      const sectionName = selectedCourse.section_name;
 
-      const className =
-        typeof schoolClass === "object"
-          ? schoolClass.name
-          : schoolClass;
+      if (
+        selectedCourse.class_id == null ||
+        selectedCourse.section_id == null ||
+        selectedCourse.subject_id == null ||
+        !className ||
+        !sectionName
+      ) {
+        throw new Error(
+          "Selected course ki class, section ya subject details missing hain."
+        );
+      }
 
-      const sectionName =
-        typeof section === "object"
-          ? section.name
-          : section;
-
-      const subjectId =
-        typeof subject === "object"
-          ? subject.id
-          : subject;
-
-      const res =
-        await teacherService.getSubjectStudents(
+      // Roster aur selected date ki saved attendance load karo.
+      const [studentResponse, attendanceResponse] = await Promise.all([
+        teacherService.getClassStudents(
           employeeId,
           className,
-          sectionName,
-          subjectId
-        );
+          sectionName
+        ),
+        teacherService.getClassAttendance(
+          employeeId,
+          selectedCourse.class_id,
+          selectedCourse.section_id,
+          selectedCourse.subject_id,
+          attendanceDate
+        ),
+      ]);
 
-      if (res.success) {
-        const data =
-          res.data?.results ||
-          res.data ||
-          res.students ||
-          [];
+      const studentList = getStudents(studentResponse);
+      const attendanceList = getAttendanceRecords(attendanceResponse);
 
-        const studentList = Array.isArray(data)
-          ? data
-          : [];
+      // Saved attendance ko database student ID se map karo.
+      const savedStatuses = {};
 
-        setStudents(studentList);
+      attendanceList.forEach((record) => {
+        const studentId = getStudentId(record);
+        const status = record?.status;
 
-        // Default every student to Present
-        const initialAttendance = {};
+        if (
+          studentId != null &&
+          (status === "Present" || status === "Absent")
+        ) {
+          savedStatuses[String(studentId)] = status;
+        }
+      });
 
-        studentList.forEach((student) => {
-          const id =
-            student.id || student.student_id;
+      // Student roster ko consistent format mein rakho.
+      const normalizedStudents = studentList
+        .map((student) => ({
+          id: student.id,
+          studentCode:
+            student.studentId ?? student.studentCode ?? "",
+          name:
+            student.name ||
+            [
+              student.firstName,
+              student.middleName,
+              student.lastName,
+            ]
+              .filter(Boolean)
+              .join(" "),
+          gender: student.gender ?? "",
+          parentName: student.parentName ?? "",
+          parentPhone: student.parentPhone ?? "",
+        }))
+        .filter((student) => student.id != null);
 
-          initialAttendance[id] = "Present";
-        });
+      // Har student ke liye saved status restore karo.
+      // Naye/unmarked students ka status blank rahega.
+      const nextStatuses = {};
 
-        setAttendance(initialAttendance);
-      } else {
-        setError(
-          res.message ||
-            "Unable to load students."
-        );
-      }
+      normalizedStudents.forEach((student) => {
+        nextStatuses[String(student.id)] =
+          savedStatuses[String(student.id)] ?? "";
+      });
+
+      setStudents(normalizedStudents);
+      setStatuses(nextStatuses);
+
+      setMessage("");
     } catch (err) {
-      console.error(err);
-      setError("Failed to load students.");
+      setStudents([]);
+      setStatuses({});
+      setError(
+        err.message || "Students ki saved attendance load nahi ho saki."
+      );
     } finally {
-      setStudentsLoading(false);
+      setLoadingStudents(false);
     }
-  };
+  }, [selectedCourse, attendanceDate, employeeId]);
 
-  // ==========================================
-  // Change Individual Attendance
-  // ==========================================
-  const handleAttendanceChange = (
-    studentId,
-    status
-  ) => {
-    setAttendance((prev) => ({
-      ...prev,
-      [studentId]: status,
+  // Course ya date change hone par attendance dobara load karo.
+  useEffect(() => {
+    loadAttendance();
+  }, [loadAttendance]);
+
+  const markStudent = (studentId, status) => {
+    setStatuses((previous) => ({
+      ...previous,
+      [String(studentId)]: status,
     }));
 
-    setSuccess("");
-  };
-
-  // ==========================================
-  // Mark All Present
-  // ==========================================
-  const markAllPresent = () => {
-    const updatedAttendance = {};
-
-    students.forEach((student) => {
-      const id =
-        student.id || student.student_id;
-
-      updatedAttendance[id] = "Present";
-    });
-
-    setAttendance(updatedAttendance);
-    setSuccess("");
-  };
-
-  // ==========================================
-  // Mark All Absent
-  // ==========================================
-  const markAllAbsent = () => {
-    const updatedAttendance = {};
-
-    students.forEach((student) => {
-      const id =
-        student.id || student.student_id;
-
-      updatedAttendance[id] = "Absent";
-    });
-
-    setAttendance(updatedAttendance);
-    setSuccess("");
-  };
-
-  // ==========================================
-  // Save Attendance
-  // ==========================================
-  const handleSaveAttendance = async () => {
+    setMessage("");
     setError("");
-    setSuccess("");
+  };
 
-    if (!selectedAllocation) {
+  const markAll = (status) => {
+    const nextStatuses = {};
+
+    students.forEach((student) => {
+      nextStatuses[String(student.id)] = status;
+    });
+
+    setStatuses(nextStatuses);
+    setMessage("");
+    setError("");
+  };
+
+  const presentCount = students.filter(
+    (student) => statuses[String(student.id)] === "Present"
+  ).length;
+
+  const absentCount = students.filter(
+    (student) => statuses[String(student.id)] === "Absent"
+  ).length;
+
+  const unmarkedCount = students.length - presentCount - absentCount;
+
+  const saveAttendance = async () => {
+    if (!employeeId || !selectedCourse) {
+      setError("Teacher ya course details missing hain.");
+      return;
+    }
+
+    if (!students.length) {
+      setError("Attendance save karne ke liye students available nahi hain.");
+      return;
+    }
+
+    if (unmarkedCount > 0) {
       setError(
-        "Please select a class and subject."
+        `${unmarkedCount} students ki attendance abhi mark nahi hui hai.`
       );
       return;
     }
 
-    if (!selectedDate) {
-      setError("Please select attendance date.");
-      return;
-    }
-
-    if (students.length === 0) {
-      setError(
-        "No students found in this class."
-      );
-      return;
-    }
-
-    const schoolClass =
-      selectedAllocation.school_class ||
-      selectedAllocation.schoolClass ||
-      selectedAllocation.class;
-
-    const section =
-      selectedAllocation.section;
-
-    const subject =
-      selectedAllocation.subject;
-
-    const classId =
-      typeof schoolClass === "object"
-        ? schoolClass.id
-        : selectedAllocation.school_class_id ||
-          selectedAllocation.class_id;
-
-    const sectionId =
-      typeof section === "object"
-        ? section.id
-        : selectedAllocation.section_id;
-
-    const subjectId =
-      typeof subject === "object"
-        ? subject.id
-        : selectedAllocation.subject_id ||
-          subject;
-
-    const attendanceList = students.map(
-      (student) => {
-        const studentId =
-          student.id || student.student_id;
-
-        return {
-          student_id: student.id,
-          status:
-            attendance[studentId] ||
-            "Present",
-        };
-      }
-    );
+    setSaving(true);
+    setError("");
+    setMessage("");
 
     try {
-      setSaving(true);
+      const attendance = students.map((student) => ({
+        studentId: student.id,
+        status: statuses[String(student.id)],
+      }));
 
-      const payload = {
-        employee_id: employeeId,
-        class_id: classId,
-        section_id: sectionId,
-        subject_id: subjectId,
-        date: selectedDate,
-        attendance: attendanceList,
-      };
+      const response = await teacherService.markBulkAttendance({
+        employeeId,
+        classId: selectedCourse.class_id,
+        sectionId: selectedCourse.section_id,
+        subjectId: selectedCourse.subject_id,
+        date: attendanceDate,
+        attendance,
+      });
 
-      const res =
-        await teacherService.markBulkAttendance(
-          payload
-        );
+      const data = getResponseData(response);
 
-      if (res.success) {
-        setSuccess(
-          `Attendance saved successfully for ${students.length} student(s).`
-        );
-      } else {
-        setError(
-          res.message ||
-            "Failed to save attendance."
-        );
+      if (data?.success === false) {
+        throw new Error(data.error || "Attendance save nahi hui.");
       }
-    } catch (err) {
-      console.error(err);
-      setError(
-        "Failed to save attendance."
+
+      setMessage(
+        data?.message || "Attendance save ho gayi. Saved records reload ho rahe hain..."
       );
+
+      // Database se dobara fetch karo; local state par depend mat karo.
+      await loadAttendance();
+
+      setMessage("Attendance save ho gayi aur saved statuses reload ho gaye.");
+    } catch (err) {
+      setError(err.message || "Attendance save karte waqt error aaya.");
     } finally {
       setSaving(false);
     }
   };
 
-  // ==========================================
-  // Helpers
-  // ==========================================
-  const getStudentId = (student) =>
-    student.id || student.student_id;
-
-  const getStudentName = (student) => {
-    if (student.name) {
-      return student.name;
-    }
-
-    return [
-      student.first_name,
-      student.middle_name,
-      student.last_name,
-    ]
-      .filter(Boolean)
-      .join(" ");
+  const handleRefresh = async () => {
+    setMessage("");
+    await loadAttendance();
   };
 
-  const presentCount = students.filter(
-    (student) =>
-      attendance[getStudentId(student)] ===
-      "Present"
-  ).length;
-
-  const absentCount = students.filter(
-    (student) =>
-      attendance[getStudentId(student)] ===
-      "Absent"
-  ).length;
-
-  // ==========================================
-  // Loading
-  // ==========================================
-  if (loading) {
-    return (
-      <div className="teacher-page">
-        <div className="teacher-page-header">
-          <div>
-            <h2>Attendance</h2>
-            <p>
-              Mark attendance for your assigned
-              students.
-            </p>
-          </div>
-        </div>
-
-        <div className="teacher-loading">
-          Loading class allocations...
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="teacher-page">
-      {/* Header */}
-      <div className="teacher-page-header">
+    <main className="teacher-attendance">
+      <header className="attendance-header">
         <div>
-          <h2>Student Attendance</h2>
-          <p>
-            Mark attendance for your assigned
-            Class, Section and Subject.
+          <p className="attendance-eyebrow">TEACHER PORTAL</p>
+          <h1>Student Attendance</h1>
+          <p className="attendance-subtitle">
+            Apni assigned class aur subject ki daily attendance manage karein.
           </p>
         </div>
 
         <button
           type="button"
-          className="back-btn"
-          onClick={() =>
-            navigate("/teacher/dashboard")
-          }
+          className="attendance-refresh"
+          onClick={handleRefresh}
+          disabled={loadingStudents || saving || !selectedCourse}
         >
-          ← Dashboard
+          {loadingStudents ? "Loading..." : "Refresh"}
         </button>
-      </div>
+      </header>
 
-      {/* Error */}
       {error && (
-        <div className="alert error-alert">
+        <div className="attendance-alert attendance-alert-error" role="alert">
           {error}
         </div>
       )}
 
-      {/* Success */}
-      {success && (
-        <div className="alert success-alert">
-          {success}
+      {message && (
+        <div
+          className="attendance-alert attendance-alert-success"
+          role="status"
+        >
+          {message}
         </div>
       )}
 
-      {/* Class Selection */}
-      <section className="attendance-section">
-        <h3>Select Class & Subject</h3>
+      <section className="attendance-filters">
+        <div className="attendance-field">
+          <label htmlFor="attendance-course">Assigned Class / Subject</label>
+          <select
+            id="attendance-course"
+            value={selectedCourseId}
+            onChange={(event) => setSelectedCourseId(event.target.value)}
+            disabled={loadingCourses || courses.length === 0}
+          >
+            {courses.length === 0 && (
+              <option value="">No assigned courses</option>
+            )}
 
-        {allocations.length === 0 ? (
-          <div className="empty-state">
-            No class or subject has been assigned
-            to you.
-          </div>
-        ) : (
-          <div className="allocation-grid">
-            {allocations.map((allocation) => {
-              const schoolClass =
-                allocation.school_class ||
-                allocation.schoolClass ||
-                allocation.class;
+            {courses.map((course) => (
+              <option key={course.id} value={String(course.id)}>
+                {course.class_name} - {course.section_name} |{" "}
+                {course.subject_name}
+              </option>
+            ))}
+          </select>
+        </div>
 
-              const section =
-                allocation.section;
-
-              const subject =
-                allocation.subject;
-
-              const allocationId =
-                allocation.id ||
-                allocation.allocationId;
-
-              const isSelected =
-                selectedAllocation &&
-                (
-                  selectedAllocation.id ||
-                  selectedAllocation.allocationId
-                ) === allocationId;
-
-              return (
-                <button
-                  key={allocationId}
-                  type="button"
-                  className={`allocation-card ${
-                    isSelected
-                      ? "selected"
-                      : ""
-                  }`}
-                  onClick={() =>
-                    handleSelectAllocation(
-                      allocation
-                    )
-                  }
-                >
-                  <div className="allocation-class">
-                    {typeof schoolClass ===
-                    "object"
-                      ? schoolClass.name
-                      : schoolClass}
-                  </div>
-
-                  <div className="allocation-section">
-                    Section:{" "}
-                    {typeof section ===
-                    "object"
-                      ? section.name
-                      : section}
-                  </div>
-
-                  <div className="allocation-subject">
-                    Subject:{" "}
-                    {typeof subject ===
-                    "object"
-                      ? subject.name
-                      : subject}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        )}
+        <div className="attendance-field">
+          <label htmlFor="attendance-date">Attendance Date</label>
+          <input
+            id="attendance-date"
+            type="date"
+            value={attendanceDate}
+            max={getLocalDate()}
+            onChange={(event) => setAttendanceDate(event.target.value)}
+          />
+        </div>
       </section>
 
-      {/* Date */}
-      {selectedAllocation && (
-        <section className="attendance-section">
-          <div className="attendance-top">
-            <div>
-              <h3>Attendance Date</h3>
-              <p>
-                Select the date for which attendance
-                should be recorded.
-              </p>
+      {loadingCourses ? (
+        <div className="attendance-empty">
+          Assigned courses load ho rahe hain...
+        </div>
+      ) : courses.length === 0 ? (
+        <div className="attendance-empty">
+          Aapko abhi koi class ya subject assign nahi hua hai.
+        </div>
+      ) : (
+        <>
+          {selectedCourse && (
+            <section className="attendance-course-info">
+              <div>
+                <span>CLASS</span>
+                <strong>{selectedCourse.class_name}</strong>
+              </div>
+              <div>
+                <span>SECTION</span>
+                <strong>{selectedCourse.section_name}</strong>
+              </div>
+              <div>
+                <span>SUBJECT</span>
+                <strong>{selectedCourse.subject_name}</strong>
+              </div>
+              <div>
+                <span>ACADEMIC YEAR</span>
+                <strong>{selectedCourse.academic_year || "—"}</strong>
+              </div>
+            </section>
+          )}
+
+          <section className="attendance-stats">
+            <div className="attendance-stat">
+              <span>Total Students</span>
+              <strong>{students.length}</strong>
             </div>
-
-            <input
-              type="date"
-              className="attendance-date"
-              value={selectedDate}
-              onChange={(e) => {
-                setSelectedDate(e.target.value);
-                setSuccess("");
-              }}
-            />
-          </div>
-        </section>
-      )}
-
-      {/* Students */}
-      {selectedAllocation && (
-        <section className="attendance-section">
-          <div className="section-heading">
-            <div>
-              <h3>Student Attendance</h3>
-
-              <p>
-                Select Present or Absent for each
-                student.
-              </p>
+            <div className="attendance-stat present-stat">
+              <span>Present</span>
+              <strong>{presentCount}</strong>
             </div>
-
-            <div className="attendance-summary">
-              <span>
-                Total: {students.length}
-              </span>
-
-              <span>
-                Present: {presentCount}
-              </span>
-
-              <span>
-                Absent: {absentCount}
-              </span>
+            <div className="attendance-stat absent-stat">
+              <span>Absent</span>
+              <strong>{absentCount}</strong>
             </div>
-          </div>
+            <div className="attendance-stat unmarked-stat">
+              <span>Unmarked</span>
+              <strong>{unmarkedCount}</strong>
+            </div>
+          </section>
 
-          {studentsLoading ? (
-            <div className="teacher-loading">
-              Loading students...
-            </div>
-          ) : students.length === 0 ? (
-            <div className="empty-state">
-              No students found in this class and
-              section.
-            </div>
-          ) : (
-            <>
-              {/* Bulk Buttons */}
-              <div className="bulk-attendance-actions">
+          <section className="attendance-roster">
+            <div className="attendance-roster-header">
+              <div>
+                <h2>Students List</h2>
+                <p>
+                  Har student ke liye Present ya Absent select karein.
+                </p>
+              </div>
+
+              <div className="attendance-bulk-actions">
                 <button
                   type="button"
-                  className="present-all-btn"
-                  onClick={markAllPresent}
+                  className="attendance-bulk-present"
+                  onClick={() => markAll("Present")}
+                  disabled={loadingStudents || students.length === 0}
                 >
                   Mark All Present
                 </button>
 
                 <button
                   type="button"
-                  className="absent-all-btn"
-                  onClick={markAllAbsent}
+                  className="attendance-bulk-absent"
+                  onClick={() => markAll("Absent")}
+                  disabled={loadingStudents || students.length === 0}
                 >
                   Mark All Absent
                 </button>
               </div>
+            </div>
 
-              {/* Table */}
-              <div className="attendance-table-wrapper">
-                <table className="attendance-table">
-                  <thead>
-                    <tr>
-                      <th>#</th>
-                      <th>Student ID</th>
-                      <th>Student Name</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
+            {loadingStudents ? (
+              <div className="attendance-empty">
+                Students aur saved attendance load ho rahi hai...
+              </div>
+            ) : students.length === 0 ? (
+              <div className="attendance-empty">
+                Is class aur section mein active students nahi mile.
+              </div>
+            ) : (
+              <>
+                <div className="attendance-table-wrap">
+                  <table className="attendance-table">
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>Student ID</th>
+                        <th>Student Name</th>
+                        <th>Attendance Status</th>
+                      </tr>
+                    </thead>
 
-                  <tbody>
-                    {students.map(
-                      (student, index) => {
-                        const studentId =
-                          getStudentId(
-                            student
-                          );
-
-                        const currentStatus =
-                          attendance[
-                            studentId
-                          ] || "Present";
+                    <tbody>
+                      {students.map((student, index) => {
+                        const currentStatus = statuses[String(student.id)];
 
                         return (
-                          <tr key={studentId}>
+                          <tr key={student.id}>
                             <td>{index + 1}</td>
-
+                            <td>{student.studentCode || student.id}</td>
                             <td>
-                              {student.student_id ||
-                                studentId}
+                              <div className="attendance-student-name">
+                                <span className="attendance-avatar">
+                                  {(student.name || "S")
+                                    .trim()
+                                    .charAt(0)
+                                    .toUpperCase()}
+                                </span>
+                                <span>
+                                  {student.name || "Unnamed Student"}
+                                </span>
+                              </div>
                             </td>
-
                             <td>
-                              {getStudentName(
-                                student
-                              )}
-                            </td>
-
-                            <td>
-                              <div className="attendance-status">
+                              <div className="attendance-status-buttons">
                                 <button
                                   type="button"
-                                  className={`status-btn present ${
-                                    currentStatus ===
-                                    "Present"
-                                      ? "active"
-                                      : ""
+                                  className={`attendance-status-btn status-present ${
+                                    currentStatus === "Present" ? "selected" : ""
                                   }`}
+                                  aria-pressed={currentStatus === "Present"}
                                   onClick={() =>
-                                    handleAttendanceChange(
-                                      studentId,
-                                      "Present"
-                                    )
+                                    markStudent(student.id, "Present")
                                   }
+                                  disabled={loadingStudents || saving}
                                 >
                                   Present
                                 </button>
 
                                 <button
                                   type="button"
-                                  className={`status-btn absent ${
-                                    currentStatus ===
-                                    "Absent"
-                                      ? "active"
-                                      : ""
+                                  className={`attendance-status-btn status-absent ${
+                                    currentStatus === "Absent" ? "selected" : ""
                                   }`}
+                                  aria-pressed={currentStatus === "Absent"}
                                   onClick={() =>
-                                    handleAttendanceChange(
-                                      studentId,
-                                      "Absent"
-                                    )
+                                    markStudent(student.id, "Absent")
                                   }
+                                  disabled={loadingStudents || saving}
                                 >
                                   Absent
                                 </button>
@@ -645,34 +528,37 @@ function Attendence() {
                             </td>
                           </tr>
                         );
-                      }
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                      })}
+                    </tbody>
+                  </table>
+                </div>
 
-              {/* Save */}
-              <div className="attendance-save-actions">
-                <button
-                  type="button"
-                  className="save-attendance-btn"
-                  onClick={
-                    handleSaveAttendance
-                  }
-                  disabled={saving}
-                >
-                  {saving
-                    ? "Saving Attendance..."
-                    : "Save Attendance"}
-                </button>
-              </div>
-            </>
-          )}
-        </section>
+                <footer className="attendance-save-footer">
+                  <span>
+                    {unmarkedCount > 0
+                      ? `${unmarkedCount} students pending`
+                      : "All students marked"}
+                  </span>
+
+                  <button
+                    type="button"
+                    className="attendance-save-btn"
+                    onClick={saveAttendance}
+                    disabled={
+                      saving ||
+                      loadingStudents ||
+                      students.length === 0 ||
+                      unmarkedCount > 0
+                    }
+                  >
+                    {saving ? "Saving Attendance..." : "Save Attendance"}
+                  </button>
+                </footer>
+              </>
+            )}
+          </section>
+        </>
       )}
-    </div>
+    </main>
   );
 }
-
-export default Attendence;
-

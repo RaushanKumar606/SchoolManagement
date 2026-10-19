@@ -49,7 +49,6 @@ from academics.models import (
 )
 
 
-
 from students.models import Student
 from rest_framework import generics
 from .models import TeacherSubjectAllocation
@@ -648,7 +647,7 @@ def teacher_class_students_api(request, employee_id, class_name, section):
 
         # Get actual students
         students = (
-            MainStudent.objects
+            Student.objects
             .filter(
                 school_class=school_class,
                 section=section_obj,
@@ -716,6 +715,79 @@ def teacher_class_students_api(request, employee_id, class_name, section):
             status=500
         )
 
+
+
+
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def teacher_my_courses_api(request):
+    try:
+        # Logged-in teacher only
+        if getattr(request.user, "role", "").lower() != "teacher":
+            return Response(
+                {
+                    "success": False,
+                    "error": "Teacher access required."
+                },
+                status=403
+            )
+
+        teacher = Teacher.objects.get(user=request.user)
+
+        allocations = (
+            TeacherSubjectAllocation.objects
+            .filter(teacher=teacher)
+            .select_related(
+                "school_class",
+                "section",
+                "subject",
+                "school_class__academic_year",
+            )
+            .order_by(
+                "school_class__name",
+                "section__name",
+                "subject__name",
+            )
+        )
+
+        courses = []
+
+        for allocation in allocations:
+            academic_year = getattr(
+                allocation.school_class,
+                "academic_year",
+                None,
+            )
+
+            courses.append({
+                "id": allocation.id,
+                "class_id": allocation.school_class_id,
+                "class_name": allocation.school_class.name,
+                "section_id": allocation.section_id,
+                "section_name": allocation.section.name,
+                "subject_id": allocation.subject_id,
+                "subject_name": allocation.subject.name,
+                "academic_year": (
+                    academic_year.name if academic_year else None
+                ),
+            })
+
+        return Response({
+            "success": True,
+            "count": len(courses),
+            "courses": courses,
+        })
+
+    except Teacher.DoesNotExist:
+        return Response(
+            {
+                "success": False,
+                "error": "Teacher profile not found."
+            },
+            status=404
+        )
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
@@ -1552,7 +1624,7 @@ def mark_attendance_api(request):
 
             student_ids.append(student_id)
 
-        students = MainStudent.objects.filter(
+        students = Student.objects.filter(
             id__in=student_ids,
             school_class_id=class_id,
             section_id=section_id,
@@ -1668,6 +1740,74 @@ def mark_attendance_api(request):
             status=500
         )
 
+# Student sees his/her own attendance for a specific date.
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def student_daily_attendance_api(request):
+    """
+    Logged-in student ki selected date ki attendance return karta hai.
+    GET ?date=YYYY-MM-DD
+    """
+
+    student = Student.objects.filter(
+        user=request.user,
+        is_active=True,
+    ).first()
+
+    if not student:
+        return Response(
+            {
+                "success": False,
+                "error": "Student profile nahi mila.",
+            },
+            status=404,
+        )
+
+    date_value = request.query_params.get("date")
+    attendance_date = timezone.localdate()
+
+    if date_value:
+        try:
+            attendance_date = date.fromisoformat(date_value)
+        except ValueError:
+            return Response(
+                {
+                    "success": False,
+                    "error": "Date format YYYY-MM-DD hona chahiye.",
+                },
+                status=400,
+            )
+
+    records = (
+        Attendance.objects.filter(
+            student=student,
+            date=attendance_date,
+        )
+        .select_related("subject", "teacher")
+        .order_by("subject__name")
+    )
+
+    attendance_list = [
+        {
+            "id": record.id,
+            "date": record.date.isoformat(),
+            "status": record.status,
+            "subjectId": record.subject_id,
+            "subject": str(record.subject),
+            "teacher": str(record.teacher),
+        }
+        for record in records
+    ]
+
+    return Response(
+        {
+            "success": True,
+            "studentId": student.student_id,
+            "date": attendance_date.isoformat(),
+            "count": len(attendance_list),
+            "attendance": attendance_list,
+        }
+    )
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])

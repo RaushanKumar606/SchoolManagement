@@ -1,652 +1,7 @@
 
-// import { useEffect, useState } from "react";
-// import { useNavigate } from "react-router-dom";
-// import { getMyStudentProfile } from "../../services/studentService";
-// // import "./StudentDashboard.css";
-
-// function StudentDashboard() {
-//   const navigate = useNavigate();
-
-//   const [student, setStudent] = useState(null);
-//   const [loading, setLoading] = useState(true);
-//   const [error, setError] = useState("");
-//   const [selectedFeature, setSelectedFeature] = useState(null);
-
-//   // -----------------------------------
-//   // Load only student profile
-//   // -----------------------------------
-//   useEffect(() => {
-//     loadStudentProfile();
-//   }, []);
-
-//   const loadStudentProfile = async () => {
-//     try {
-//       setLoading(true);
-//       setError("");
-
-//       const data = await getMyStudentProfile();
-
-//       setStudent(data);
-//     } catch (err) {
-//       console.error("Student profile error:", err);
-
-//       setError(
-//         err.message || "Unable to load student information."
-//       );
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   // -----------------------------------
-//   // Open feature popup
-//   // -----------------------------------
-//   const openFeaturePopup = (feature) => {
-//     setSelectedFeature(feature);
-//   };
-
-//   // -----------------------------------
-//   // Close popup
-//   // -----------------------------------
-//   const closeFeaturePopup = () => {
-//     setSelectedFeature(null);
-//   };
-
-//   // -----------------------------------
-//   // Open selected page
-//   // API will be called by that page
-//   // -----------------------------------
-//   const handleOpenFeature = () => {
-//     if (!selectedFeature?.path) return;
-
-//     const path = selectedFeature.path;
-
-//     setSelectedFeature(null);
-
-//     navigate(path);
-//   };
-
-//   // -----------------------------------
-//   // Loading
-//   // -----------------------------------
-//   if (loading) {
-//     return (
-//       <div className="student-dashboard-loading">
-//         <div className="loading-spinner"></div>
-//         <p>Loading student dashboard...</p>
-//       </div>
-//     );
-//   }
-
-//   // -----------------------------------
-//   // Error
-//   // -----------------------------------
-//   if (error) {
-//     return (
-//       <div className="student-dashboard-error">
-//         <div className="error-icon">⚠️</div>
-
-//         <h2>Unable to Load Dashboard</h2>
-
-//         <p>{error}</p>
-
-//         <button
-//           className="retry-btn"
-//           onClick={loadStudentProfile}
-//         >
-//           Try Again
-//         </button>
-//       </div>
-//     );
-//   }
-
-//   // -----------------------------------
-//   // No student data
-//   // -----------------------------------
-//   if (!student) {
-//     return (
-//       <div className="student-dashboard-error">
-//         <div className="error-icon">👤</div>
-
-//         <h2>Student Information Not Found</h2>
-
-//         <p>
-//           We could not find your student profile.
-//         </p>
-
-//         <button
-//           className="retry-btn"
-//           onClick={loadStudentProfile}
-//         >
-//           Try Again
-//         </button>
-//       </div>
-//     );
-//   }
-
-//   // -----------------------------------
-//   // Student name
-//   // -----------------------------------
-//   const fullName =
-//     `${student.first_name || ""} ${
-//       student.last_name || ""
-//     }`.trim() ||
-//     student.username ||
-//     "Student";
-
-//   const firstLetter =
-//     student.first_name?.charAt(0)?.toUpperCase() ||
-//     student.username?.charAt(0)?.toUpperCase() ||
-//     "S";
-
-//   return (
-//     <>
-//       <div className="student-dashboard">
-
-//         {/* =====================================
-//             DASHBOARD HEADER
-//         ====================================== */}
-//         <section className="dashboard-header">
-//           <div className="dashboard-header-content">
-//             <p className="dashboard-welcome">
-//               Welcome back 👋
-//             </p>
-
-//             <h1>{fullName}</h1>
-
-//             <p className="dashboard-subtitle">
-//               Manage your academic activities from
-//               your student portal.
-//             </p>
-//           </div>
-
-//           {/* <button
-//             className="profile-btn"
-//             onClick={() =>
-//               openFeaturePopup({
-//                 title: "My Profile",
-//                 description:
-//                   "View your personal and academic profile information.",
-//                 icon: "👤",
-//                 path: "/student/profile",
-//               })
-//             }
-//           >
-//             View Profile h
-//           </button> */}
-//         </section>
-
-//         {/* =====================================
-//             STUDENT OVERVIEW
-//         ====================================== */}
-//         <section className="student-overview">
-
-//           <div className="student-avatar">
-//             {firstLetter}
-//           </div>
-
-//           <div className="student-basic-info">
-//             <h2>{fullName}</h2>
-
-//             <div className="student-meta">
-
-//               <span>
-//                 Student ID:
-//                 <strong>
-//                   {student.student_id || "N/A"}
-//                 </strong>
-//               </span>
-
-//               <span>
-//                 Class:
-//                 <strong>
-//                   {student.school_class || "N/A"}
-//                 </strong>
-//               </span>
-
-//               <span>
-//                 Section:
-//                 <strong>
-//                   {student.section || "N/A"}
-//                 </strong>
-//               </span>
-
-//             </div>
-//           </div>
-//         </section>
-
-//         {/* =====================================
-//             ACADEMIC OVERVIEW
-//         ====================================== */}
-//         <section className="dashboard-section">
-
-//           <div className="section-heading">
-//             <div>
-//               <h2>Academic Overview</h2>
-
-//               <p>
-//                 Access your academic information
-//               </p>
-//             </div>
-//           </div>
-
-//           <div className="dashboard-cards">
-
-//             {/* Attendance */}
-//             <DashboardCard
-//               icon="📅"
-//               title="Attendance"
-//               description="View your attendance record"
-//               className="attendance-card"
-//               onClick={() =>
-//                 openFeaturePopup({
-//                   title: "Attendance",
-//                   description:
-//                     "View your complete attendance record, present days and absent days.",
-//                   icon: "📅",
-//                   path: "/student/attendance",
-//                 })
-//               }
-//             />
-
-//             {/* Timetable */}
-//             <DashboardCard
-//               icon="🕐"
-//               title="Timetable"
-//               description="Check your class schedule"
-//               className="timetable-card"
-//               onClick={() =>
-//                 openFeaturePopup({
-//                   title: "Timetable",
-//                   description:
-//                     "Check your daily and weekly class timetable.",
-//                   icon: "🕐",
-//                   path: "/student/timetable",
-//                 })
-//               }
-//             />
-
-//             {/* Homework */}
-//             <DashboardCard
-//               icon="📝"
-//               title="Homework"
-//               description="View your assignments"
-//               className="homework-card"
-//               onClick={() =>
-//                 openFeaturePopup({
-//                   title: "Homework",
-//                   description:
-//                     "View your assignments, due dates and submit your homework.",
-//                   icon: "📝",
-//                   path: "/student/homework",
-//                 })
-//               }
-//             />
-
-//             {/* Results */}
-//             <DashboardCard
-//               icon="📊"
-//               title="Results"
-//               description="Check your exam results"
-//               className="results-card"
-//               onClick={() =>
-//                 openFeaturePopup({
-//                   title: "Results",
-//                   description:
-//                     "View your examination marks, subjects and result details.",
-//                   icon: "📊",
-//                   path: "/student/results",
-//                 })
-//               }
-//             />
-
-//             {/* Fees */}
-//             <DashboardCard
-//               icon="💳"
-//               title="Fees"
-//               description="View fees and payments"
-//               className="fees-card"
-//               onClick={() =>
-//                 openFeaturePopup({
-//                   title: "Fees",
-//                   description:
-//                     "View your fee details, payments and payment history.",
-//                   icon: "💳",
-//                   path: "/student/fees",
-//                 })
-//               }
-//             />
-
-//             {/* Profile */}
-//             <DashboardCard
-//               icon="👤"
-//               title="My Profile"
-//               description="View your profile"
-//               className="profile-card"
-//               onClick={() =>
-//                 openFeaturePopup({
-//                   title: "My Profile",
-//                   description:
-//                     "View your personal and academic information.",
-//                   icon: "👤",
-//                   path: "/student/profile",
-//                 })
-//               }
-//             />
-
-//           </div>
-//         </section>
-
-//         {/* =====================================
-//             QUICK ACCESS + STUDENT INFORMATION
-//         ====================================== */}
-//         <section className="dashboard-grid">
-
-//           {/* Quick Access */}
-//           <div className="dashboard-panel">
-
-//             <div className="panel-header">
-//               <div>
-//                 <h2>Quick Access</h2>
-
-//                 <p>
-//                   Frequently used student services
-//                 </p>
-//               </div>
-//             </div>
-
-//             <div className="quick-actions">
-
-//               <button
-//                 onClick={() =>
-//                   openFeaturePopup({
-//                     title: "Attendance",
-//                     description:
-//                       "View your complete attendance record.",
-//                     icon: "📅",
-//                     path: "/student/attendance",
-//                   })
-//                 }
-//               >
-//                 <span>📅</span>
-//                 <div>
-//                   <strong>Attendance</strong>
-//                   <small>View attendance</small>
-//                 </div>
-//                 <b>→</b>
-//               </button>
-
-//               <button
-//                 onClick={() =>
-//                   openFeaturePopup({
-//                     title: "Timetable",
-//                     description:
-//                       "Check your class schedule.",
-//                     icon: "🕐",
-//                     path: "/student/timetable",
-//                   })
-//                 }
-//               >
-//                 <span>🕐</span>
-//                 <div>
-//                   <strong>Timetable</strong>
-//                   <small>View schedule</small>
-//                 </div>
-//                 <b>→</b>
-//               </button>
-
-//               <button
-//                 onClick={() =>
-//                   openFeaturePopup({
-//                     title: "Homework",
-//                     description:
-//                       "View and submit your assignments.",
-//                     icon: "📝",
-//                     path: "/student/homework",
-//                   })
-//                 }
-//               >
-//                 <span>📝</span>
-//                 <div>
-//                   <strong>Homework</strong>
-//                   <small>View assignments</small>
-//                 </div>
-//                 <b>→</b>
-//               </button>
-
-//               <button
-//                 onClick={() =>
-//                   openFeaturePopup({
-//                     title: "Results",
-//                     description:
-//                       "View your examination results.",
-//                     icon: "📊",
-//                     path: "/student/results",
-//                   })
-//                 }
-//               >
-//                 <span>📊</span>
-//                 <div>
-//                   <strong>Results</strong>
-//                   <small>View marks</small>
-//                 </div>
-//                 <b>→</b>
-//               </button>
-
-//             </div>
-//           </div>
-
-//           {/* Student Information */}
-//           <div className="dashboard-panel">
-
-//             <div className="panel-header">
-//               <div>
-//                 <h2>Student Information</h2>
-
-//                 <p>
-//                   Your basic academic details
-//                 </p>
-//               </div>
-//             </div>
-
-//             <div className="information-list">
-
-//               <InfoRow
-//                 label="Student ID"
-//                 value={
-//                   student.student_id || "N/A"
-//                 }
-//               />
-
-//               <InfoRow
-//                 label="Class"
-//                 value={
-//                   student.school_class || "N/A"
-//                 }
-//               />
-
-//               <InfoRow
-//                 label="Section"
-//                 value={
-//                   student.section || "N/A"
-//                 }
-//               />
-
-//               <InfoRow
-//                 label="Email"
-//                 value={
-//                   student.email || "N/A"
-//                 }
-//               />
-
-//               <InfoRow
-//                 label="Phone"
-//                 value={
-//                   student.phone || "N/A"
-//                 }
-//               />
-
-//             </div>
-
-//             {/*  */}
-
-//           </div>
-
-//         </section>
-
-//         {/* =====================================
-//             NOTICE
-//         ====================================== */}
-//         <section className="dashboard-notice">
-
-//           <div className="notice-icon">
-//             🔔
-//           </div>
-
-//           <div>
-//             <h3>Stay Updated</h3>
-
-//             <p>
-//               Check your timetable, homework,
-//               attendance and examination results
-//               regularly.
-//             </p>
-//           </div>
-
-//         </section>
-
-//       </div>
-
-//       {/* =====================================
-//           FEATURE POPUP / MODAL
-//       ====================================== */}
-//       {selectedFeature && (
-//         <div
-//           className="feature-modal-overlay"
-//           onClick={closeFeaturePopup}
-//         >
-//           <div
-//             className="feature-modal"
-//             onClick={(event) =>
-//               event.stopPropagation()
-//             }
-//           >
-
-//             {/* Close */}
-//             <button
-//               className="modal-close"
-//               onClick={closeFeaturePopup}
-//               aria-label="Close"
-//             >
-//               ×
-//             </button>
-
-//             {/* Icon */}
-//             <div className="modal-icon">
-//               {selectedFeature.icon}
-//             </div>
-
-//             {/* Title */}
-//             <h2>
-//               {selectedFeature.title}
-//             </h2>
-
-//             {/* Description */}
-//             <p>
-//               {selectedFeature.description}
-//             </p>
-
-//             {/* Actions */}
-//             <div className="modal-actions">
-
-//               <button
-//                 className="modal-cancel-btn"
-//                 onClick={closeFeaturePopup}
-//               >
-//                 Cancel
-//               </button>
-
-//               <button
-//                 className="modal-view-btn"
-//                 onClick={handleOpenFeature}
-//               >
-//                 View Details →
-//               </button>
-
-//             </div>
-
-//           </div>
-//         </div>
-//       )}
-//     </>
-//   );
-// }
-
-// /* =========================================
-//    DASHBOARD CARD
-// ========================================= */
-
-// function DashboardCard({
-//   icon,
-//   title,
-//   description,
-//   onClick,
-//   className = "",
-// }) {
-//   return (
-//     <button
-//       className={`dashboard-card ${className}`}
-//       onClick={onClick}
-//       type="button"
-//     >
-//       <div className="card-icon">
-//         {icon}
-//       </div>
-
-//       <div className="card-content">
-//         <h3>{title}</h3>
-
-//         <p>{description}</p>
-//       </div>
-
-//       <span className="card-arrow">
-//         →
-//       </span>
-//     </button>
-//   );
-// }
-
-// /* =========================================
-//    INFORMATION ROW
-// ========================================= */
-
-// function InfoRow({ label, value }) {
-//   return (
-//     <div className="information-row">
-
-//       <span>{label}</span>
-
-//       <strong>
-//         {value}
-//       </strong>
-
-//     </div>
-//   );
-// }
-
-// export default StudentDashboard;
-
-
-
-
-
-
-
-
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getMyStudentProfile } from "../../services/studentService";
+import { getMyStudentProfile, getMyFeeInvoice, } from "../../services/studentService";
 import "./Student.css";
 
 function StudentDashboard() {
@@ -656,9 +11,12 @@ function StudentDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedFeature, setSelectedFeature] = useState(null);
-
+  const [feeInvoices, setFeeInvoices] = useState([]);
+  const [feeLoading, setFeeLoading] = useState(true);
+  const [feeError, setFeeError] = useState("");
   useEffect(() => {
     loadStudentProfile();
+    loadPendingFees();
   }, []);
 
   const loadStudentProfile = async () => {
@@ -672,6 +30,29 @@ function StudentDashboard() {
       setError(err.message || "Unable to load student information.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadPendingFees = async () => {
+    try {
+      setFeeLoading(true);
+
+      const response = await getMyFeeInvoice();
+
+      const invoices = Array.isArray(response?.data)
+        ? response.data
+        : Array.isArray(response?.data?.results)
+          ? response.data.results
+          : Array.isArray(response)
+            ? response
+            : [];
+
+      setFeeInvoices(invoices);
+    } catch (error) {
+      console.error("Pending fees error:", error);
+      setFeeInvoices([]);
+    } finally {
+      setFeeLoading(false);
     }
   };
 
@@ -735,6 +116,31 @@ function StudentDashboard() {
     student.username?.charAt(0)?.toUpperCase() ||
     "S";
 
+
+
+  const pendingInvoices = feeInvoices.filter(
+    (invoice) => Number(invoice.due_amount || 0) > 0
+  );
+
+  const totalPendingFees = pendingInvoices.reduce(
+    (total, invoice) => total + Number(invoice.due_amount || 0),
+    0
+  );
+
+  const nextDueDate = pendingInvoices
+    .filter((invoice) => invoice.due_date)
+    .sort(
+      (a, b) => new Date(a.due_date) - new Date(b.due_date)
+    )[0]?.due_date;
+
+  const formattedDueDate = nextDueDate
+    ? new Date(nextDueDate).toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    })
+    : "No pending due date";
+
   return (
     <>
       <div className="student-dashboard">
@@ -766,7 +172,7 @@ function StudentDashboard() {
         ====================================== */}
         <section className="metrics-grid">
 
-           {/* Student Profile Box */}
+          {/* Student Profile Box */}
           <div className="dashboard-panel student-profile-panel">
             <div className="student-card-banner">
               <div className="student-avatar-lg">{firstLetter}</div>
@@ -784,14 +190,14 @@ function StudentDashboard() {
               <div><span>Phone</span><strong>{student.parent_phone || "N/A"}</strong></div>
             </div>
 
-            <button 
+            <button
               className="view-full-profile-btn"
               onClick={() => openFeaturePopup({ title: "My Profile", description: "View your personal and academic information.", icon: "👤", path: "/student/profile" })}
             >
               View Full Profile →
             </button>
           </div>
-          
+
           {/* Attendance Metric Card */}
           <div className="metric-card" onClick={() => openFeaturePopup({ title: "Attendance", description: "View your complete attendance record, present days and absent days.", icon: "📅", path: "/student/attendance" })}>
             <div className="metric-card-top">
@@ -804,7 +210,7 @@ function StudentDashboard() {
           </div>
 
           {/* Pending Fees Metric Card */}
-          <div className="metric-card" onClick={() => openFeaturePopup({ title: "Fees", description: "View your fee details, payments and payment history.", icon: "💳", path: "/student/fees" })}>
+          {/* <div className="metric-card" onClick={() => openFeaturePopup({ title: "Fees", description: "View your fee details, payments and payment history.", icon: "💳", path: "/student/fees" })}>
             <div className="metric-card-top">
               <div className="metric-icon fees-bg">₹</div>
               <button className="pay-now-badge-btn">Pay Now →</button>
@@ -812,6 +218,56 @@ function StudentDashboard() {
             <h3>Pending Fees</h3>
             <div className="metric-value">₹ 5,000</div>
             <p className="metric-subtext">Next Due: 15 Oct 2025</p>
+          </div> */}
+
+
+          {/* Pending Fees Metric Card */}
+          <div
+            className="metric-card"
+            onClick={() =>
+              openFeaturePopup({
+                title: "Fees",
+                description:
+                  "View your fee details, payments and payment history.",
+                icon: "💳",
+                path: "/student/fees",
+              })
+            }
+          >
+            <div className="metric-card-top">
+              <div className="metric-icon fees-bg">₹</div>
+
+              <button
+                type="button"
+                className="pay-now-badge-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate("/student/fees");
+                }}
+              >
+                Pay Now →
+              </button>
+            </div>
+
+            <h3>Pending Fees</h3>
+
+            <div className="metric-value">
+              {feeLoading
+                ? "Loading..."
+                : `₹ ${totalPendingFees.toLocaleString("en-IN")}`}
+            </div>
+
+            <p className="metric-subtext">
+              {feeLoading
+                ? "Loading fee details..."
+                : nextDueDate
+                  ? `Next Due: ${new Date(nextDueDate).toLocaleDateString("en-IN", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                  })}`
+                  : "No pending fees"}
+            </p>
           </div>
 
           {/* Pending Assignments Card */}
@@ -959,29 +415,104 @@ function StudentDashboard() {
             </table>
           </div>
 
+
           {/* Fees & Payments Table */}
           <div className="dashboard-panel fees-panel">
             <div className="panel-header-inline">
-              <h2>Fees & Payments</h2>
-              <button className="text-btn" onClick={() => navigate("/student/fees")}>View All →</button>
+              <h2>Fees &amp; Payments</h2>
+
+              <button
+                className="text-btn"
+                onClick={() => navigate("/student/fees")}
+              >
+                View All →
+              </button>
             </div>
-            <table className="dashboard-table">
-              <thead>
-                <tr>
-                  <th>Particulars</th>
-                  <th>Amount</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr><td>Tuition Fee (July 2025)</td><td>₹ 5,000</td><td><span className="status-badge paid">Paid</span></td></tr>
-                <tr><td>Tuition Fee (Aug 2025)</td><td>₹ 5,000</td><td><span className="status-badge paid">Paid</span></td></tr>
-                <tr><td>Tuition Fee (Sep 2025)</td><td>₹ 5,000</td><td><span className="status-badge paid">Paid</span></td></tr>
-                <tr><td>Tuition Fee (Oct 2025)</td><td>₹ 5,000</td><td><span className="status-badge pending">Pending</span></td></tr>
-              </tbody>
-            </table>
-            <button className="primary-pay-btn" onClick={() => navigate("/student/fees")}>💳 Pay Now</button>
+
+            {feeLoading ? (
+              <p>Loading fee details...</p>
+            ) : feeError ? (
+              <p className="error-message">{feeError}</p>
+            ) : feeInvoices.length === 0 ? (
+              <p>No fee invoices found.</p>
+            ) : (
+              <div className="dashboard-table-wrapper">
+                <table className="dashboard-table">
+                  <thead>
+                    <tr>
+                      <th>Particulars</th>
+                      <th>Total Amount</th>
+                      <th>Paid</th>
+                      <th>Pending</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {feeInvoices.map((item) => {
+                      const total = Number(item.amount || 0);
+                      const paid = Number(item.paid_amount || 0);
+
+                      const pending =
+                        item.due_amount !== undefined &&
+                          item.due_amount !== null
+                          ? Math.max(0, Number(item.due_amount) || 0)
+                          : Math.max(0, total - paid);
+
+                      const status =
+                        pending <= 0
+                          ? "Paid"
+                          : paid > 0
+                            ? "Partially Paid"
+                            : "Pending";
+
+                      return (
+                        <tr key={item.id}>
+                          <td>
+                            {item.fee_particulars?.toLowerCase().includes("monthly fee")
+                              ? "Tuition Fees"
+                              : item.fee_particulars || "School Fees"}
+                            {/* {item.fee_structure_name || item.fee_structure?.name || "Fee"} */}
+
+                            {item.due_date && (
+                              <small style={{ display: "block" }}>
+                                Due: {new Date(item.due_date).toLocaleDateString("en-IN")}
+                              </small>
+                            )}
+                          </td>
+
+                          <td>₹ {total.toLocaleString("en-IN")}</td>
+                          <td>₹ {paid.toLocaleString("en-IN")}</td>
+                          <td>₹ {pending.toLocaleString("en-IN")}</td>
+
+                          <td>
+                            <span
+                              className={`status-badge ${status === "Paid"
+                                ? "paid"
+                                : status === "Pending"
+                                  ? "pending"
+                                  : "partial"
+                                }`}
+                            >
+                              {status}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <button
+              className="primary-pay-btn"
+              onClick={() => navigate("/student/fees")}
+            >
+              💳 Pay Fees
+            </button>
           </div>
+
 
           {/* Quick Links Grid */}
           <div className="dashboard-panel quick-links-panel">

@@ -39,18 +39,6 @@ function StudentLayout() {
           >
             🏠 Timetable
           </NavLink>
-         
-
-          <NavLink
-            to="/student/attendance"
-            className={({ isActive }) =>
-              `nav-item ${isActive ? "active" : ""}`
-            }
-          >
-            🏠 Attendance
-          </NavLink>
-
-         
 
           <NavLink
             to="/student/homework"
@@ -85,7 +73,33 @@ function StudentLayout() {
             🏠 Fees
           </NavLink>
 
+          <NavLink
+            to="/student/MySubjects"
+            className={({ isActive }) =>
+              `nav-item ${isActive ? "active" : ""}`
+            }
+          >
+            🏠 My Subject
+          </NavLink>
 
+
+          {/* <NavLink
+            to="/student/My-Attendance"
+            className={({ isActive }) =>
+              `nav-item ${isActive ? "active" : ""}`
+            }
+          >
+            🏠 Attendance
+          </NavLink> */}
+
+           <NavLink
+            to="/student/My-Attendance"
+            className={({ isActive }) =>
+              `nav-item ${isActive ? "active" : ""}`
+            }
+          >
+           🏠 Attendance
+          </NavLink>
 
 
 

@@ -4,6 +4,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.utils import timezone
+from calendar import monthrange
+from datetime import date
 
 from .models import FeeStructure
 from .serializers import FeeStructureSerializer
@@ -13,8 +15,8 @@ from decimal import Decimal
 from django.db.models import Sum
 from django.db.models.functions import Coalesce
 
-
 from .models import FeeStructure, FeeInvoice, FeePayment
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 from students.models import Student
 from .serializers import (
@@ -40,6 +42,19 @@ from .models import (
     FeePayment,
     FeeOnlineOrder,
 )
+
+
+
+import logging
+from django.conf import settings
+from django.db import transaction
+from rest_framework import status
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+
+logger = logging.getLogger(__name__)
+
 
 
 def has_fee_access(user):
@@ -788,41 +803,29 @@ class FeeDashboardView(APIView):
             }
         )      
 
+
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 @transaction.atomic
 def create_fee_online_order(request):
-
-    # ------------------------------------------------
-    # 1. Check Razorpay configuration
-    # ------------------------------------------------
-
-    if not settings.RAZORPAY_KEY_ID:
-        return Response(
-            {
-                "success": False,
-                "message": "Razorpay Key ID is not configured.",
-            },
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        )
-
-    if not settings.RAZORPAY_KEY_SECRET:
-        return Response(
-            {
-                "success": False,
-                "message": "Razorpay Secret Key is not configured.",
-            },
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        )
-
-    # ------------------------------------------------
-    # 2. Get logged-in student's profile
-    # ------------------------------------------------
-
+    from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
     from students.models import Student
 
-    try:
+    # 1. Validate Razorpay configuration
+    key_id = (settings.RAZORPAY_KEY_ID or "").strip()
+    key_secret = (settings.RAZORPAY_KEY_SECRET or "").strip()
 
+    if not key_id or not key_secret:
+        return Response(
+            {
+                "success": False,
+                "message": "Razorpay credentials are not configured.",
+            },
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+    # 2. Get logged-in student's active profile
+    try:
         student = Student.objects.select_related(
             "user",
             "academic_year",
@@ -832,25 +835,19 @@ def create_fee_online_order(request):
             user=request.user,
             is_active=True,
         )
-
     except Student.DoesNotExist:
-
         return Response(
             {
                 "success": False,
-                "message": "Student profile not found.",
+                "message": "Active student profile not found.",
             },
             status=status.HTTP_404_NOT_FOUND,
         )
 
-    # ------------------------------------------------
-    # 3. Get invoice ID
-    # ------------------------------------------------
-
+    # 3. Validate invoice ID
     invoice_id = request.data.get("invoice")
 
     if not invoice_id:
-
         return Response(
             {
                 "success": False,
@@ -859,12 +856,8 @@ def create_fee_online_order(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    # ------------------------------------------------
-    # 4. Get student's invoice only
-    # ------------------------------------------------
-
+    # 4. Fetch only this student's invoice and lock the row
     try:
-
         invoice = (
             FeeInvoice.objects
             .select_for_update()
@@ -878,23 +871,17 @@ def create_fee_online_order(request):
                 student=student,
             )
         )
-
-    except FeeInvoice.DoesNotExist:
-
+    except (FeeInvoice.DoesNotExist, ValueError, TypeError):
         return Response(
             {
                 "success": False,
-                "message": "Invoice not found.",
+                "message": "Invoice not found or invalid invoice ID.",
             },
             status=status.HTTP_404_NOT_FOUND,
         )
 
-    # ------------------------------------------------
-    # 5. Check invoice status
-    # ------------------------------------------------
-
+    # 5. Validate invoice status
     if invoice.status == "CANCELLED":
-
         return Response(
             {
                 "success": False,
@@ -903,12 +890,22 @@ def create_fee_online_order(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    # ------------------------------------------------
-    # 6. Check due amount
-    # ------------------------------------------------
+    # 6. Read outstanding balance and requested payment amount
+    try:
+        due_amount = Decimal(str(invoice.due_amount))
+        requested_amount = Decimal(
+            str(request.data.get("amount", ""))
+        )
+    except (InvalidOperation, ValueError, TypeError):
+        return Response(
+            {
+                "success": False,
+                "message": "Please enter a valid payment amount.",
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
-    if invoice.due_amount <= 0:
-
+    if not due_amount.is_finite() or due_amount <= 0:
         return Response(
             {
                 "success": False,
@@ -917,127 +914,155 @@ def create_fee_online_order(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    # ------------------------------------------------
-    # 7. Amount in paise
-    # ------------------------------------------------
-
-    amount_paise = int(
-        invoice.due_amount * 100
-    )
-
-    if amount_paise <= 0:
-
+    if not requested_amount.is_finite() or requested_amount <= 0:
         return Response(
             {
                 "success": False,
-                "message": "Invalid invoice amount.",
+                "message": "Payment amount must be greater than zero.",
             },
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    # ------------------------------------------------
-    # 8. Create Razorpay client
-    # ------------------------------------------------
+    # 7. Prevent payment exceeding the pending balance
+    if requested_amount > due_amount:
+        return Response(
+            {
+                "success": False,
+                "message": (
+                    f"Payment cannot exceed pending fees of ₹{due_amount}."
+                ),
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
-    client = razorpay.Client(
-        auth=(
-            settings.RAZORPAY_KEY_ID,
-            settings.RAZORPAY_KEY_SECRET,
+    # 8. Allow a maximum of two decimal places
+    if requested_amount != requested_amount.quantize(Decimal("0.01")):
+        return Response(
+            {
+                "success": False,
+                "message": (
+                    "Payment amount can have at most two decimal places."
+                ),
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    # 9. Convert the requested rupee amount into paise
+    amount_paise = int(
+        (requested_amount * Decimal("100")).quantize(
+            Decimal("1"),
+            rounding=ROUND_HALF_UP,
         )
     )
 
-    # ------------------------------------------------
-    # 9. Create Razorpay order
-    # ------------------------------------------------
+    if amount_paise <= 0:
+        return Response(
+            {
+                "success": False,
+                "message": "Payment amount must be greater than zero.",
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
+    # 10. Initialize Razorpay client
+    client = razorpay.Client(
+        auth=(key_id, key_secret)
+    )
+
+    # 11. Create Razorpay order for the CUSTOM amount
     try:
-
         razorpay_order = client.order.create(
             {
                 "amount": amount_paise,
                 "currency": "INR",
-                "receipt": invoice.invoice_number,
+                "receipt": f"fee_{invoice.id}",
                 "notes": {
                     "invoice_id": str(invoice.id),
-                    "student_id": student.student_id,
+                    "student_id": str(student.student_id),
                 },
             }
         )
 
-    except Exception as e:
+        razorpay_order_id = razorpay_order.get("id")
 
+        if not razorpay_order_id:
+            logger.error(
+                "Razorpay response did not contain an order ID."
+            )
+            return Response(
+                {
+                    "success": False,
+                    "message": "Razorpay did not return an order ID.",
+                },
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+
+    except Exception:
+        logger.exception("Razorpay create-order request failed.")
         return Response(
             {
                 "success": False,
-                "message": "Unable to create online payment order.",
-                "error": str(e),
+                "message": (
+                    "Unable to create online payment order. "
+                    "Check backend logs."
+                ),
             },
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status=status.HTTP_502_BAD_GATEWAY,
         )
 
-    # ------------------------------------------------
-    # 10. Save order in our database
-    # ------------------------------------------------
+    # 12. Save the actual requested amount, not the full pending balance
+    try:
+        online_order = FeeOnlineOrder.objects.create(
+            invoice=invoice,
+            student=student,
+            order_id=razorpay_order_id,
+            amount=requested_amount,
+            status="CREATED",
+        )
+    except Exception:
+        logger.exception(
+            "Razorpay order created, but local database save failed."
+        )
+        raise
 
-    online_order = FeeOnlineOrder.objects.create(
-        invoice=invoice,
-        student=student,
-        order_id=razorpay_order["id"],
-        amount=invoice.due_amount,
-        status="CREATED",
-    )
+    # 13. Build student name
+    student_name = " ".join(
+        filter(
+            None,
+            [
+                student.first_name,
+                student.middle_name,
+                student.last_name,
+            ],
+        )
+    ).strip()
 
-    # ------------------------------------------------
-    # 11. Return order information to React
-    # ------------------------------------------------
-
+    # 14. Return order details to React
     return Response(
         {
             "success": True,
             "message": "Online payment order created successfully.",
-
             "data": {
                 "order_id": online_order.order_id,
-
                 "amount": amount_paise,
-
-                "amount_rupees": str(
-                    invoice.due_amount
-                ),
-
+                "amount_rupees": str(requested_amount),
                 "currency": "INR",
-
-                "key_id": settings.RAZORPAY_KEY_ID,
-
+                "key_id": key_id,
                 "invoice": {
                     "id": invoice.id,
                     "invoice_number": invoice.invoice_number,
                     "amount": str(invoice.amount),
-                    "paid_amount": str(
-                        invoice.paid_amount
-                    ),
-                    "due_amount": str(
-                        invoice.due_amount
-                    ),
+                    "paid_amount": str(invoice.paid_amount),
+                    "due_amount": str(due_amount),
                 },
-
                 "student": {
                     "student_id": student.student_id,
-                    "name": " ".join(
-                        filter(
-                            None,
-                            [
-                                student.first_name,
-                                student.middle_name,
-                                student.last_name,
-                            ],
-                        )
-                    ).strip(),
+                    "name": student_name,
                 },
             },
         },
         status=status.HTTP_201_CREATED,
-    ) 
+    )
 
 
 @api_view(["POST"])
@@ -1355,12 +1380,133 @@ def verify_fee_online_payment(request):
 
 
 
-class MyFeeInvoiceView(APIView):
+class FeeDashboardView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        if not has_fee_access(request.user):
+            return Response(
+                {
+                    "success": False,
+                    "message": "You do not have permission to access fee dashboard."
+                },
+                status=403,
+            )
+
+        # Existing invoice records
+        invoices = (
+            FeeInvoice.objects
+            .select_related(
+                "student",
+                "student__school_class",
+                "student__section",
+                "academic_year",
+                "fee_structure",
+            )
+            .all()
+        )
+
+        # Exclude cancelled invoices from financial totals
+        active_invoices = invoices.exclude(status="CANCELLED")
+
+        # Only successful payments count as collected fees
+        successful_payments = FeePayment.objects.filter(
+            payment_status="SUCCESS"
+        )
+
+        total_invoiced = active_invoices.aggregate(
+            total=Coalesce(
+                Sum("amount"),
+                Decimal("0.00"),
+            )
+        )["total"]
+
+        total_collected = successful_payments.aggregate(
+            total=Coalesce(
+                Sum("amount"),
+                Decimal("0.00"),
+            )
+        )["total"]
+
+        total_due = active_invoices.aggregate(
+            total=Coalesce(
+                Sum("due_amount"),
+                Decimal("0.00"),
+            )
+        )["total"]
+
+        # Invoice status counts
+        pending_invoices = active_invoices.filter(
+            status="PENDING"
+        ).count()
+
+        partial_invoices = active_invoices.filter(
+            status="PARTIAL"
+        ).count()
+
+        paid_invoices = active_invoices.filter(
+            status="PAID"
+        ).count()
+
+        cancelled_invoices = invoices.filter(
+            status="CANCELLED"
+        ).count()
+
+        # Student-wise fee records
+        fee_records = FeeInvoiceSerializer(
+            invoices,
+            many=True,
+        ).data
+
+        # Latest 10 successful payments
+        recent_payments = (
+            successful_payments
+            .select_related(
+                "invoice",
+                "invoice__student",
+                "invoice__student__school_class",
+                "invoice__student__section",
+                "collected_by",
+            )
+            .order_by("-payment_date", "-id")[:10]
+        )
+
+        recent_payments_data = FeePaymentSerializer(
+            recent_payments,
+            many=True,
+        ).data
+
+        return Response({
+            "success": True,
+            "data": {
+                "total_invoiced": total_invoiced,
+                "total_collected": total_collected,
+                "total_due": total_due,
+
+                "invoice_summary": {
+                    "pending": pending_invoices,
+                    "partial": partial_invoices,
+                    "paid": paid_invoices,
+                    "cancelled": cancelled_invoices,
+                },
+
+                "fee_records": fee_records,
+                "recent_payments": recent_payments_data,
+            },
+        })
+
+
+
+class MyFeeStructureView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        # Logged-in student ka profile fetch karo
         try:
-            student = Student.objects.get(
+            student = Student.objects.select_related(
+                "academic_year",
+                "school_class"
+            ).get(
                 user=request.user,
                 is_active=True
             )
@@ -1373,24 +1519,143 @@ class MyFeeInvoiceView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        invoices = FeeInvoice.objects.filter(
-            student=student
-        ).order_by("-id")
+        # Student ki class aur academic year ki active fee structure
+        fee_structure = FeeStructure.objects.select_related(
+            "academic_year",
+            "school_class"
+        ).filter(
+            academic_year=student.academic_year,
+            school_class=student.school_class,
+            is_active=True
+        ).first()
 
-        serializer = FeeInvoiceSerializer(
-            invoices,
-            many=True
-        )
+        if not fee_structure:
+            return Response(
+                {
+                    "success": False,
+                    "message": (
+                        "No active fee structure found "
+                        "for your class and academic year."
+                    )
+                },
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        serializer = FeeStructureSerializer(fee_structure)
 
         return Response(
             {
                 "success": True,
-                "count": invoices.count(),
                 "data": serializer.data
             },
             status=status.HTTP_200_OK
         )
 
+class MyFeeInvoiceView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        # 1. Logged-in student
+        try:
+            student = Student.objects.select_related(
+                "academic_year",
+                "school_class",
+                "section",
+            ).get(
+                user=request.user,
+                is_active=True,
+            )
+        except Student.DoesNotExist:
+            return Response(
+                {
+                    "success": False,
+                    "message": "Student profile not found.",
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # 2. Validate academic details
+        if not student.academic_year or not student.school_class:
+            return Response(
+                {
+                    "success": False,
+                    "message": (
+                        "Your academic year or class is not assigned. "
+                        "Please contact the school administrator."
+                    ),
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # 3. Find active fee structure
+        fee_structure = FeeStructure.objects.filter(
+            academic_year=student.academic_year,
+            school_class=student.school_class,
+            is_active=True,
+        ).first()
+
+        if not fee_structure:
+            return Response(
+                {
+                    "success": False,
+                    "message": (
+                        "No active fee structure found "
+                        "for your class and academic year."
+                    ),
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # 4. Current monthly invoice details
+        today = timezone.localdate()
+        last_day = monthrange(today.year, today.month)[1]
+        due_date = date(
+            today.year,
+            today.month,
+            min(10, last_day),
+        )
+
+        # 5. Create this month's invoice if it doesn't exist
+        invoice, created = FeeInvoice.objects.get_or_create(
+            student=student,
+            month=today.month,
+            year=today.year,
+            defaults={
+                "academic_year": student.academic_year,
+                "fee_structure": fee_structure,
+                "amount": fee_structure.monthly_fee,
+                "due_date": due_date,
+                "remarks": (
+                    f"Monthly fee invoice for "
+                    f"{today.strftime('%B %Y')}"
+                ),
+            },
+        )
+
+        # 6. Return all invoices belonging to this student
+        invoices = FeeInvoice.objects.filter(
+            student=student,
+        ).order_by("-year", "-month", "-id")
+
+        serializer = FeeInvoiceSerializer(
+            invoices,
+            many=True,
+        )
+
+        return Response(
+            {
+                "success": True,
+                "message": (
+                    "Monthly invoice generated successfully."
+                    if created
+                    else "Student invoices fetched successfully."
+                ),
+                "invoice_created": created,
+                "count": invoices.count(),
+                "data": serializer.data,
+            },
+            status=status.HTTP_200_OK,
+        )
 
 class MyFeePaymentsView(APIView):
     permission_classes = [IsAuthenticated]

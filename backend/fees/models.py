@@ -90,6 +90,125 @@ class FeeStructure(models.Model):
     def __str__(self):
         return f"{self.school_class.name} - {self.academic_year.name}"
 
+# class FeeInvoice(models.Model):
+#     STATUS_CHOICES = [
+#         ("PENDING", "Pending"),
+#         ("PARTIAL", "Partially Paid"),
+#         ("PAID", "Paid"),
+#         ("CANCELLED", "Cancelled"),
+#     ]
+
+#     student = models.ForeignKey(
+#         "students.Student",
+#         on_delete=models.PROTECT,
+#         related_name="fee_invoices",
+#     )
+
+#     academic_year = models.ForeignKey(
+#         "academics.AcademicYear",
+#         on_delete=models.PROTECT,
+#         related_name="fee_invoices",
+#     )
+
+#     fee_structure = models.ForeignKey(
+#         FeeStructure,
+#         on_delete=models.PROTECT,
+#         related_name="invoices",
+#     )
+
+#     invoice_number = models.CharField(
+#         max_length=30,
+#         unique=True,
+#         blank=True,
+#     )
+
+#     month = models.PositiveIntegerField(
+#         null=True,
+#         blank=True,
+#     )
+
+#     year = models.PositiveIntegerField()
+
+#     amount = models.DecimalField(
+#         max_digits=12,
+#         decimal_places=2,
+#     )
+
+#     paid_amount = models.DecimalField(
+#         max_digits=12,
+#         decimal_places=2,
+#         default=0,
+#     )
+
+#     due_amount = models.DecimalField(
+#         max_digits=12,
+#         decimal_places=2,
+#         default=0,
+#     )
+
+#     status = models.CharField(
+#         max_length=20,
+#         choices=STATUS_CHOICES,
+#         default="PENDING",
+#     )
+
+#     due_date = models.DateField(
+#         null=True,
+#         blank=True,
+#     )
+
+#     remarks = models.TextField(
+#         blank=True,
+#         null=True,
+#     )
+
+#     created_at = models.DateTimeField(
+#         auto_now_add=True,
+#     )
+
+#     updated_at = models.DateTimeField(
+#         auto_now=True,
+#     )
+
+#     class Meta:
+#         ordering = ["-year", "-month", "-id"]
+
+#         constraints = [
+#         models.UniqueConstraint(
+#             fields=["student", "month", "year"],
+#             name="unique_student_monthly_fee_invoice",
+#         )
+#     ]
+
+#     def save(self, *args, **kwargs):
+#         if not self.invoice_number:
+#             last_invoice = FeeInvoice.objects.order_by("-id").first()
+
+#             next_id = (
+#                 last_invoice.id + 1
+#                 if last_invoice
+#                 else 1
+#             )
+
+#             self.invoice_number = f"INV-{next_id:05d}"
+
+#         self.due_amount = self.amount - self.paid_amount
+
+#         if self.paid_amount <= 0:
+#             self.status = "PENDING"
+#         elif self.paid_amount < self.amount:
+#             self.status = "PARTIAL"
+#         else:
+#             self.paid_amount = self.amount
+#             self.due_amount = 0
+#             self.status = "PAID"
+
+#         super().save(*args, **kwargs)
+
+#     def __str__(self):
+#         return f"{self.invoice_number} - {self.student.student_id}"
+
+
 class FeeInvoice(models.Model):
     STATUS_CHOICES = [
         ("PENDING", "Pending"),
@@ -137,13 +256,13 @@ class FeeInvoice(models.Model):
     paid_amount = models.DecimalField(
         max_digits=12,
         decimal_places=2,
-        default=0,
+        default=Decimal("0.00"),
     )
 
     due_amount = models.DecimalField(
         max_digits=12,
         decimal_places=2,
-        default=0,
+        default=Decimal("0.00"),
     )
 
     status = models.CharField(
@@ -173,33 +292,60 @@ class FeeInvoice(models.Model):
     class Meta:
         ordering = ["-year", "-month", "-id"]
 
-    def save(self, *args, **kwargs):
-        if not self.invoice_number:
-            last_invoice = FeeInvoice.objects.order_by("-id").first()
+        constraints = [
+            models.UniqueConstraint(
+                fields=["student", "month", "year"],
+                name="unique_student_monthly_fee_invoice",
+            )
+        ]
 
-            next_id = (
-                last_invoice.id + 1
-                if last_invoice
-                else 1
+    def save(self, *args, **kwargs):
+        # Generate invoice number
+        if not self.invoice_number:
+            last_invoice = (
+                FeeInvoice.objects.order_by("-id").first()
             )
 
+            next_id = last_invoice.id + 1 if last_invoice else 1
             self.invoice_number = f"INV-{next_id:05d}"
 
-        self.due_amount = self.amount - self.paid_amount
+        # Convert values safely to Decimal
+        amount = self.amount or Decimal("0.00")
+        paid = self.paid_amount or Decimal("0.00")
 
-        if self.paid_amount <= 0:
-            self.status = "PENDING"
-        elif self.paid_amount < self.amount:
+        # Validate fee amounts
+        if amount < Decimal("0.00"):
+            raise ValueError("Total fees cannot be negative.")
+
+        if paid < Decimal("0.00"):
+            raise ValueError("Paid fees cannot be negative.")
+
+        # Do not allow paid amount to exceed invoice amount
+        self.paid_amount = min(paid, amount)
+
+        # Calculate pending fees
+        self.due_amount = max(
+            amount - self.paid_amount,
+            Decimal("0.00"),
+        )
+
+        # Update invoice status
+        if self.status == "CANCELLED":
+            pass
+        elif self.due_amount == Decimal("0.00"):
+            self.status = "PAID"
+        elif self.paid_amount > Decimal("0.00"):
             self.status = "PARTIAL"
         else:
-            self.paid_amount = self.amount
-            self.due_amount = 0
-            self.status = "PAID"
+            self.status = "PENDING"
 
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.invoice_number} - {self.student.student_id}"
+        return (
+            f"{self.invoice_number} - "
+            f"{self.student.student_id}"
+        )
 
 
 class FeePayment(models.Model):

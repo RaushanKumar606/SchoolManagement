@@ -70,6 +70,11 @@ export const getMyExamResultDetail = async (examName) => {
   );
 };
 
+export const getMyDailyAttendance =async (date) => {
+  return await apiRequest(
+    `/students/my-attendance/?date=${encodeURIComponent(date)}`
+  );
+};
 
 
 
@@ -120,9 +125,19 @@ export const getTimetableByDay = async (day) => {
 
 
 
-export const createFeeOnlineOrder = async (invoiceId) => {
+export const createFeeOnlineOrder = async (invoiceId, amount) => {
   if (!invoiceId) {
     throw new Error("Invoice ID is required.");
+  }
+
+  if (
+    amount === undefined ||
+    amount === null ||
+    String(amount).trim() === "" ||
+    !Number.isFinite(Number(amount)) ||
+    Number(amount) <= 0
+  ) {
+    throw new Error("Enter a valid payment amount.");
   }
 
   return await apiRequest(
@@ -131,10 +146,12 @@ export const createFeeOnlineOrder = async (invoiceId) => {
       method: "POST",
       body: JSON.stringify({
         invoice: invoiceId,
+        amount: Number(amount),
       }),
     }
   );
 };
+
 
 
 export const verifyFeeOnlinePayment = async (paymentData) => {
@@ -160,10 +177,18 @@ export const getMyFeePayments = async () => {
   return await apiRequest("/fees/my-payments/");
 };
 
+// Get fee structure for the logged-in student
+export const getMyFeeStructure = async () => {
+  return await apiRequest("/fees/my-structure/", {
+    method: "GET",
+  });
+};
+
 
 const studentService = {
   getMyStudentProfile,
   getStudentDashboard,
+  getMyDailyAttendance,
 
   getMyStudentSubjects,
   getMyStudentAssignments,
@@ -181,7 +206,9 @@ const studentService = {
   createFeeOnlineOrder,
   verifyFeeOnlinePayment,
   getMyFeeInvoice,
-  getMyFeePayments
+  getMyFeePayments,
+
+  getMyFeeStructure,
 };
 
 export default studentService;

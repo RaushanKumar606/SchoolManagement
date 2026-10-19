@@ -7,6 +7,8 @@ import Unauthorized from "../pages/public/Unauthorized";
 import Home from "../pages/Home";
 import Login from "../pages/public/Login";
 import About from "../pages/About";
+import AccountantRegistration from "../pages/admin/AccountantRegistration";
+
 
 const AdmissionForm = lazy(() =>
   import("../pages/admission/admissionForm")
@@ -15,6 +17,11 @@ const AdmissionForm = lazy(() =>
 const Admission_Enquiry = lazy(() =>
   import("../pages/admin/Admission_Enquiry")
 );
+
+const AcademicManagement = lazy(() =>
+  import("../pages/admin/AcademicManagement")
+);
+const TeacherAssignment = lazy(() => import("../pages/admin/AdminTeacherAssin"))
 
 const Acountant = lazy(() =>
   import("../pages/admin/AdminAccontentDashboard")
@@ -63,7 +70,9 @@ const TeacherRegister = lazy(() =>
   import("../pages/teacher/TeacherRegistation")
 );
 
-const TeacherClasses = lazy(() =>
+
+
+const TeacherMyCourses = lazy(() =>
   import("../pages/teacher/TeacherClasses")
 );
 
@@ -92,11 +101,9 @@ const StudentDashboard = lazy(() =>
 const StudentProfile = lazy(() =>
   import("../pages/student/StudentProfile")
 );
-
 const StudentAttendance = lazy(() =>
-  import("../pages/student/StudentProfile")
+  import("../pages/student/StudentAttendance")
 );
-
 
 const StudentTimetable = lazy(() =>
   import("../pages/student/StudentTimetable")
@@ -114,6 +121,23 @@ const StudentFees = lazy(() =>
   import("../pages/student/StudentFees")
 );
 
+const StudentMySubjects = lazy(() =>
+  import("../pages/student/StudentSubject")
+);
+
+// Accountent
+
+
+const AccountantLayout = lazy(() => import("../components/layout/AccountantLayout"));
+
+const AccountantTotalCollection = lazy(
+  () => import("../pages/accountant/AccountantCollectTotalFeesByStudent")
+);
+const AccountantStudentFeePayment = lazy(
+  () => import("../pages/accountant/AccountantStudentFeesPayment")
+);
+
+
 const AccountantDashboard = lazy(
   () => import("../pages/accountant/AccountantDashboard")
 );
@@ -126,14 +150,23 @@ const SalaryStructure = lazy(
   () => import("../pages/accountant/SalaryStructures")
 );
 
-// const SalarySlip = lazy(
-//   () => import("../pages/accountant.SalarySlips")
-// );
+const SalarySlip = lazy(
+  () => import("../pages/accountant/SalarySlips")
+);
 
 const FeesInvoice = lazy(
   () => import("../pages/accountant/FeesInvoices")
 );
 
+
+const AdminFeesStructure = lazy(
+  () => import("../pages/admin/AdminFeesStructure")
+
+);
+
+const AdminFeesCollection = lazy(
+  () => import("../pages/admin/AdminFeesCollection")
+);
 
 
 import ChangePassword from "../pages/public/ChangePass";
@@ -174,219 +207,225 @@ function AppRoutes() {
   return (
     <Suspense fallback={<PageLoader />}>
 
-    <Routes>
+      <Routes>
 
-      {/* ================= PUBLIC ROUTES ================= */}
+        {/* ================= PUBLIC ROUTES ================= */}
 
-      <Route path="/" element={<Home />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/unauthorized"element={<Unauthorized />}/>
-      <Route path="/register" element={<TeacherRegister />} />
-      <Route path="/about" element={<About />} />
-      <Route path="/change-password" element={<ChangePassword />} />
-      <Route path="/admission/apply"element={<AdmissionForm />}
-      />
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/unauthorized" element={<Unauthorized />} />
+        <Route path="/register" element={<TeacherRegister />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/change-password" element={<ChangePassword />} />
+        <Route path="/admission/apply" element={<AdmissionForm />}
 
-      {/* ================= PROTECTED ROUTES ================= */}
 
-      <Route element={<ProtectedRoute />}>
+        />
 
-        {/* ---------- ADMIN ---------- */}
+        {/* ================= PROTECTED ROUTES ================= */}
 
-        {/* <Route
-          element={
-            <RoleRoute
-              allowedRoles={[
-                ROLES.SCHOOL_ADMIN,
-              ]}
-            />
-          }
-        >
+        <Route element={<ProtectedRoute />}>
+
+          {/* ---------- ADMIN ---------- */}
+
           <Route
-            path="/admin"
-            element={<AdminLayout />}
+            element={
+              <RoleRoute
+                allowedRoles={[ROLES.SCHOOL_ADMIN]}
+              />
+            }
           >
             <Route
-              path="dashboard"
-              element={<AdminDashboard />}
-            />
+              path="/admin"
+              element={<AdminLayout />}
+            >
+
+
+              {/* {Admission_Enquiry} */}
+
+              {/* Dashboard */}
+              <Route
+                path="dashboard"
+                element={<AdminDashboard />}
+              />
+              {/*  AcademicManagement Dashboard */}
+              <Route
+                path="/admin/academics"
+                element={<AcademicManagement />}
+              />
+
+              <Route
+                path="/admin/teacherAssigment"
+                element={<TeacherAssignment />}
+              />
+              {/* Accountant Registration */}
+              <Route
+                path="/admin/accountants/register"
+                element={<AccountantRegistration />}
+              />
+
+              {/* Students */}
+              <Route
+                path="admissions/new"
+                element={<Admissions />}
+              />
+              {/* {Admission_Enquiry} */}
+              <Route
+                path="admission_enquiry"
+                element={<Admission_Enquiry />}
+              />
+
+              <Route
+                path="students"
+                element={<Students />}
+              />
+
+              {/* New Admission */}
+              <Route
+                path="admissions/new"
+                element={<Admissions />}
+              />
+
+              {/* Fees */}
+              <Route
+                path="fees/structure"
+                element={<AdminFeesStructure />}
+              />
+
+              <Route
+                path="fees/collection"
+                element={<AdminFeesCollection />}
+              />
+
+              <Route
+                path="fees/quick-collect"
+                element={<div>Quick Fee Collect Coming Soon</div>}
+              />
+
+
+
+              <Route
+                path="exams"
+                element={<Exams />}
+              />
+
+              {/* People */}
+              <Route
+                path="teachers"
+                element={<Teachers />}
+              />
+
+              {/* People */}
+              <Route
+                path="accountant"
+                element={<Acountant />}
+              />
+
+
+
+
+
+
+              <Route
+                path="timetable"
+                element={<Timetable />}
+              />
+
+              {/* System */}
+              <Route
+                path="notifications"
+                element={<Notifications />}
+              />
+
+
+
+            </Route>
           </Route>
-        </Route> */}
-        {/* ---------- ADMIN ---------- */}
-
-       <Route
-  element={
-    <RoleRoute
-      allowedRoles={[ROLES.SCHOOL_ADMIN]}
-    />
-  }
->
-  <Route
-    path="/admin"
-    element={<AdminLayout />}
-  >
-
-
-    {/* {Admission_Enquiry} */}
-
-    {/* Dashboard */}
-    <Route
-      path="dashboard"
-      element={<AdminDashboard />}
-    />
-
-    {/* Students */}
-    <Route
-      path="admissions/new"
-      element={<Admissions />}
-    />
- {/* {Admission_Enquiry} */}
-    <Route
-      path="admission_enquiry"
-      element={<Admission_Enquiry />}
-    />
-
-    <Route
-      path="students"
-      element={<Students />}
-    />
-
-    {/* New Admission */}
-    <Route
-      path="admissions/new"
-      element={<Admissions />}
-    />
-
-    {/* Fees */}
-    <Route
-      path="fees/structure"
-      element={<div>Fee Structure Coming Soon</div>}
-    />
-
-    <Route
-      path="fees/collection"
-      element={<div>Fee Collection Coming Soon</div>}
-    />
-
-    <Route
-      path="fees/quick-collect"
-      element={<div>Quick Fee Collect Coming Soon</div>}
-    />
-
-   
-
-    <Route
-      path="exams"
-      element={<Exams />}
-    />
-
-    {/* People */}
-    <Route
-      path="teachers"
-      element={<Teachers />}
-    />
-
-    {/* People */}
-    <Route
-      path="accountant"
-      element={<Acountant />}
-    />
-
-
-  
-
-   
-
-    <Route
-      path="timetable"
-      element={<Timetable />}
-    />
-
-    {/* System */}
-    <Route
-      path="notifications"
-      element={<Notifications />}
-    />
-
-    
-
-  </Route>
-       </Route>
 
 
 
-        {/* Teacher Protected & Role-based Routes */}
-        <Route
-          element={
-            <RoleRoute
-              allowedRoles={[ROLES.TEACHER]}
-            />
-          }
-        >
-          <Route path="/teacher" element={<TeacherLayout />}>
-            <Route
-              path="dashboard"
-              element={<TeacherDashboard />}
-            />
-            <Route
-              path="profile"
-              element={<TeacherProfile />}
-            />
+          {/* Teacher Protected & Role-based Routes */}
+          <Route
+            element={
+              <RoleRoute
+                allowedRoles={[ROLES.TEACHER]}
+              />
+            }
+          >
+            <Route path="/teacher" element={<TeacherLayout />}>
+              <Route
+                path="dashboard"
+                element={<TeacherDashboard />}
+              />
+              <Route
+                path="profile"
+                element={<TeacherProfile />}
+              />
+              <Route
+                path="My-Courses"
+                element={<TeacherMyCourses />}
+              />
 
-            <Route
-              path="classes"
-              element={<TeacherClasses />}
-            />
-            <Route
-              path="attendance"
-              element={<Attendance />}
-            />
-            <Route
-              path="marks"
-              element={<ExamMarks />}
-            />
-            <Route
-              path="assignments"
-              element={<Assignments />}
-            />
-
-            <Route
-              path="timetable"
-              element={<TimeTable />}
-            />
             
-           
+              <Route
+                path="attendance"
+                element={<Attendance />}
+              />
+              <Route
+                path="marks"
+                element={<ExamMarks />}
+              />
+              <Route
+                path="assignments"
+                element={<Assignments />}
+              />
+
+              <Route
+                path="timetable"
+                element={<TimeTable />}
+              />
+
+
+
+            </Route>
+          </Route>
+
+
+
+          {/* ACCONTENT  */}
+
+
+          <Route allowedRoles={[ROLES.ACCOUNTANT]}
+            path="/accountant" element={<AccountantLayout />}>
+            <Route path="dashboard" element={<AccountantDashboard />} />
+            <Route
+              path="employees"
+              element={<Employees />}
+            />
+            <Route
+              path="salary-structure"
+              element={<SalaryStructure />}
+            />
+
+            <Route
+              path="salary-slips"
+              element={<SalarySlip />}
+            />
+
+            <Route
+              path="fees-invoice"
+              element={<FeesInvoice />}
+            />
+            <Route 
+            path="fees"
+            element={<AccountantTotalCollection />}
+            />
+            <Route
+              path="student-fees-payment"
+              element={<AccountantStudentFeePayment />}
+            />
 
           </Route>
-        </Route>
-
-        {/* ACCONTENT  */}
-
-         <Route allowedRoles={[ROLES.ACCOUNTANT]}>
-    <Route
-      path="/accountant/dashboard"
-      element={<AccountantDashboard />}
-    />
-
-    <Route
-      path="/accountant/employees"
-      element={<Employees />}
-    />
-
-    <Route
-      path="/accountant/salary-structure"
-      element={<SalaryStructure />}
-    />
-
-    {/* <Route
-      path="/accountant/salary-slips"
-      element={<SalarySlip />}
-    /> */}
-
-    <Route
-      path="/accountant/fees-invoice"
-      element={<FeesInvoice />}
-    />
 
         </Route>
 
@@ -412,39 +451,44 @@ function AppRoutes() {
               element={<StudentProfile />}
             />
             <Route
-  path="/student/attendance"
-  element={<StudentAttendance />}
-/>
+              path="My-Attendance"
+              element={<StudentAttendance />}
+            />
 
- <Route
-                path="timetable"
-                element={<StudentTimetable />}
-              />
+            <Route
+              path="timetable"
+              element={<StudentTimetable />}
+            />
 
-              {/* Homework */}
-              <Route
-                path="homework"
-                element={<StudentHomework />}
-              />
+            {/* Homework */}
+            <Route
+              path="homework"
+              element={<StudentHomework />}
+            />
 
-              {/* Results */}
-              <Route
-                path="results"
-                element={<StudentResults />}
-              />
+            {/* Results */}
+            <Route
+              path="results"
+              element={<StudentResults />}
+            />
 
-              {/* Fees */}
-              <Route
-                path="fees"
-                element={<StudentFees />}
-              />
+            {/* Fees */}
+            <Route
+              path="fees"
+              element={<StudentFees />}
+            />
+
+            <Route
+              path="MySubjects"
+              element={<StudentMySubjects />}
+            />
           </Route>
         </Route>
 
-      </Route>
 
-    </Routes>
-    </Suspense> 
+
+      </Routes>
+    </Suspense>
   );
 }
 

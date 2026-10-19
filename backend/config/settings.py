@@ -10,8 +10,10 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 import os
-from pathlib import Path
 
+from decouple import config
+
+from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -167,8 +169,18 @@ REST_FRAMEWORK = {
 }
 
 
-RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID")
-RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET")
+
+# Razorpay Configuration
+RAZORPAY_KEY_ID = config(
+    "RAZORPAY_KEY_ID",
+    default="",
+).strip()
+
+RAZORPAY_KEY_SECRET = config(
+    "RAZORPAY_KEY_SECRET",
+    default="",
+).strip()
+
 
 
 # Email Configuration (Gmail SMTP)
@@ -179,3 +191,7 @@ RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET")
 # EMAIL_USE_TLS = True
 # EMAIL_HOST_USER = 'school@gmail.com'        
 # DEFAULT_FROM_EMAIL = 'School Admin <apni.email@gmail.com>'
+
+
+print("RAZORPAY KEY ID LOADED:", bool(RAZORPAY_KEY_ID))
+print("RAZORPAY SECRET LOADED:", bool(RAZORPAY_KEY_SECRET))

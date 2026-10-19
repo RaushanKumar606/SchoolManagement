@@ -1,536 +1,266 @@
-import { useEffect, useState } from "react";
-import { getMyAttendance } from "../../services/studentService";
 
+import { useCallback, useEffect, useState } from "react";
+import studentService  from "../../services/studentService";
+import "./Attendance.css";
+
+function getTodayDate() {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function formatDate(dateValue) {
+  if (!dateValue) return "—";
+
+  return new Date(`${dateValue}T00:00:00`).toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
 
 function StudentAttendance() {
-  const [attendance, setAttendance] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [selectedDate, setSelectedDate] = useState(getTodayDate());
+  const [attendance, setAttendance] = useState([]);
+  const [studentId, setStudentId] = useState("");
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    loadAttendance();
-  }, []);
+  const loadAttendance = useCallback(async () => {
+    setLoading(true);
+    setError("");
 
-  const loadAttendance = async () => {
     try {
-      setLoading(true);
-      setError("");
+      const response =
+        await studentService.getMyDailyAttendance(selectedDate);
 
-      const data = await getMyAttendance();
+      // API response direct object ya wrapped response ho sakta hai.
+      const data = response?.data ?? response;
 
       if (data?.success === false) {
         throw new Error(
-          data?.error || "Failed to load attendance"
+          data.error || "Attendance load nahi ho payi."
         );
       }
 
-      setAttendance(data);
-    } catch (err) {
-      console.error("Attendance error:", err);
+      setAttendance(
+        Array.isArray(data?.attendance) ? data.attendance : []
+      );
 
+      setStudentId(data?.studentId || "");
+    } catch (err) {
+      console.error("Student attendance error:", err);
+      setAttendance([]);
       setError(
-        err.message || "Unable to load attendance."
+        err?.message || "Attendance load nahi ho payi. Dobara try karein."
       );
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedDate]);
 
-  if (loading) {
-    return (
-      <div className="attendance-loading">
-        <div className="attendance-spinner"></div>
-        <p>Loading attendance...</p>
-      </div>
-    );
-  }
+  useEffect(() => {
+    loadAttendance();
+  }, [loadAttendance]);
 
-  if (error) {
-    return (
-      <div className="attendance-error">
-        <div className="attendance-error-icon">⚠️</div>
+  const presentCount = attendance.filter(
+    (item) => item.status?.toLowerCase() === "present"
+  ).length;
 
-        <h2>Unable to Load Attendance</h2>
+  const absentCount = attendance.filter(
+    (item) => item.status?.toLowerCase() === "absent"
+  ).length;
 
-        <p>{error}</p>
+  const totalCount = attendance.length;
 
-        <button
-          onClick={loadAttendance}
-          className="attendance-retry-btn"
-        >
-          Try Again
-        </button>
-      </div>
-    );
-  }
-
-  if (!attendance) {
-    return (
-      <div className="attendance-empty">
-        <div>📅</div>
-        <h2>No Attendance Data</h2>
-        <p>
-          Attendance information is not available.
-        </p>
-      </div>
-    );
-  }
-
-  const percentage = Number(
-    attendance.percentage || 0
-  );
+  const attendancePercentage =
+    totalCount > 0
+      ? Math.round((presentCount / totalCount) * 100)
+      : 0;
 
   return (
     <div className="student-attendance-page">
-
-      {/* ==============================
-          HEADER
-      ============================== */}
       <div className="attendance-page-header">
         <div>
-          <p className="attendance-breadcrumb">
-            Student Portal / Attendance
-          </p>
-
-          <h1>Attendance</h1>
+          <h1>My Attendance</h1>
 
           <p>
-            View your attendance summary and
-            subject-wise attendance.
+            Apni daily subject-wise attendance aur attendance status check karein.
           </p>
         </div>
+
+        <button
+          type="button"
+          className="attendance-refresh-btn"
+          onClick={loadAttendance}
+          disabled={loading}
+        >
+          <span aria-hidden="true">↻</span>
+          {loading ? "Loading..." : "Refresh"}
+        </button>
       </div>
 
-      {/* ==============================
-          SUMMARY CARDS
-      ============================== */}
-      <div className="attendance-summary">
+      <div className="attendance-filter-card">
+        <div className="attendance-date-control">
+          <label htmlFor="attendance-date">
+            Select Attendance Date
+          </label>
 
-        {/* Overall */}
-        <div className="attendance-stat-card overall">
-          <div className="stat-icon">📊</div>
-
-          <div className="stat-content">
-            <span>Overall Attendance</span>
-
-            <strong>
-              {percentage.toFixed(1)}%
-            </strong>
-          </div>
-        </div>
-
-        {/* Total */}
-        <div className="attendance-stat-card total">
-          <div className="stat-icon">📚</div>
-
-          <div className="stat-content">
-            <span>Total Classes</span>
-
-            <strong>
-              {attendance.total || 0}
-            </strong>
-          </div>
-        </div>
-
-        {/* Present */}
-        <div className="attendance-stat-card present">
-          <div className="stat-icon">✓</div>
-
-          <div className="stat-content">
-            <span>Present</span>
-
-            <strong>
-              {attendance.present || 0}
-            </strong>
-          </div>
-        </div>
-
-        {/* Absent */}
-        <div className="attendance-stat-card absent">
-          <div className="stat-icon">×</div>
-
-          <div className="stat-content">
-            <span>Absent</span>
-
-            <strong>
-              {attendance.absent || 0}
-            </strong>
-          </div>
-        </div>
-
-      </div>
-
-      {/* ==============================
-          ATTENDANCE PROGRESS
-      ============================== */}
-      <div className="attendance-main-grid">
-
-        <div className="attendance-panel">
-
-          <div className="attendance-panel-header">
-            <div>
-              <h2>Overall Attendance</h2>
-
-              <p>
-                Your attendance performance
-              </p>
-            </div>
-
-            <span className="attendance-percentage">
-              {percentage.toFixed(1)}%
-            </span>
-          </div>
-
-          <div className="attendance-progress-wrapper">
-
-            <div className="attendance-progress">
-              <div
-                className="attendance-progress-bar"
-                style={{
-                  width: `${Math.min(
-                    Math.max(percentage, 0),
-                    100
-                  )}%`,
-                }}
-              ></div>
-            </div>
-
-            <div className="attendance-progress-info">
-              <span>
-                Present: {attendance.present || 0}
-              </span>
-
-              <span>
-                Absent: {attendance.absent || 0}
-              </span>
-            </div>
-
-          </div>
-
-        </div>
-
-        {/* Attendance Status */}
-        <div className="attendance-panel status-panel">
-
-          <div className="attendance-panel-header">
-            <div>
-              <h2>Attendance Status</h2>
-
-              <p>
-                Current attendance status
-              </p>
-            </div>
-          </div>
-
-          <AttendanceStatus
-            percentage={percentage}
+          <input
+            id="attendance-date"
+            type="date"
+            value={selectedDate}
+            max={getTodayDate()}
+            onChange={(event) => setSelectedDate(event.target.value)}
           />
-
         </div>
 
+        {studentId && (
+          <div className="attendance-student-id">
+            <span>Student ID</span>
+            <strong>{studentId}</strong>
+          </div>
+        )}
       </div>
 
-      {/* ==============================
-          SUBJECT-WISE ATTENDANCE
-      ============================== */}
-      <div className="attendance-panel subject-panel">
+      {error && (
+        <div className="attendance-error" role="alert">
+          <strong>Unable to load attendance</strong>
+          <p>{error}</p>
 
-        <div className="attendance-panel-header">
+          <button type="button" onClick={loadAttendance}>
+            Try Again
+          </button>
+        </div>
+      )}
+
+      <div className="attendance-summary-grid">
+        <div className="attendance-summary-card total">
+          <div className="attendance-summary-icon">📋</div>
           <div>
-            <h2>Subject-wise Attendance</h2>
+            <span>Total Records</span>
+            <h2>{loading ? "—" : totalCount}</h2>
+            <small>Selected date</small>
+          </div>
+        </div>
 
+        <div className="attendance-summary-card present">
+          <div className="attendance-summary-icon">✓</div>
+          <div>
+            <span>Present</span>
+            <h2>{loading ? "—" : presentCount}</h2>
+            <small>Present records</small>
+          </div>
+        </div>
+
+        <div className="attendance-summary-card absent">
+          <div className="attendance-summary-icon">✕</div>
+          <div>
+            <span>Absent</span>
+            <h2>{loading ? "—" : absentCount}</h2>
+            <small>Absent records</small>
+          </div>
+        </div>
+
+        <div className="attendance-summary-card percentage">
+          <div className="attendance-summary-icon">%</div>
+          <div>
+            <span>Daily Attendance</span>
+            <h2>{loading ? "—" : `${attendancePercentage}%`}</h2>
+            <small>Present / total records</small>
+          </div>
+        </div>
+      </div>
+
+      <div className="attendance-table-card">
+        <div className="attendance-table-header">
+          <div>
+            <h2>Attendance Details</h2>
+            <p>{formatDate(selectedDate)}</p>
+          </div>
+
+          <span className="attendance-record-count">
+            {totalCount} {totalCount === 1 ? "record" : "records"}
+          </span>
+        </div>
+
+        {loading ? (
+          <div className="attendance-state">
+            <div className="attendance-spinner" />
+            <p>Attendance load ho rahi hai...</p>
+          </div>
+        ) : error ? (
+          <div className="attendance-state">
+            <p>Data display nahi ho raha hai.</p>
+          </div>
+        ) : attendance.length === 0 ? (
+          <div className="attendance-empty">
+            <div className="attendance-empty-icon">📅</div>
+            <h3>No Attendance Records</h3>
             <p>
-              Attendance performance for each subject
+              {formatDate(selectedDate)} ke liye attendance record nahi mila.
+              Ho sakta hai teacher ne abhi attendance mark na ki ho.
             </p>
           </div>
-        </div>
-
-        {attendance.subjects?.length > 0 ? (
-          <div className="subject-table-wrapper">
-
-            <table className="subject-attendance-table">
-
+        ) : (
+          <div className="attendance-table-wrapper">
+            <table className="attendance-table">
               <thead>
                 <tr>
+                  <th>#</th>
                   <th>Subject</th>
-                  <th>Total</th>
-                  <th>Present</th>
-                  <th>Absent</th>
-                  <th>Percentage</th>
+                  <th>Date</th>
+                  <th>Teacher</th>
                   <th>Status</th>
                 </tr>
               </thead>
 
               <tbody>
-                {attendance.subjects.map(
-                  (subject, index) => {
+                {attendance.map((record, index) => {
+                  const isPresent =
+                    record.status?.toLowerCase() === "present";
 
-                    const subjectPercentage =
-                      Number(
-                        subject.percentage || 0
-                      );
+                  return (
+                    <tr key={record.id ?? `${record.subjectId}-${index}`}>
+                      <td>{index + 1}</td>
 
-                    return (
-                      <tr
-                        key={
-                          subject.id ||
-                          subject.subject_id ||
-                          index
-                        }
-                      >
-                        <td>
-                          <div className="subject-name">
-                            <div className="subject-icon">
-                              📖
-                            </div>
+                      <td>
+                        <strong>
+                          {record.subject || "Subject not available"}
+                        </strong>
+                      </td>
 
-                            <strong>
-                              {subject.subject ||
-                                subject.subject_name ||
-                                "Unknown Subject"}
-                            </strong>
-                          </div>
-                        </td>
+                      <td>{formatDate(record.date || selectedDate)}</td>
 
-                        <td>
-                          {subject.total || 0}
-                        </td>
+                      <td>{record.teacher || "—"}</td>
 
-                        <td className="present-text">
-                          {subject.present || 0}
-                        </td>
-
-                        <td className="absent-text">
-                          {subject.absent || 0}
-                        </td>
-
-                        <td>
-                          <div className="subject-percentage-wrapper">
-
-                            <div className="mini-progress">
-                              <div
-                                className="mini-progress-bar"
-                                style={{
-                                  width: `${Math.min(
-                                    Math.max(
-                                      subjectPercentage,
-                                      0
-                                    ),
-                                    100
-                                  )}%`,
-                                }}
-                              ></div>
-                            </div>
-
-                            <span>
-                              {subjectPercentage.toFixed(
-                                1
-                              )}
-                              %
-                            </span>
-
-                          </div>
-                        </td>
-
-                        <td>
-                          <AttendanceBadge
-                            percentage={
-                              subjectPercentage
-                            }
-                          />
-                        </td>
-
-                      </tr>
-                    );
-                  }
-                )}
+                      <td>
+                        <span
+                          className={`attendance-status ${
+                            isPresent ? "status-present" : "status-absent"
+                          }`}
+                        >
+                          <span className="attendance-status-dot" />
+                          {record.status || "Unknown"}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
-
             </table>
-
-          </div>
-        ) : (
-          <div className="no-subject-attendance">
-            <div>📚</div>
-
-            <h3>
-              No Subject Attendance
-            </h3>
-
-            <p>
-              Subject-wise attendance data is
-              not available yet.
-            </p>
           </div>
         )}
-
       </div>
 
-      {/* ==============================
-          RECENT ATTENDANCE
-      ============================== */}
-      {attendance.recent?.length > 0 && (
-        <div className="attendance-panel recent-panel">
-
-          <div className="attendance-panel-header">
-            <div>
-              <h2>Recent Attendance</h2>
-
-              <p>
-                Your recent attendance records
-              </p>
-            </div>
-          </div>
-
-          <div className="recent-attendance-list">
-
-            {attendance.recent.map(
-              (record, index) => {
-
-                const isPresent =
-                  record.status === "PRESENT" ||
-                  record.present === true ||
-                  record.is_present === true;
-
-                return (
-                  <div
-                    className="recent-attendance-item"
-                    key={
-                      record.id || index
-                    }
-                  >
-                    <div className="recent-date">
-                      <span>
-                        {formatDate(
-                          record.date ||
-                            record.attendance_date
-                        )}
-                      </span>
-                    </div>
-
-                    <div className="recent-subject">
-                      <strong>
-                        {record.subject ||
-                          record.subject_name ||
-                          "Attendance"}
-                      </strong>
-
-                      {record.day && (
-                        <small>
-                          {record.day}
-                        </small>
-                      )}
-                    </div>
-
-                    <div
-                      className={`recent-status ${
-                        isPresent
-                          ? "status-present"
-                          : "status-absent"
-                      }`}
-                    >
-                      {isPresent
-                        ? "Present"
-                        : "Absent"}
-                    </div>
-                  </div>
-                );
-              }
-            )}
-
-          </div>
-        </div>
-      )}
-
+      <p className="attendance-page-note">
+        Note: Attendance records teacher ke dwara mark kiye gaye data par based hain.
+      </p>
     </div>
   );
-}
-
-/* =====================================
-   ATTENDANCE STATUS
-===================================== */
-
-function AttendanceStatus({ percentage }) {
-  let status = "";
-  let description = "";
-
-  if (percentage >= 75) {
-    status = "Good";
-    description =
-      "Your attendance is above the required level.";
-  } else if (percentage >= 60) {
-    status = "Needs Attention";
-    description =
-      "Try to attend more classes regularly.";
-  } else {
-    status = "Low Attendance";
-    description =
-      "Your attendance is below the required level.";
-  }
-
-  return (
-    <div className="attendance-status-content">
-
-      <div className="status-circle">
-        {percentage.toFixed(0)}%
-      </div>
-
-      <div>
-        <h3>{status}</h3>
-
-        <p>{description}</p>
-      </div>
-
-    </div>
-  );
-}
-
-/* =====================================
-   ATTENDANCE BADGE
-===================================== */
-
-function AttendanceBadge({ percentage }) {
-  if (percentage >= 75) {
-    return (
-      <span className="attendance-badge good">
-        Good
-      </span>
-    );
-  }
-
-  if (percentage >= 60) {
-    return (
-      <span className="attendance-badge warning">
-        Attention
-      </span>
-    );
-  }
-
-  return (
-    <span className="attendance-badge danger">
-      Low
-    </span>
-  );
-}
-
-/* =====================================
-   DATE FORMAT
-===================================== */
-
-function formatDate(date) {
-  if (!date) return "N/A";
-
-  const parsedDate = new Date(date);
-
-  if (Number.isNaN(parsedDate.getTime())) {
-    return date;
-  }
-
-  return parsedDate.toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
 }
 
 export default StudentAttendance;

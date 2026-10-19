@@ -80,7 +80,7 @@ class Teacher(models.Model):
 
     primary_subject = models.CharField(max_length=100)
 
-    must_change_password = models.BooleanField(default=False)
+    must_change_password = models.BooleanField(default=True)
 
     def __str__(self):
         return f"{self.name} - {self.primary_subject}"
@@ -131,6 +131,8 @@ class TeacherSubjectAllocation(models.Model):
             f"({self.section.name}) : "
             f"{self.subject.name}"
         )
+
+
 
 
 class Student(models.Model):
