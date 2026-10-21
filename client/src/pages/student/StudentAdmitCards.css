@@ -1,0 +1,298 @@
+
+.student-admit-page {
+  min-height: 100%;
+  padding: 28px;
+  background: #f5f7fb;
+  color: #172033;
+}
+
+.student-admit-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 26px;
+}
+
+.student-admit-header h1 {
+  margin: 0 0 8px;
+  font-size: 29px;
+}
+
+.student-admit-header p {
+  color: #64748b;
+  margin: 0;
+}
+
+.student-admit-header .student-admit-eyebrow {
+  color: #4f46e5;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  margin-bottom: 8px;
+}
+
+.admit-refresh-btn,
+.admit-print-btn {
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 8px;
+  background: #4f46e5;
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.admit-message,
+.admit-empty,
+.admit-error {
+  padding: 32px;
+  border-radius: 12px;
+  background: white;
+  text-align: center;
+}
+
+.admit-empty {
+  border: 1px solid #e2e8f0;
+}
+
+.admit-empty-icon {
+  font-size: 38px;
+}
+
+.admit-empty h2 {
+  margin-bottom: 8px;
+}
+
+.admit-empty p {
+  color: #64748b;
+}
+
+.admit-error {
+  color: #b91c1c;
+}
+
+.admit-list {
+  display: grid;
+  gap: 22px;
+}
+
+.admit-card {
+  max-width: 1000px;
+  padding: 25px;
+  background: white;
+  border: 1px solid #dce3ee;
+  border-radius: 14px;
+  box-shadow: 0 4px 18px rgb(15 23 42 / 5%);
+}
+
+.admit-card-top {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #4f46e5;
+}
+
+.admit-school-icon {
+  font-size: 34px;
+}
+
+.admit-school-info {
+  flex: 1;
+}
+
+.admit-school-info h2 {
+  margin: 0 0 5px;
+  font-size: 20px;
+}
+
+.admit-school-info p {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.admit-released {
+  padding: 6px 10px;
+  border-radius: 20px;
+  background: #dcfce7;
+  color: #166534;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.admit-exam-title {
+  margin: 20px 0;
+  font-size: 19px;
+  font-weight: 800;
+  color: #3730a3;
+}
+
+.admit-details-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+  padding: 20px;
+  background: #f8faff;
+  border-radius: 10px;
+}
+
+.admit-details-grid div {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow-wrap: anywhere;
+}
+
+.admit-details-grid span {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.admit-details-grid strong {
+  font-size: 14px;
+}
+
+.admit-schedule {
+  margin-top: 24px;
+}
+
+.admit-schedule h3 {
+  margin-bottom: 14px;
+}
+
+.admit-table-wrap {
+  overflow-x: auto;
+}
+
+.admit-table-wrap table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 500px;
+}
+
+.admit-table-wrap th,
+.admit-table-wrap td {
+  padding: 12px;
+  text-align: left;
+  border: 1px solid #e2e8f0;
+  font-size: 13px;
+}
+
+.admit-table-wrap th {
+  background: #f1f5f9;
+}
+
+.admit-schedule-note {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.admit-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.admit-card-footer span {
+  color: #64748b;
+  font-size: 12px;
+}
+
+@media (max-width: 700px) {
+  .student-admit-page {
+    padding: 16px;
+  }
+
+  .admit-card {
+    padding: 16px;
+  }
+
+  .admit-details-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 14px;
+  }
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  .student-admit-page,
+  .student-admit-page .admit-card.print-this-admit-card,
+  .student-admit-page .admit-card.print-this-admit-card * {
+    visibility: visible !important;
+  }
+
+  .student-admit-page {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #fff !important;
+  }
+
+  .student-admit-header,
+  .no-print,
+  .admit-empty,
+  .admit-error,
+  .admit-message,
+  .admit-card:not(.print-this-admit-card) {
+    display: none !important;
+  }
+
+  .admit-list {
+    display: block !important;
+  }
+
+  .admit-card.print-this-admit-card {
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 18px !important;
+    border: 1px solid #777 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .admit-details-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .admit-table-wrap {
+    overflow: visible !important;
+  }
+
+  .admit-table-wrap table {
+    min-width: 0 !important;
+    width: 100% !important;
+    table-layout: fixed;
+  }
+
+  .admit-table-wrap th,
+  .admit-table-wrap td {
+    padding: 6px 4px !important;
+    font-size: 10px !important;
+    overflow-wrap: anywhere;
+  }
+}

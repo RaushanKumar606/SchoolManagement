@@ -286,14 +286,18 @@ export const apiRequest = async (
   // API ERROR
   // =======================================================
   if (!response.ok) {
+  console.error("API REQUEST FAILED:", {
+    url: response.url,
+    status: response.status,
+    response: data,
+  });
 
-    throw new Error(
-      data?.detail ||
-      data?.message ||
-      "API request failed"
-    );
-  }
-
+  throw new Error(
+    data?.detail ||
+    data?.message ||
+    (typeof data === "string" ? data : `API request failed (${response.status})`)
+  );
+}
 
   // =======================================================
   // RETURN DATA
