@@ -31,11 +31,7 @@ ALLOWED_ROLES = {
     "SUPER_ADMIN",
 }
 
-from django.conf import settings
-from django.db import transaction
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.response import Response
-from rest_framework import status
+
 
 from .models import (
     FeeInvoice,
@@ -50,8 +46,6 @@ from django.conf import settings
 from django.db import transaction
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
 
 logger = logging.getLogger(__name__)
 
@@ -1551,11 +1545,12 @@ class MyFeeStructureView(APIView):
             status=status.HTTP_200_OK
         )
 
+
 class MyFeeInvoiceView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        # 1. Logged-in student
+        # 1. Get logged-in student's profile
         try:
             student = Student.objects.select_related(
                 "academic_year",
@@ -1587,7 +1582,7 @@ class MyFeeInvoiceView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # 3. Find active fee structure
+        # 3. Find active fee structure for student's class/year
         fee_structure = FeeStructure.objects.filter(
             academic_year=student.academic_year,
             school_class=student.school_class,
@@ -1599,14 +1594,14 @@ class MyFeeInvoiceView(APIView):
                 {
                     "success": False,
                     "message": (
-                        "No active fee structure found "
-                        "for your class and academic year."
+                        "No active fee structure found for your class "
+                        "and academic year."
                     ),
                 },
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        # 4. Current monthly invoice details
+        # 4. Calculate current month and due date
         today = timezone.localdate()
         last_day = monthrange(today.year, today.month)[1]
         due_date = date(
@@ -1615,42 +1610,110 @@ class MyFeeInvoiceView(APIView):
             min(10, last_day),
         )
 
-        # 5. Create this month's invoice if it doesn't exist
-        invoice, created = FeeInvoice.objects.get_or_create(
+        created_count = 0
+
+        # 5. Create monthly Tuition Fee invoice
+        _, created = FeeInvoice.objects.get_or_create(
             student=student,
             month=today.month,
             year=today.year,
+            fee_type="TUITION",
             defaults={
                 "academic_year": student.academic_year,
                 "fee_structure": fee_structure,
                 "amount": fee_structure.monthly_fee,
                 "due_date": due_date,
                 "remarks": (
-                    f"Monthly fee invoice for "
-                    f"{today.strftime('%B %Y')}"
+                    f"Tuition Fee for {today.strftime('%B %Y')}"
                 ),
             },
         )
+        created_count += int(created)
 
-        # 6. Return all invoices belonging to this student
+        # 6. Create monthly Transport Fee invoice if configured
+        if fee_structure.transport_fee > 0:
+            _, created = FeeInvoice.objects.get_or_create(
+                student=student,
+                month=today.month,
+                year=today.year,
+                fee_type="TRANSPORT",
+                defaults={
+                    "academic_year": student.academic_year,
+                    "fee_structure": fee_structure,
+                    "amount": fee_structure.transport_fee,
+                    "due_date": due_date,
+                    "remarks": (
+                        f"Transport Fee for "
+                        f"{today.strftime('%B %Y')}"
+                    ),
+                },
+            )
+            created_count += int(created)
+
+        # 7. Create one-time academic-year charges
+        one_time_fees = [
+            (
+                "ADMISSION",
+                fee_structure.admission_fee,
+                "Admission Fee",
+            ),
+            (
+                "EXAM",
+                fee_structure.exam_fee,
+                "Exam Fee",
+            ),
+            (
+                "OTHER",
+                fee_structure.other_fee,
+                "Other Charges",
+            ),
+        ]
+
+        for fee_type, amount, label in one_time_fees:
+            if amount is None or amount <= 0:
+                continue
+
+            # Avoid creating a duplicate one-time invoice
+            existing_invoice = FeeInvoice.objects.filter(
+                student=student,
+                academic_year=student.academic_year,
+                fee_type=fee_type,
+                month__isnull=True,
+            ).first()
+
+            if existing_invoice:
+                continue
+
+            FeeInvoice.objects.create(
+                student=student,
+                academic_year=student.academic_year,
+                fee_structure=fee_structure,
+                month=None,
+                year=today.year,
+                fee_type=fee_type,
+                amount=amount,
+                due_date=due_date,
+                remarks=f"{label} for academic year",
+            )
+            created_count += 1
+
+        # 8. Fetch all invoices for this student
         invoices = FeeInvoice.objects.filter(
             student=student,
         ).order_by("-year", "-month", "-id")
 
+        # 9. Serialize invoices
         serializer = FeeInvoiceSerializer(
             invoices,
             many=True,
         )
 
+        # 10. Return response
         return Response(
             {
                 "success": True,
-                "message": (
-                    "Monthly invoice generated successfully."
-                    if created
-                    else "Student invoices fetched successfully."
-                ),
-                "invoice_created": created,
+                "message": "Student fee invoices fetched successfully.",
+                "invoice_created_count": created_count,
                 "count": invoices.count(),
                 "data": serializer.data,
             },

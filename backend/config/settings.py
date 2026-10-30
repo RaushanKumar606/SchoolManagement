@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     'teacher',
     'fees',
     "payroll",
+    "exams"
 ]
 
 MIDDLEWARE = [
@@ -66,10 +67,16 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+
+      "corsheaders.middleware.CorsMiddleware",
+        "django.middleware.common.CommonMiddleware",
+        # baaki existing middleware ko bhi rakho
 ]
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
+    "http://localhost:58605",
+    "http://127.0.0.1:58605 ",
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -98,7 +105,7 @@ WSGI_APPLICATION = 'config.wsgi.application'
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": "school_management",
+        "NAME": "My_Collage_Data",
         "USER": "postgres",
         "PASSWORD": "Raushan@606",
         "HOST": "localhost",
@@ -165,6 +172,13 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAuthenticated",
     ),
 
+     "DEFAULT_THROTTLE_CLASSES": (
+        "rest_framework.throttling.ScopedRateThrottle",
+    ),
+
+    "DEFAULT_THROTTLE_RATES": {
+        "login": "5/min",
+    },
     "PAGE_SIZE": 20,
 }
 
@@ -191,7 +205,3 @@ RAZORPAY_KEY_SECRET = config(
 # EMAIL_USE_TLS = True
 # EMAIL_HOST_USER = 'school@gmail.com'        
 # DEFAULT_FROM_EMAIL = 'School Admin <apni.email@gmail.com>'
-
-
-print("RAZORPAY KEY ID LOADED:", bool(RAZORPAY_KEY_ID))
-print("RAZORPAY SECRET LOADED:", bool(RAZORPAY_KEY_SECRET))

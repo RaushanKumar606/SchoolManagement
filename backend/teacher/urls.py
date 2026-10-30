@@ -20,7 +20,7 @@ from .views import (
     teacher_assignments_api,
     teacher_assignment_submissions_api,
     review_assignment_submission_api,
-    teacher_exam_marks_api,
+   
     teacher_attendance_history_api,
     teacher_dashboard_api,
     my_teacher_timetable_api,
@@ -149,13 +149,6 @@ urlpatterns = [
         add_bulk_exam_marks_api,
         name="add-bulk-marks",
     ),
-
-    path(
-        "<str:employee_id>/exam-marks/<int:class_id>/<int:section_id>/<int:subject_id>/",
-        teacher_exam_marks_api,
-        name="teacher-exam-marks",
-    ),
-
 
     # =====================================================
     # ATTENDANCE

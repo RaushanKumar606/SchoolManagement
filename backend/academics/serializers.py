@@ -30,7 +30,6 @@ class AcademicYearSerializer(serializers.ModelSerializer):
             "is_active",
         ]
 
-
 class SchoolClassSerializer(serializers.ModelSerializer):
     academic_year_id = serializers.PrimaryKeyRelatedField(
         source="academic_year",
@@ -110,8 +109,6 @@ class ClassSubjectSerializer(serializers.ModelSerializer):
             "subject_code",
             "is_optional",
         ]
-
-
 
 class BulkTeacherSubjectAllocationSerializer(serializers.Serializer):
     teacher = serializers.PrimaryKeyRelatedField(
@@ -220,8 +217,6 @@ class BulkTeacherSubjectAllocationSerializer(serializers.Serializer):
             ).order_by("subject__name")
         )
 
-
-
 class TeacherSubjectAllocationSerializer(serializers.ModelSerializer):
     teacher_name = serializers.CharField(
         source="teacher.name",
@@ -305,3 +300,35 @@ class TeacherSubjectAllocationSerializer(serializers.ModelSerializer):
 
         return attrs
 
+from rest_framework import serializers
+from .models import Timetable
+
+
+class TimetableSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Timetable
+        fields = "__all__"
+        read_only_fields = [
+            "id",
+            "created_at",
+            "updated_at",
+        ]
+
+    def validate(self, attrs):
+        instance = self.instance
+
+        start = attrs.get(
+            "start_time",
+            getattr(instance, "start_time", None)
+        )
+        end = attrs.get(
+            "end_time",
+            getattr(instance, "end_time", None)
+        )
+
+        if start and end and start >= end:
+            raise serializers.ValidationError({
+                "end_time": "End time must be after start time."
+            })
+
+        return attrs

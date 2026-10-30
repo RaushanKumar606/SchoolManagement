@@ -118,6 +118,7 @@ class FeeInvoiceSerializer(serializers.ModelSerializer):
             "remarks",
             "created_at",
             "updated_at",
+            "fee_type",
         ]
 
         read_only_fields = [

@@ -5,7 +5,7 @@ from django.db import migrations
 
 def migrate_exam_mark_data(apps, schema_editor):
     ExamMark = apps.get_model("teacher", "ExamMark")
-    MainStudent = apps.get_model("students", "Student")
+    Student = apps.get_model("students", "Student")
     Subject = apps.get_model("academics", "Subject")
 
     for mark in ExamMark.objects.all():
@@ -24,7 +24,7 @@ def migrate_exam_mark_data(apps, schema_editor):
             if old_student:
                 full_name = old_student.name.strip()
 
-                students = MainStudent.objects.filter(
+                students = Student.objects.filter(
                     first_name__iexact=full_name
                 )
 

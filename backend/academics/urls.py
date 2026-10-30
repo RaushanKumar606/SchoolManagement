@@ -9,6 +9,12 @@ from .views import (
    
 )
 
+from .timetable_views import (
+    AdminTimetableListCreateView,
+    AdminTimetableDetailView,
+    TimetableReadOnlyListView,
+)
+
 
 
 from .admin_views import (
@@ -32,7 +38,21 @@ from .admin_views import (
 urlpatterns = [
 
 
-
+path(
+    "admin/timetables/",
+    AdminTimetableListCreateView.as_view(),
+    name="admin-timetable-list-create",
+),
+path(
+    "admin/timetables/<int:pk>/",
+    AdminTimetableDetailView.as_view(),
+    name="admin-timetable-detail",
+),
+path(
+    "timetables/",
+    TimetableReadOnlyListView.as_view(),
+    name="timetable-read-only",
+),
     
 # Separate School Admin CRUD APIs
 path("admin/years/", AdminAcademicYearView.as_view()),

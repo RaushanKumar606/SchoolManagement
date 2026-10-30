@@ -37,7 +37,7 @@ User = get_user_model()
 import json
 from .models import (
     Teacher, TeacherRegistration, TeacherSubjectAllocation,
-    Attendance, ExamMark, Assignment,AssignmentSubmission
+    Attendance,  Assignment,AssignmentSubmission
 )
 
 
@@ -2521,253 +2521,6 @@ def review_assignment_submission_api(
     )
 
 
-
-@api_view(["GET"])
-@permission_classes([IsAuthenticated])
-def teacher_exam_marks_api(
-    request,
-    employee_id,
-    class_id,
-    section_id,
-    subject_id
-):
-    try:
-        exam_name = request.query_params.get("exam_name")
-
-        if not exam_name:
-            return Response(
-                {
-                    "success": False,
-                    "error": "Exam name is required."
-                },
-                status=400
-            )
-
-        # --------------------------------
-        # Get Teacher
-        # --------------------------------
-
-        teacher = Teacher.objects.filter(
-            employee_id=employee_id
-        ).first()
-
-        if not teacher:
-            return Response(
-                {
-                    "success": False,
-                    "error": "Teacher not found."
-                },
-                status=404
-            )
-
-        # --------------------------------
-        # Get Class
-        # --------------------------------
-
-        school_class = SchoolClass.objects.filter(
-            id=class_id
-        ).first()
-
-        if not school_class:
-            return Response(
-                {
-                    "success": False,
-                    "error": "Class not found."
-                },
-                status=404
-            )
-
-        # --------------------------------
-        # Get Section
-        # --------------------------------
-
-        section_obj = Section.objects.filter(
-            id=section_id,
-            school_class=school_class
-        ).first()
-
-        if not section_obj:
-            return Response(
-                {
-                    "success": False,
-                    "error": "Section not found for this class."
-                },
-                status=404
-            )
-
-        # --------------------------------
-        # Get Subject
-        # --------------------------------
-
-        subject_obj = Subject.objects.filter(
-            id=subject_id,
-            is_active=True
-        ).first()
-
-        if not subject_obj:
-            return Response(
-                {
-                    "success": False,
-                    "error": "Subject not found."
-                },
-                status=404
-            )
-
-        # --------------------------------
-        # Verify Teacher Allocation
-        # --------------------------------
-
-        allocation = TeacherSubjectAllocation.objects.filter(
-            teacher=teacher,
-            school_class=school_class,
-            section=section_obj,
-            subject=subject_obj
-        ).first()
-
-        if not allocation:
-            return Response(
-                {
-                    "success": False,
-                    "error": (
-                        "Access denied. You are not assigned "
-                        "to this class, section and subject."
-                    )
-                },
-                status=403
-            )
-
-        # --------------------------------
-        # Get Students
-        # --------------------------------
-
-        students = Student.objects.filter(
-            school_class=school_class,
-            section=section_obj,
-            is_active=True
-        ).order_by("student_id")
-
-        # --------------------------------
-        # Get Existing Exam Marks
-        # --------------------------------
-
-        exam_marks = ExamMark.objects.filter(
-            student__school_class=school_class,
-            student__section=section_obj,
-            subject=subject_obj,
-            exam_name=exam_name
-        ).select_related(
-            "student",
-            "teacher"
-        )
-
-        marks_map = {
-            mark.student_id: mark
-            for mark in exam_marks
-        }
-
-        # --------------------------------
-        # Build Student List
-        # --------------------------------
-
-        student_list = []
-
-        for student in students:
-
-            mark = marks_map.get(student.id)
-
-            student_name = (
-                f"{student.first_name} "
-                f"{student.middle_name + ' ' if student.middle_name else ''}"
-                f"{student.last_name}"
-            ).strip()
-
-            student_list.append(
-                {
-                    "studentId": student.id,
-                    "admissionId": student.student_id,
-                    "name": student_name,
-                    "firstName": student.first_name,
-                    "middleName": student.middle_name,
-                    "lastName": student.last_name,
-                    "gender": student.gender,
-
-                    "marksObtained": (
-                        mark.marks_obtained
-                        if mark
-                        else None
-                    ),
-
-                    "totalMarks": (
-                        mark.total_marks
-                        if mark
-                        else None
-                    ),
-
-                    "hasMarks": mark is not None,
-
-                    "examMarkId": (
-                        mark.id
-                        if mark
-                        else None
-                    ),
-
-                    "markedBy": (
-                        mark.teacher.employee_id
-                        if mark and mark.teacher
-                        else None
-                    )
-                }
-            )
-
-        # --------------------------------
-        # Response
-        # --------------------------------
-
-        return Response(
-            {
-                "success": True,
-
-                "teacher": {
-                    "id": teacher.id,
-                    "employeeId": teacher.employee_id,
-                    "name": teacher.name
-                },
-
-                "class": {
-                    "id": school_class.id,
-                    "name": school_class.name
-                },
-
-                "section": {
-                    "id": section_obj.id,
-                    "name": section_obj.name
-                },
-
-                "subject": {
-                    "id": subject_obj.id,
-                    "name": subject_obj.name,
-                    "code": subject_obj.code
-                },
-
-                "examName": exam_name,
-
-                "count": len(student_list),
-
-                "students": student_list
-            },
-            status=200
-        )
-
-    except Exception as e:
-        return Response(
-            {
-                "success": False,
-                "error": str(e)
-            },
-            status=500
-        )
-
-
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def teacher_attendance_history_api(
@@ -3164,19 +2917,19 @@ def teacher_dashboard_api(request, employee_id):
         # Exam Marks Statistics
         # --------------------------------
 
-        teacher_exam_marks = ExamMark.objects.filter(
-            teacher=teacher
-        )
+        # teacher_exam_marks = ExamMark.objects.filter(
+        #     teacher=teacher
+        # )
 
-        total_exam_marks = teacher_exam_marks.count()
+        # total_exam_marks = teacher_exam_marks.count()
 
-        marked_students = teacher_exam_marks.values(
-            "student_id"
-        ).distinct().count()
+        # marked_students = teacher_exam_marks.values(
+        #     "student_id"
+        # ).distinct().count()
 
-        exam_count = teacher_exam_marks.values(
-            "exam_name"
-        ).distinct().count()
+        # exam_count = teacher_exam_marks.values(
+        #     "exam_name"
+        # ).distinct().count()
 
         # --------------------------------
         # Today's Attendance Records
@@ -3237,11 +2990,11 @@ def teacher_dashboard_api(request, employee_id):
                         "reviewed": reviewed_submissions
                     },
 
-                    "examMarks": {
-                        "totalMarks": total_exam_marks,
-                        "studentsMarked": marked_students,
-                        "exams": exam_count
-                    }
+                    # "examMarks": {
+                    #     "totalMarks": total_exam_marks,
+                    #     "studentsMarked": marked_students,
+                    #     "exams": exam_count
+                    # }
                 },
 
                 "assignedClasses": assigned_classes,

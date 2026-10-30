@@ -219,6 +219,13 @@ class ExamMark(models.Model):
         on_delete=models.CASCADE,
         related_name="exam_marks"
     )
+    exam = models.ForeignKey(
+    "exams.Exam",
+    on_delete=models.CASCADE,
+    null=True,
+    blank=True,
+    related_name="marks",
+)
 
     subject = models.ForeignKey(
         "academics.Subject",

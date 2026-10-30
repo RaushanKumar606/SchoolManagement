@@ -1,7 +1,5 @@
 from django.contrib.auth import authenticate
 from django.contrib.auth import get_user_model
-
-from django.contrib.auth import get_user_model
 from django.db import IntegrityError, transaction
 
 from rest_framework import generics, serializers, status
@@ -16,7 +14,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 
 from .UserSignupSerializer import UserSignupSerializer
 from teacher.models import Teacher
-
+from rest_framework.throttling import ScopedRateThrottle
 
 from .serializers import (
     AdminSchoolClassSerializer,
@@ -83,6 +81,8 @@ class UserSignupView(generics.CreateAPIView):
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "login"
 
 
 # =========================================================

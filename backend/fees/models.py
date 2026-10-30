@@ -289,15 +289,37 @@ class FeeInvoice(models.Model):
         auto_now=True,
     )
 
+    month = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+    )
+
+    fee_type = models.CharField(
+        max_length=30,
+        default="TUITION",
+        choices=[
+            ("TUITION", "Tuition Fee"),
+            ("ADMISSION", "Admission Fee"),
+            ("EXAM", "Exam Fee"),
+            ("TRANSPORT", "Transport Fee"),
+            ("OTHER", "Other Charges"),
+        ],
+    )
+
+    year = models.PositiveIntegerField()
+
+    # Baaki existing fields...
+
     class Meta:
         ordering = ["-year", "-month", "-id"]
 
         constraints = [
             models.UniqueConstraint(
-                fields=["student", "month", "year"],
-                name="unique_student_monthly_fee_invoice",
+                fields=["student", "month", "year", "fee_type"],
+                name="unique_student_monthly_fee_type_invoice",
             )
         ]
+        
 
     def save(self, *args, **kwargs):
         # Generate invoice number

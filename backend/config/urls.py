@@ -18,7 +18,9 @@ urlpatterns = [
     "api/auth/accountants/create/",
     AccountantCreateView.as_view(),
     name="accountant-create",
-),
+),  
+
+path("api/auth/exams/", include("exams.urls")),
 
     path("api/auth/payroll/", include("payroll.urls")),
       
