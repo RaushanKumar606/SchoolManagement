@@ -49,7 +49,14 @@ function StudentLayout() {
             🏠 Homework
           </NavLink>
 
-
+<NavLink
+            to="/student/admit-Card"
+            className={({ isActive }) =>
+              `nav-item ${isActive ? "active" : ""}`
+            }
+          >
+            🏠 Admit Card Downlode
+          </NavLink>
           
 
           <NavLink
@@ -60,6 +67,7 @@ function StudentLayout() {
           >
             🏠 Results
           </NavLink>
+
 
 
          

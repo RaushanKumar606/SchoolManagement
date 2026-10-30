@@ -1,334 +1,217 @@
 
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { teacherService } from "../../services/teacherService";
+import { useCallback, useEffect, useState } from "react";
+import { getTeacherDailyTimetable } from "../../services/timetableService";
+import "../student/Timetable.css";
 
-function TimeTable() {
-  const navigate = useNavigate();
+const DAYS = [
+  { value: "MONDAY", label: "Monday" },
+  { value: "TUESDAY", label: "Tuesday" },
+  { value: "WEDNESDAY", label: "Wednesday" },
+  { value: "THURSDAY", label: "Thursday" },
+  { value: "FRIDAY", label: "Friday" },
+  { value: "SATURDAY", label: "Saturday" },
+];
 
-  const employeeId = localStorage.getItem("employee_id");
+const getList = (response) => {
+  if (Array.isArray(response)) return response;
+  if (Array.isArray(response?.results)) return response.results;
+  if (Array.isArray(response?.data)) return response.data;
+  if (Array.isArray(response?.data?.results)) return response.data.results;
+  return [];
+};
 
-  const [timetable, setTimetable] = useState([]);
-  const [selectedDay, setSelectedDay] = useState("All");
+const relationName = (item, relation, fallback) => {
+  const value = item?.[relation];
 
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  const days = [
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-  ];
-
-  // ==========================================
-  // Load Teacher Timetable
-  // ==========================================
-  useEffect(() => {
-    if (!employeeId) {
-      navigate("/login");
-      return;
-    }
-
-    fetchTimetable();
-  }, [employeeId, navigate]);
-
-  const fetchTimetable = async () => {
-    try {
-      setLoading(true);
-      setError("");
-
-      const res =
-        await teacherService.getTeacherTimetable(
-          employeeId
-        );
-
-      if (res.success) {
-        const data =
-          res.data?.results ||
-          res.data ||
-          res.timetable ||
-          res.results ||
-          [];
-
-        setTimetable(
-          Array.isArray(data) ? data : []
-        );
-      } else {
-        setError(
-          res.message ||
-            "Unable to load timetable."
-        );
-      }
-    } catch (err) {
-      console.error(err);
-      setError("Failed to load timetable.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ==========================================
-  // Helpers
-  // ==========================================
-  const getDay = (item) =>
-    item.day ||
-    item.day_name ||
-    item.weekday ||
-    "";
-
-  const getClassName = (item) =>
-    item.school_class?.name ||
-    item.schoolClass?.name ||
-    item.class_name ||
-    item.class ||
-    "-";
-
-  const getSectionName = (item) =>
-    item.section?.name ||
-    item.section_name ||
-    item.section ||
-    "-";
-
-  const getSubjectName = (item) =>
-    item.subject?.name ||
-    item.subject_name ||
-    item.subject ||
-    "-";
-
-  const getStartTime = (item) =>
-    item.start_time ||
-    item.startTime ||
-    item.start ||
-    "-";
-
-  const getEndTime = (item) =>
-    item.end_time ||
-    item.endTime ||
-    item.end ||
-    "-";
-
-  const getRoom = (item) =>
-    item.room ||
-    item.room_number ||
-    item.roomNumber ||
-    "-";
-
-  // ==========================================
-  // Filter Timetable
-  // ==========================================
-  const filteredTimetable =
-    selectedDay === "All"
-      ? timetable
-      : timetable.filter(
-          (item) =>
-            getDay(item).toLowerCase() ===
-            selectedDay.toLowerCase()
-        );
-
-  // ==========================================
-  // Sort By Day & Time
-  // ==========================================
-  const sortedTimetable = [...filteredTimetable].sort(
-    (a, b) => {
-      const timeA = getStartTime(a);
-      const timeB = getStartTime(b);
-
-      return String(timeA).localeCompare(
-        String(timeB)
-      );
-    }
-  );
-
-  // ==========================================
-  // Loading
-  // ==========================================
-  if (loading) {
+  if (value && typeof value === "object") {
     return (
-      <div className="teacher-page">
-        <div className="teacher-page-header">
-          <div>
-            <h2>My Timetable</h2>
-            <p>
-              View your assigned classes and subjects.
-            </p>
-          </div>
-        </div>
-
-        <div className="teacher-loading">
-          Loading timetable...
-        </div>
-      </div>
+      value.name ||
+      value.display_name ||
+      value.subject_name ||
+      value.full_name ||
+      value.employee_id ||
+      ""
     );
   }
 
+  return item?.[fallback] || "";
+};
+
+const formatTime = (time) => {
+  if (!time) return "—";
+
+  const [hours, minutes] = String(time).split(":");
+  const date = new Date();
+  date.setHours(Number(hours), Number(minutes), 0, 0);
+
+  return date.toLocaleTimeString("en-IN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+};
+
+function TeacherTimetable() {
+  const [timetable, setTimetable] = useState([]);
+  const [selectedDay, setSelectedDay] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const loadTimetable = useCallback(async () => {
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await getTeacherDailyTimetable(
+        selectedDay || undefined
+      );
+      setTimetable(getList(response));
+    } catch (err) {
+      console.error("Teacher timetable error:", err);
+      setError(
+        err?.message ||
+          "Unable to load timetable. Please refresh and try again."
+      );
+      setTimetable([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedDay]);
+
+  useEffect(() => {
+    loadTimetable();
+  }, [loadTimetable]);
+
   return (
-    <div className="teacher-page">
-      {/* =====================================
-          Header
-      ====================================== */}
-      <div className="teacher-page-header">
+    <main className="school-timetable-page">
+      <header className="school-timetable-header">
         <div>
-          <h2>My Timetable</h2>
-          <p>
-            View your daily class and subject
-            schedule.
-          </p>
+          <p className="school-timetable-eyebrow">TEACHER PORTAL</p>
+          <h1>My Teaching Timetable</h1>
+          <p>View your assigned classes, subjects and teaching periods.</p>
         </div>
 
         <button
           type="button"
-          className="back-btn"
-          onClick={() =>
-            navigate("/teacher/dashboard")
-          }
+          className="school-timetable-button"
+          onClick={loadTimetable}
+          disabled={loading}
         >
-          ← Dashboard
+          {loading ? "Loading…" : "↻ Refresh"}
         </button>
-      </div>
+      </header>
 
-      {/* =====================================
-          Error
-      ====================================== */}
-      {error && (
-        <div className="alert error-alert">
-          {error}
-        </div>
-      )}
-
-      {/* =====================================
-          Day Filter
-      ====================================== */}
-      <section className="timetable-section">
-        <div className="section-heading">
+      <section className="school-timetable-card">
+        <div className="school-timetable-toolbar">
           <div>
-            <h3>Class Schedule</h3>
-            <p>
-              Select a day to view your classes.
-            </p>
+            <h2>My Teaching Schedule</h2>
+            <p>Only periods assigned to your teacher account are shown.</p>
           </div>
 
-          <span className="student-count">
-            {timetable.length} Classes
-          </span>
-        </div>
-
-        <div className="day-filter">
-          <button
-            type="button"
-            className={`day-btn ${
-              selectedDay === "All"
-                ? "active"
-                : ""
-            }`}
-            onClick={() =>
-              setSelectedDay("All")
-            }
-          >
-            All
-          </button>
-
-          {days.map((day) => (
-            <button
-              type="button"
-              key={day}
-              className={`day-btn ${
-                selectedDay === day
-                  ? "active"
-                  : ""
-              }`}
-              onClick={() =>
-                setSelectedDay(day)
-              }
+          <div className="school-timetable-day-filter">
+            <label htmlFor="teacher-timetable-day">Select day</label>
+            <select
+              id="teacher-timetable-day"
+              value={selectedDay}
+              onChange={(event) => setSelectedDay(event.target.value)}
             >
-              {day}
-            </button>
-          ))}
+              <option value="">All days</option>
+              {DAYS.map((day) => (
+                <option key={day.value} value={day.value}>
+                  {day.label}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
-        {/* =====================================
-            Timetable
-        ====================================== */}
-        {sortedTimetable.length === 0 ? (
-          <div className="empty-state">
-            {selectedDay === "All"
-              ? "No timetable has been assigned to you."
-              : `No classes scheduled for ${selectedDay}.`}
-          </div>
-        ) : (
-          <div className="timetable-table-wrapper">
-            <table className="timetable-table">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Day</th>
-                  <th>Time</th>
-                  <th>Class</th>
-                  <th>Section</th>
-                  <th>Subject</th>
-                  <th>Room</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {sortedTimetable.map(
-                  (item, index) => (
-                    <tr
-                      key={
-                        item.id ||
-                        item.timetable_id ||
-                        index
-                      }
-                    >
-                      <td>{index + 1}</td>
-
-                      <td>
-                        <strong>
-                          {getDay(item) || "-"}
-                        </strong>
-                      </td>
-
-                      <td>
-                        <div className="time-cell">
-                          <span>
-                            {getStartTime(item)}
-                          </span>
-                          <span> - </span>
-                          <span>
-                            {getEndTime(item)}
-                          </span>
-                        </div>
-                      </td>
-
-                      <td>
-                        {getClassName(item)}
-                      </td>
-
-                      <td>
-                        {getSectionName(item)}
-                      </td>
-
-                      <td>
-                        <strong>
-                          {getSubjectName(item)}
-                        </strong>
-                      </td>
-
-                      <td>
-                        {getRoom(item)}
-                      </td>
-                    </tr>
-                  )
-                )}
-              </tbody>
-            </table>
+        {error && (
+          <div className="school-timetable-error" role="alert">
+            {error}
           </div>
         )}
+
+        {loading ? (
+          <div className="school-timetable-message">
+            Loading your teaching schedule…
+          </div>
+        ) : timetable.length === 0 ? (
+          <div className="school-timetable-empty">
+            <div className="school-timetable-empty-icon">▦</div>
+            <h3>No teaching periods found</h3>
+            <p>
+              Check with the school administrator if your timetable has been
+              assigned.
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="school-timetable-count">
+              {timetable.length} teaching period
+              {timetable.length !== 1 ? "s" : ""}
+            </div>
+
+            <div className="school-timetable-list">
+              {timetable.map((item) => {
+                const dayLabel =
+                  DAYS.find((day) => day.value === item.day)?.label ||
+                  item.day ||
+                  "Class";
+
+                const subject =
+                  relationName(item, "subject", "subject_name") ||
+                  "Subject";
+
+                const className =
+                  relationName(item, "school_class", "class_name") ||
+                  item.school_class_name ||
+                  "Class";
+
+                const section =
+                  relationName(item, "section", "section_name") ||
+                  item.section_name ||
+                  "—";
+
+                const year =
+                  relationName(item, "academic_year", "academic_year_name");
+
+                return (
+                  <article
+                    className="school-timetable-entry"
+                    key={item.id ?? `${item.day}-${item.start_time}-${subject}`}
+                  >
+                    <div className="school-timetable-time">
+                      <strong>{formatTime(item.start_time)}</strong>
+                      <span>to</span>
+                      <strong>{formatTime(item.end_time)}</strong>
+                    </div>
+
+                    <div className="school-timetable-entry-content">
+                      <span className="school-timetable-day">{dayLabel}</span>
+                      <h3>{subject}</h3>
+                      <p>
+                        {className} • Section {section}
+                      </p>
+                      {year && (
+                        <span className="school-timetable-meta">
+                          Academic Year: {year}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="school-timetable-room">
+                      <span>ROOM</span>
+                      <strong>{item.room_number || "—"}</strong>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </>
+        )}
       </section>
-    </div>
+    </main>
   );
 }
 
-export default TimeTable;
+export default TeacherTimetable;

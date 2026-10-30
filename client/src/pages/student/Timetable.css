@@ -1,0 +1,345 @@
+
+.school-timetable-page {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 26px;
+  color: #1e293b;
+}
+
+.school-timetable-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
+.school-timetable-header h1 {
+  margin: 5px 0 8px;
+  font-size: clamp(25px, 3vw, 34px);
+  font-weight: 800;
+  letter-spacing: -0.6px;
+}
+
+.school-timetable-header p:not(.school-timetable-eyebrow) {
+  margin: 0;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.school-timetable-eyebrow {
+  margin: 0;
+  color: #3157d5;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.4px;
+}
+
+.school-timetable-button {
+  flex-shrink: 0;
+  min-height: 42px;
+  padding: 10px 16px;
+  color: white;
+  background: #3157d5;
+  border: 0;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.school-timetable-button:hover {
+  background: #2445b8;
+}
+
+.school-timetable-button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.school-timetable-card {
+  padding: 24px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  box-shadow: 0 5px 22px rgb(15 23 42 / 4%);
+}
+
+.school-timetable-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 22px;
+}
+
+.school-timetable-toolbar h2 {
+  margin: 0 0 6px;
+  font-size: 19px;
+  font-weight: 750;
+}
+
+.school-timetable-toolbar p {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.school-timetable-day-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 170px;
+}
+
+.school-timetable-day-filter label {
+  color: #334155;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.school-timetable-day-filter select {
+  min-height: 42px;
+  padding: 9px 12px;
+  color: #1e293b;
+  background: white;
+  border: 1px solid #dbe3ee;
+  border-radius: 9px;
+  font-size: 13px;
+  outline: none;
+}
+
+.school-timetable-day-filter select:focus {
+  border-color: #3157d5;
+  box-shadow: 0 0 0 3px rgb(49 87 213 / 10%);
+}
+
+.school-timetable-count {
+  margin-bottom: 14px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.school-timetable-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.school-timetable-entry {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr) 90px;
+  align-items: center;
+  gap: 20px;
+  padding: 18px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.school-timetable-entry:hover {
+  border-color: #c6d2f8;
+  box-shadow: 0 4px 14px rgb(49 87 213 / 5%);
+}
+
+.school-timetable-time {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-left: 12px;
+  border-left: 3px solid #3157d5;
+}
+
+.school-timetable-time strong {
+  color: #243a77;
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.school-timetable-time span {
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+.school-timetable-entry-content {
+  min-width: 0;
+}
+
+.school-timetable-day {
+  display: inline-block;
+  margin-bottom: 6px;
+  padding: 4px 8px;
+  color: #3157d5;
+  background: #eef2ff;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.school-timetable-entry-content h3 {
+  margin: 0 0 6px;
+  color: #1e293b;
+  font-size: 16px;
+  font-weight: 750;
+  overflow-wrap: anywhere;
+}
+
+.school-timetable-entry-content p {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.school-timetable-meta {
+  display: block;
+  margin-top: 5px;
+  color: #8490a3;
+  font-size: 11px;
+}
+
+.school-timetable-room {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 8px;
+  background: #f5f7fb;
+  border-radius: 10px;
+}
+
+.school-timetable-room span {
+  color: #8490a3;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+}
+
+.school-timetable-room strong {
+  color: #334155;
+  font-size: 13px;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.school-timetable-empty,
+.school-timetable-message {
+  padding: 48px 18px;
+  color: #64748b;
+  text-align: center;
+}
+
+.school-timetable-empty {
+  border: 1px dashed #dbe3ee;
+  border-radius: 12px;
+}
+
+.school-timetable-empty-icon {
+  margin-bottom: 10px;
+  color: #94a3b8;
+  font-size: 35px;
+}
+
+.school-timetable-empty h3 {
+  margin: 0 0 8px;
+  color: #1e293b;
+  font-size: 17px;
+}
+
+.school-timetable-empty p {
+  max-width: 450px;
+  margin: 0 auto;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.school-timetable-error {
+  margin-bottom: 18px;
+  padding: 13px 15px;
+  color: #a32828;
+  background: #fff4f3;
+  border: 1px solid #f2d0cd;
+  border-radius: 9px;
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 760px) {
+  .school-timetable-page {
+    padding: 16px;
+  }
+
+  .school-timetable-header,
+  .school-timetable-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .school-timetable-button {
+    width: 100%;
+  }
+
+  .school-timetable-card {
+    padding: 16px;
+  }
+
+  .school-timetable-day-filter {
+    min-width: 0;
+  }
+
+  .school-timetable-entry {
+    grid-template-columns: minmax(0, 1fr) 72px;
+    gap: 14px;
+    padding: 14px;
+  }
+
+  .school-timetable-time {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    align-items: center;
+    gap: 7px;
+    padding: 0 0 10px;
+    border-left: 0;
+    border-bottom: 1px solid #e8edf5;
+  }
+
+  .school-timetable-time span {
+    margin: 0 2px;
+  }
+
+  .school-timetable-entry-content {
+    grid-column: 1;
+  }
+
+  .school-timetable-room {
+    grid-column: 2;
+    grid-row: 2;
+  }
+}
+
+@media (max-width: 400px) {
+  .school-timetable-page {
+    padding: 10px;
+  }
+
+  .school-timetable-card {
+    padding: 12px;
+  }
+
+  .school-timetable-entry {
+    grid-template-columns: minmax(0, 1fr) 60px;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .school-timetable-entry-content h3 {
+    font-size: 14px;
+  }
+}

@@ -1,0 +1,240 @@
+
+.admin-timetable-page {
+  padding: 24px;
+  color: #172033;
+  background: #f5f7fb;
+  min-height: 100vh;
+}
+
+.admin-timetable-header,
+.at-table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.admin-timetable-header h1 {
+  margin: 0 0 6px;
+  font-size: 28px;
+}
+
+.admin-timetable-header p {
+  margin: 0;
+  color: #64748b;
+}
+
+.at-card {
+  padding: 22px;
+  margin-bottom: 24px;
+  background: #fff;
+  border: 1px solid #e5eaf2;
+  border-radius: 14px;
+  box-shadow: 0 4px 16px rgb(15 23 42 / 4%);
+}
+
+.at-card h2 {
+  margin: 0 0 20px;
+  font-size: 20px;
+}
+
+.at-form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.at-form-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.at-form-grid input,
+.at-form-grid select {
+  width: 100%;
+  min-height: 43px;
+  padding: 10px 12px;
+  border: 1px solid #d5dce8;
+  border-radius: 8px;
+  background: #fff;
+  color: #172033;
+  font: inherit;
+  box-sizing: border-box;
+}
+
+.at-form-grid input:focus,
+.at-form-grid select:focus {
+  outline: 2px solid #bfdbfe;
+  border-color: #2563eb;
+}
+
+.at-form-grid select:disabled {
+  background: #f1f5f9;
+  cursor: not-allowed;
+}
+
+.at-help-text {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.at-form-actions,
+.at-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.at-form-actions {
+  margin-top: 22px;
+}
+
+.at-btn {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  border: 0;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.at-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.at-btn-primary {
+  background: #2563eb;
+  color: #fff;
+}
+
+.at-btn-primary:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.at-btn-secondary {
+  background: #e8edf5;
+  color: #243047;
+}
+
+.at-btn-secondary:hover:not(:disabled) {
+  background: #dbe3ef;
+}
+
+.at-btn-danger {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.at-btn-danger:hover:not(:disabled) {
+  background: #fecaca;
+}
+
+.at-btn-small {
+  padding: 7px 10px;
+  font-size: 12px;
+}
+
+.at-alert {
+  padding: 12px 15px;
+  border-radius: 9px;
+  margin-bottom: 18px;
+  font-size: 14px;
+}
+
+.at-alert-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+}
+
+.at-alert-success {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+}
+
+.at-table-header h2 {
+  margin: 0;
+}
+
+.at-table-header span {
+  color: #64748b;
+  font-size: 14px;
+}
+
+.at-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.at-table {
+  width: 100%;
+  border-collapse: collapse;
+  white-space: nowrap;
+}
+
+.at-table th,
+.at-table td {
+  padding: 13px 12px;
+  text-align: left;
+  border-bottom: 1px solid #e8edf4;
+  font-size: 13px;
+}
+
+.at-table th {
+  color: #475569;
+  background: #f8fafc;
+  font-weight: 700;
+}
+
+.at-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.at-empty {
+  padding: 20px 0;
+  text-align: center;
+  color: #64748b;
+}
+
+@media (max-width: 900px) {
+  .at-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .admin-timetable-page {
+    padding: 14px;
+  }
+
+  .admin-timetable-header {
+    align-items: flex-start;
+  }
+
+  .admin-timetable-header h1 {
+    font-size: 23px;
+  }
+
+  .at-card {
+    padding: 16px;
+  }
+
+  .at-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .at-form-actions .at-btn {
+    width: 100%;
+  }
+}

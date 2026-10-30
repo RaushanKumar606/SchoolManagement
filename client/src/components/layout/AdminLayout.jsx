@@ -99,6 +99,17 @@ function AdminLayout() {
           </NavLink>
 
 
+<NavLink
+            to="/admin/timetable"
+            className={({ isActive }) =>
+              `nav-item ${isActive ? "active" : ""}`
+            }
+          >
+            📝 TimeTable 
+          </NavLink>
+
+
+
           {/* FEES */}
           <p className="nav-heading">FEES</p>
 

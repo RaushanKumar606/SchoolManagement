@@ -9,6 +9,7 @@ import Login from "../pages/public/Login";
 import About from "../pages/About";
 import AccountantRegistration from "../pages/admin/AccountantRegistration";
 
+const AdminTimetable = lazy(() => import("../pages/admin/AdminTimetable"));
 
 const AdmissionForm = lazy(() =>
   import("../pages/admission/admissionForm")
@@ -37,9 +38,9 @@ const Students = lazy(() =>
 const Teachers = lazy(() =>
   import("../pages/admin/Teachers")
 );
-const Timetable = lazy(() =>
-  import("../pages/admin/Timetable")
-);
+// const Timetable = lazy(() =>
+//   import("../pages/admin/")
+// );
 const Exams = lazy(() =>
   import("../pages/admin/Exams")
 );
@@ -90,6 +91,8 @@ const TimeTable = lazy(() =>
   import("../pages/teacher/Timetable")
 );
 
+// STUDENT KA ALL PAGE 
+
 const StudentLayout = lazy(() =>
   import("../components/layout/StudentLayout")
 );
@@ -101,6 +104,8 @@ const StudentDashboard = lazy(() =>
 const StudentProfile = lazy(() =>
   import("../pages/student/StudentProfile")
 );
+
+const StudentAdmidCard =lazy(()=>import("../pages/student/StudentAdmitCards"))
 const StudentAttendance = lazy(() =>
   import("../pages/student/StudentAttendance")
 );
@@ -254,6 +259,11 @@ function AppRoutes() {
                 element={<AcademicManagement />}
               />
 
+               <Route
+                path="timetable"
+                element={<AdminTimetable />}
+              />
+
               <Route
                 path="/admin/teacherAssigment"
                 element={<TeacherAssignment />}
@@ -326,10 +336,10 @@ function AppRoutes() {
 
 
 
-              <Route
+              {/* <Route
                 path="timetable"
                 element={<Timetable />}
-              />
+              /> */}
 
               {/* System */}
               <Route
@@ -449,6 +459,11 @@ function AppRoutes() {
             <Route
               path="profile"
               element={<StudentProfile />}
+            />
+
+            <Route
+              path="admit-Card"
+              element={<StudentAdmidCard />}
             />
             <Route
               path="My-Attendance"

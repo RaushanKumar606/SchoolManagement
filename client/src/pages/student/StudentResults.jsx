@@ -1,754 +1,224 @@
-import { useEffect, useState } from "react";
-import { getMyExamResults } from "../../services/studentService";
 
+import React, { useCallback, useEffect, useState } from "react";
+import { getMyPublishedResults } from "../../services/exams";
+import "./StudentResults.css";
 
 function StudentResults() {
-  const [results, setResults] = useState(null);
+  const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    loadResults();
-  }, []);
+  const loadResults = useCallback(async () => {
+    setLoading(true);
+    setError("");
 
-  const loadResults = async () => {
     try {
-      setLoading(true);
-      setError("");
+      const response = await getMyPublishedResults();
 
-      const data = await getMyExamResults();
+      const data = Array.isArray(response)
+        ? response
+        : response?.results ??
+          response?.data ??
+          response?.results_list ??
+          [];
 
-      setResults(data);
+      setResults(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error("Result error:", err);
-
       setError(
-        err?.message ||
-          "Failed to load examination results."
+        err?.message || "Results load nahi ho sake. Please try again."
       );
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
+    loadResults();
+  }, [loadResults]);
+
+  const getValue = (item, keys, fallback = "—") => {
+    for (const key of keys) {
+      const value = item?.[key];
+      if (value !== undefined && value !== null && value !== "") {
+        return value;
+      }
+    }
+    return fallback;
   };
 
-  /* =========================
-     LOADING
-  ========================= */
+  const getMarks = (item) => {
+    const obtained = Number(
+      getValue(item, ["obtained_marks", "marks_obtained", "marks", "marks_obtained_total"], 0)
+    );
+    const total = Number(
+      getValue(item, ["total_marks", "maximum_marks", "max_marks"], 0)
+    );
+
+    return { obtained, total };
+  };
+
+  const getStatus = (item) => {
+    const status = getValue(item, ["status", "result_status", "grade"], "");
+    if (status !== "") return String(status);
+
+    const { obtained, total } = getMarks(item);
+    if (!total) return "Not available";
+
+    const passingMarks = Number(
+      getValue(item, ["passing_marks", "pass_marks"], 0)
+    );
+
+    return obtained >= passingMarks ? "Pass" : "Fail";
+  };
+
+  const getPercentage = (item) => {
+    const direct = item?.percentage;
+    if (direct !== undefined && direct !== null && direct !== "") {
+      return `${Number(direct).toFixed(2)}%`;
+    }
+
+    const { obtained, total } = getMarks(item);
+    return total > 0
+      ? `${((obtained / total) * 100).toFixed(2)}%`
+      : "—";
+  };
+
+  const printResults = () => {
+    window.print();
+  };
 
   if (loading) {
     return (
       <div className="student-results-page">
-        <div className="result-loading">
-          <div className="result-spinner"></div>
-          <p>Loading results...</p>
-        </div>
+        <div className="results-message">Loading your results...</div>
       </div>
     );
   }
 
-  /* =========================
-     ERROR
-  ========================= */
+  return (
+    <main className="student-results-page">
+      <section className="results-header">
+        <div>
+          <p className="results-eyebrow">ACADEMIC PERFORMANCE</p>
+          <h1>My Results</h1>
+          <p className="results-subtitle">
+            View your published examination results and marks.
+          </p>
+        </div>
 
-  if (error) {
-    return (
-      <div className="student-results-page">
-        <div className="result-error">
-          <h3>Unable to load results</h3>
-
-          <p>{error}</p>
-
+        <div className="results-actions">
           <button
-            className="result-retry-btn"
+            type="button"
+            className="results-btn results-btn-secondary"
             onClick={loadResults}
           >
+            Refresh
+          </button>
+          <button
+            type="button"
+            className="results-btn results-btn-primary"
+            onClick={printResults}
+            disabled={results.length === 0}
+          >
+            Print / Save PDF
+          </button>
+        </div>
+      </section>
+
+      {error && (
+        <div className="results-error" role="alert">
+          <p>{error}</p>
+          <button type="button" onClick={loadResults}>
             Try Again
           </button>
         </div>
-      </div>
-    );
-  }
+      )}
 
-  const student =
-    results?.student ||
-    results?.student_details ||
-    {};
-
-  const examResults =
-    results?.results ||
-    results?.exam_results ||
-    results?.exams ||
-    [];
-
-  const statistics =
-    results?.statistics ||
-    results?.stats ||
-    {};
-
-  /* =========================
-     EMPTY
-  ========================= */
-
-  if (examResults.length === 0) {
-    return (
-      <div className="student-results-page">
-        <div className="result-header no-print">
-          <div>
-            <h1>My Results</h1>
-            <p>
-              View your examination results.
-            </p>
-          </div>
-        </div>
-
-        <div className="result-empty">
-          <div className="result-empty-icon">
-            📊
-          </div>
-
-          <h3>No Results Found</h3>
-
+      {!error && results.length === 0 && (
+        <section className="results-empty">
+          <div className="results-empty-icon">📋</div>
+          <h2>No published results yet</h2>
           <p>
-            Your examination results have not
-            been published yet.
+            Your results will appear here after your school publishes them.
           </p>
-        </div>
-      </div>
-    );
-  }
+        </section>
+      )}
 
-  return (
-    <div className="student-results-page">
-
-      {/* =========================
-          PAGE HEADER
-      ========================= */}
-
-      <div className="result-header no-print">
-
-        <div>
-          <h1>My Results</h1>
-
-          <p>
-            View and print your examination
-            report card.
-          </p>
-        </div>
-
-        <button
-          className="print-result-btn"
-          onClick={() => window.print()}
-        >
-          🖨 Print Result
-        </button>
-
-      </div>
-
-
-      {/* =========================
-          A4 RESULT SHEET
-      ========================= */}
-
-      <div className="a4-result-sheet">
-
-        {/* SCHOOL HEADER */}
-
-        <div className="school-result-header">
-
-          <div className="school-logo">
-            S
+      {results.length > 0 && (
+        <section className="results-content">
+          <div className="results-summary">
+            <div className="results-summary-card">
+              <span>Published Records</span>
+              <strong>{results.length}</strong>
+            </div>
+            <div className="results-summary-card">
+              <span>Subjects Listed</span>
+              <strong>{results.length}</strong>
+            </div>
           </div>
 
-          <div className="school-heading">
+          <div className="results-table-wrapper">
+            <table className="results-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Exam</th>
+                  <th>Subject</th>
+                  <th>Obtained Marks</th>
+                  <th>Total Marks</th>
+                  <th>Percentage</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {results.map((item, index) => {
+                  const { obtained, total } = getMarks(item);
+                  const status = getStatus(item);
+                  const isPass = status.toLowerCase().includes("pass") &&
+                    !status.toLowerCase().includes("fail");
 
-            <h1>
-              YOUR SCHOOL NAME
-            </h1>
-
-            <p>
-              School Management System
-            </p>
-
-            <p>
-              Address, City, State, India
-            </p>
-
-          </div>
-
-        </div>
-
-
-        <div className="result-title">
-          <h2>
-            STUDENT REPORT CARD
-          </h2>
-
-          <p>
-            Academic Examination Result
-          </p>
-        </div>
-
-
-        {/* =========================
-            STUDENT INFORMATION
-        ========================= */}
-
-        <div className="student-info-section">
-
-          <div className="student-info-row">
-
-            <InfoItem
-              label="Student Name"
-              value={
-                student.name ||
-                student.full_name ||
-                `${student.first_name || ""} ${
-                  student.last_name || ""
-                }`.trim() ||
-                "--"
-              }
-            />
-
-            <InfoItem
-              label="Student ID"
-              value={
-                student.student_id ||
-                student.admission_number ||
-                student.id ||
-                "--"
-              }
-            />
-
-          </div>
-
-
-          <div className="student-info-row">
-
-            <InfoItem
-              label="Class"
-              value={
-                student.class_name ||
-                student.class ||
-                "--"
-              }
-            />
-
-            <InfoItem
-              label="Section"
-              value={
-                student.section_name ||
-                student.section ||
-                "--"
-              }
-            />
-
-          </div>
-
-
-          <div className="student-info-row">
-
-            <InfoItem
-              label="Roll Number"
-              value={
-                student.roll_number ||
-                student.roll_no ||
-                "--"
-              }
-            />
-
-            <InfoItem
-              label="Academic Year"
-              value={
-                student.academic_year ||
-                results?.academic_year ||
-                "--"
-              }
-            />
-
-          </div>
-
-        </div>
-
-
-        {/* =========================
-            EXAM RESULTS
-        ========================= */}
-
-        {examResults.map(
-          (exam, examIndex) => {
-
-            const subjects =
-              exam.subjects ||
-              exam.marks ||
-              exam.results ||
-              [];
-
-            const examName =
-              exam.exam_name ||
-              exam.name ||
-              exam.exam ||
-              `Examination ${examIndex + 1}`;
-
-            return (
-              <div
-                className="exam-section"
-                key={
-                  exam.id ||
-                  examIndex
-                }
-              >
-
-                <div className="exam-heading">
-                  <h3>
-                    {examName}
-                  </h3>
-                </div>
-
-
-                <table className="result-table">
-
-                  <thead>
-                    <tr>
-                      <th>Sr.</th>
-                      <th>Subject</th>
-                      <th>Max Marks</th>
-                      <th>Obtained</th>
-                      <th>Grade</th>
+                  return (
+                    <tr key={item.id ?? `${index}-${item.subject ?? "result"}`}>
+                      <td>{index + 1}</td>
+                      <td>
+                        {getValue(item, [
+                          "exam_name",
+                          "exam",
+                          "examination_name",
+                        ])}
+                      </td>
+                      <td>
+                        {getValue(item, [
+                          "subject_name",
+                          "subject",
+                        ])}
+                      </td>
+                      <td>{obtained}</td>
+                      <td>{total || "—"}</td>
+                      <td>{getPercentage(item)}</td>
+                      <td>
+                        <span
+                          className={`results-status ${
+                            isPass ? "results-status-pass" : "results-status-other"
+                          }`}
+                        >
+                          {status}
+                        </span>
+                      </td>
                     </tr>
-                  </thead>
-
-                  <tbody>
-
-                    {subjects.map(
-                      (subject, index) => {
-
-                        const maxMarks =
-                          Number(
-                            subject.max_marks ||
-                            subject.maximum_marks ||
-                            subject.total_marks ||
-                            100
-                          );
-
-                        const obtained =
-                          Number(
-                            subject.obtained_marks ||
-                            subject.marks_obtained ||
-                            subject.marks ||
-                            0
-                          );
-
-                        const grade =
-                          subject.grade ||
-                          calculateGrade(
-                            obtained,
-                            maxMarks
-                          );
-
-                        return (
-                          <tr
-                            key={
-                              subject.id ||
-                              index
-                            }
-                          >
-
-                            <td>
-                              {index + 1}
-                            </td>
-
-                            <td className="subject-name">
-                              {subject.subject_name ||
-                                subject.subject?.name ||
-                                subject.subject ||
-                                "Subject"}
-                            </td>
-
-                            <td>
-                              {maxMarks}
-                            </td>
-
-                            <td>
-                              {obtained}
-                            </td>
-
-                            <td>
-                              <span className="grade">
-                                {grade}
-                              </span>
-                            </td>
-
-                          </tr>
-                        );
-                      }
-                    )}
-
-                  </tbody>
-
-                </table>
-
-
-                {/* EXAM SUMMARY */}
-
-                <div className="exam-summary">
-
-                  <SummaryItem
-                    label="Total Marks"
-                    value={
-                      exam.total_marks ||
-                      exam.maximum_marks ||
-                      calculateTotalMax(
-                        subjects
-                      )
-                    }
-                  />
-
-                  <SummaryItem
-                    label="Obtained Marks"
-                    value={
-                      exam.obtained_marks ||
-                      exam.total_obtained ||
-                      calculateTotalObtained(
-                        subjects
-                      )
-                    }
-                  />
-
-                  <SummaryItem
-                    label="Percentage"
-                    value={`${formatPercentage(
-                      exam.percentage ||
-                        calculatePercentage(
-                          subjects
-                        )
-                    )}%`}
-                  />
-
-                  <SummaryItem
-                    label="Result"
-                    value={
-                      exam.result ||
-                      exam.status ||
-                      getResultStatus(
-                        exam,
-                        subjects
-                      )
-                    }
-                  />
-
-                </div>
-
-              </div>
-            );
-          }
-        )}
-
-
-        {/* =========================
-            OVERALL SUMMARY
-        ========================= */}
-
-        <div className="overall-section">
-
-          <h3>
-            Overall Performance
-          </h3>
-
-          <div className="overall-grid">
-
-            <SummaryItem
-              label="Overall Percentage"
-              value={`${formatPercentage(
-                statistics.percentage ||
-                  results?.percentage ||
-                  calculateOverallPercentage(
-                    examResults
-                  )
-              )}%`}
-            />
-
-            <SummaryItem
-              label="Overall Grade"
-              value={
-                statistics.grade ||
-                results?.grade ||
-                calculateOverallGrade(
-                  examResults
-                )
-              }
-            />
-
-            <SummaryItem
-              label="Final Result"
-              value={
-                statistics.result ||
-                results?.result ||
-                "PASS"
-              }
-            />
-
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
 
-        </div>
-
-
-        {/* =========================
-            SIGNATURES
-        ========================= */}
-
-        <div className="signature-section">
-
-          <div className="signature-box">
-            <div className="signature-line"></div>
-            <p>Class Teacher</p>
-          </div>
-
-          <div className="signature-box">
-            <div className="signature-line"></div>
-            <p>Principal</p>
-          </div>
-
-          <div className="signature-box">
-            <div className="signature-line"></div>
-            <p>Parent / Guardian</p>
-          </div>
-
-        </div>
-
-
-        {/* FOOTER */}
-
-        <div className="result-footer">
-          <p>
-            This is a computer-generated report
-            card.
+          <p className="results-note">
+            Only results published by your school are displayed here.
           </p>
-
-          <p>
-            Generated on{" "}
-            {new Date().toLocaleDateString(
-              "en-IN"
-            )}
-          </p>
-        </div>
-
-      </div>
-
-    </div>
+        </section>
+      )}
+    </main>
   );
 }
-
-
-/* =========================
-   INFO ITEM
-========================= */
-
-function InfoItem({
-  label,
-  value,
-}) {
-  return (
-    <div className="info-item">
-      <span>{label}</span>
-      <strong>{value}</strong>
-    </div>
-  );
-}
-
-
-/* =========================
-   SUMMARY ITEM
-========================= */
-
-function SummaryItem({
-  label,
-  value,
-}) {
-  return (
-    <div className="summary-item">
-      <span>{label}</span>
-      <strong>{value}</strong>
-    </div>
-  );
-}
-
-
-/* =========================
-   CALCULATIONS
-========================= */
-
-function calculateTotalMax(
-  subjects
-) {
-  return subjects.reduce(
-    (total, subject) =>
-      total +
-      Number(
-        subject.max_marks ||
-          subject.maximum_marks ||
-          subject.total_marks ||
-          100
-      ),
-    0
-  );
-}
-
-
-function calculateTotalObtained(
-  subjects
-) {
-  return subjects.reduce(
-    (total, subject) =>
-      total +
-      Number(
-        subject.obtained_marks ||
-          subject.marks_obtained ||
-          subject.marks ||
-          0
-      ),
-    0
-  );
-}
-
-
-function calculatePercentage(
-  subjects
-) {
-  const max =
-    calculateTotalMax(subjects);
-
-  const obtained =
-    calculateTotalObtained(subjects);
-
-  if (!max) return 0;
-
-  return (obtained / max) * 100;
-}
-
-
-function calculateOverallPercentage(
-  exams
-) {
-  if (!exams.length) return 0;
-
-  let totalMax = 0;
-  let totalObtained = 0;
-
-  exams.forEach((exam) => {
-    const subjects =
-      exam.subjects ||
-      exam.marks ||
-      exam.results ||
-      [];
-
-    totalMax +=
-      calculateTotalMax(subjects);
-
-    totalObtained +=
-      calculateTotalObtained(subjects);
-  });
-
-  if (!totalMax) return 0;
-
-  return (
-    (totalObtained / totalMax) *
-    100
-  );
-}
-
-
-function calculateGrade(
-  obtained,
-  max
-) {
-  if (!max) return "--";
-
-  const percentage =
-    (obtained / max) * 100;
-
-  if (percentage >= 90) return "A+";
-  if (percentage >= 80) return "A";
-  if (percentage >= 70) return "B+";
-  if (percentage >= 60) return "B";
-  if (percentage >= 50) return "C";
-  if (percentage >= 40) return "D";
-
-  return "F";
-}
-
-
-function calculateOverallGrade(
-  exams
-) {
-  const percentage =
-    calculateOverallPercentage(
-      exams
-    );
-
-  return calculateGrade(
-    percentage,
-    100
-  );
-}
-
-
-function getResultStatus(
-  exam,
-  subjects
-) {
-  if (
-    String(
-      exam.result ||
-        exam.status ||
-        ""
-    ).toLowerCase() === "fail"
-  ) {
-    return "FAIL";
-  }
-
-  const hasFailedSubject =
-    subjects.some((subject) => {
-      const max =
-        Number(
-          subject.max_marks ||
-            subject.maximum_marks ||
-            subject.total_marks ||
-            100
-        );
-
-      const obtained =
-        Number(
-          subject.obtained_marks ||
-            subject.marks_obtained ||
-            subject.marks ||
-            0
-        );
-
-      return (
-        calculatePercentage([
-          {
-            max_marks: max,
-            marks: obtained,
-          },
-        ]) < 33
-      );
-    });
-
-  return hasFailedSubject
-    ? "FAIL"
-    : "PASS";
-}
-
-
-function formatPercentage(value) {
-  const number = Number(value);
-
-  if (Number.isNaN(number)) {
-    return "0.00";
-  }
-
-  return number.toFixed(2);
-}
-
 
 export default StudentResults;

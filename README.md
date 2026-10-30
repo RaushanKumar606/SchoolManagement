@@ -61,6 +61,7 @@ SchoolSystem/
 ```bash
 cd backend
 python -m venv venv
+
 ```
 
 Activate the environment in Windows PowerShell:

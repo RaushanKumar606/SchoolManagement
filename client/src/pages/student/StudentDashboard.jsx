@@ -1,11 +1,12 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { getMyStudentProfile, getMyFeeInvoice, } from "../../services/studentService";
 import "./Student.css";
 
 function StudentDashboard() {
   const navigate = useNavigate();
+  const initialLoadStarted = useRef(false);
 
   const [student, setStudent] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -14,11 +15,14 @@ function StudentDashboard() {
   const [feeInvoices, setFeeInvoices] = useState([]);
   const [feeLoading, setFeeLoading] = useState(true);
   const [feeError, setFeeError] = useState("");
-  useEffect(() => {
-    loadStudentProfile();
-    loadPendingFees();
-  }, []);
+ useEffect(() => {
+  if (initialLoadStarted.current) return;
 
+  initialLoadStarted.current = true;
+
+  loadStudentProfile();
+  loadPendingFees();
+}, []);
   const loadStudentProfile = async () => {
     try {
       setLoading(true);
@@ -532,6 +536,24 @@ function StudentDashboard() {
                 <span className="tile-icon">📅</span>
                 <span>Timetable</span>
               </button>
+
+              
+<button
+  className="quick-link-tile"
+  onClick={() =>
+    openFeaturePopup({
+      title: "Admit Card",
+      description:
+        "View your released examination admit cards and print or save them as PDF.",
+      icon: "🎫",
+      path: "/student/admit-Card",
+    })
+  }
+>
+  <span className="tile-icon">🎫</span>
+  <span>Admit Card</span>
+</button>
+
               <button className="quick-link-tile" onClick={() => openFeaturePopup({ title: "Messages", description: "Communicate with teachers and school administration.", icon: "💬", path: "/student/messages" })}>
                 <span className="tile-icon">💬</span>
                 <span>Messages</span>
