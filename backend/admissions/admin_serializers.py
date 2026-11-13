@@ -32,11 +32,16 @@ class AdmissionApplicationAdminSerializer(
             "state",
             "postal_code",
 
+          "message",
+            "student_photo",
+            "previous_marksheet",
+
             # Application
             "message",
             "status",
             "created_at",
             "updated_at",
+           
         ]
 
         read_only_fields = [

@@ -6,6 +6,7 @@ from .views import (
     AdmissionApplicationDetailView,
     AdmissionApplicationStatusView,
     ApproveAdmissionView,
+    AdmissionDocumentSignedURLView
 )
 
 urlpatterns = [
@@ -39,5 +40,10 @@ urlpatterns = [
     "<int:pk>/create-student/",
     ApproveAdmissionView.as_view(),
     name="admission-create-student",
+),
+path(
+    "<int:pk>/documents/",
+    AdmissionDocumentSignedURLView.as_view(),
+    name="admission-documents",
 ),
 ]

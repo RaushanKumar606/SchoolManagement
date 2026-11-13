@@ -34,8 +34,13 @@ class Migration(migrations.Migration):
                 ('subject', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='class_subjects', to='accounts.subject')),
                 ('school_class', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='class_subjects', to='accounts.schoolclass')),
             ],
-            options={
-                'constraints': [models.UniqueConstraint(fields=('school_class', 'subject'), name='unique_class_subject')],
-            },
+           options={
+    'constraints': [
+        models.UniqueConstraint(
+            fields=('school_class', 'subject'),
+            name='accounts_unique_class_subject'
+        )
+    ],
+},
         ),
     ]

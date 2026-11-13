@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from "react";
 import { academicAdminService } from "../../services/academicAdminService";
-// import "./AcademicManagement.css";
+import "./AcademicManagement.css";
 
 const tabs = [
   "Academic Years",
@@ -10,6 +10,14 @@ const tabs = [
   "Subjects",
   "Class Subjects",
 ];
+
+const tabLabels = {
+  "Academic Years": "Academic Year",
+  Classes: "Class",
+  Sections: "Section",
+  Subjects: "Subject",
+  "Class Subjects": "Class Subject",
+};
 
 export default function AcademicManagement() {
   const [activeTab, setActiveTab] = useState("Academic Years");
@@ -139,7 +147,7 @@ export default function AcademicManagement() {
         });
       }
 
-      setSuccess(`${activeTab.slice(0, -1)} saved successfully.`);
+     setSuccess(`${tabLabels[activeTab]} saved successfully.`);
 
       setForm((previous) => ({
         ...previous,
@@ -212,7 +220,7 @@ export default function AcademicManagement() {
 
       <nav className="academic-tabs">
         {tabs.map((tab) => (
-          <button
+       <button
             key={tab}
             className={activeTab === tab ? "active" : ""}
             onClick={() => {
@@ -231,7 +239,7 @@ export default function AcademicManagement() {
 
       <div className="academic-layout">
         <section className="academic-card">
-          <h2>Add {activeTab.slice(0, -1)}</h2>
+         <h2>Add {tabLabels[activeTab]}</h2>
 
           <form onSubmit={handleSubmit} className="academic-form">
             {activeTab === "Academic Years" && (
@@ -444,9 +452,17 @@ export default function AcademicManagement() {
               </>
             )}
 
-            <button className="academic-submit" type="submit" disabled={loading}>
+            {/* <button className="academic-submit" type="submit" disabled={loading}>
               {loading ? "Please wait..." : `Save ${activeTab.slice(0, -1)}`}
-            </button>
+            </button> */}
+
+            <button
+  className="academic-submit"
+  type="submit"
+  disabled={loading}
+>
+  {loading ? "Saving..." : `Save ${tabLabels[activeTab]}`}
+</button>
           </form>
         </section>
 

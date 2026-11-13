@@ -13,10 +13,48 @@ from .status_serializers import AdmissionStatusSerializer
 from .student_creation_serializers import ApproveAdmissionSerializer
 
 
+
+from django.db import transaction
+from django.shortcuts import get_object_or_404
+
+from rest_framework import generics, status
+from rest_framework.permissions import AllowAny, IsAuthenticated, BasePermission
+from rest_framework.parsers import (
+    MultiPartParser,
+    FormParser,
+    JSONParser,
+)
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from accounts.models import User
+from students.models import Student
+
+from .admin_serializers import AdmissionApplicationAdminSerializer
+from .models import AdmissionApplication
+from .permissions import IsAdmissionAdmin
+from .serializers import AdmissionApplicationSerializer
+from .status_serializers import AdmissionStatusSerializer
+from .student_creation_serializers import ApproveAdmissionSerializer
+
+from common.supabase_storage import create_document_signed_url
+
+from rest_framework.parsers import (
+    MultiPartParser,
+    FormParser,
+    JSONParser,
+)
+
+
 class AdmissionApplicationCreateView(generics.CreateAPIView):
     queryset = AdmissionApplication.objects.all()
     serializer_class = AdmissionApplicationSerializer
     permission_classes = [AllowAny]
+    parser_classes = [
+        MultiPartParser,
+        FormParser,
+        JSONParser,
+    ]
 
 
 class AdmissionApplicationListView(generics.ListAPIView):
@@ -36,49 +74,65 @@ class AdmissionApplicationStatusView(generics.UpdateAPIView):
     serializer_class = AdmissionStatusSerializer
     permission_classes = [IsAdmissionAdmin]
 
+# --------------------------------------------------
+# 5. APPROVE ADMISSION AND CREATE STUDENT
+# --------------------------------------------------
 
 class ApproveAdmissionView(generics.GenericAPIView):
+
     queryset = AdmissionApplication.objects.all()
     serializer_class = ApproveAdmissionSerializer
     permission_classes = [IsAdmissionAdmin]
 
     @transaction.atomic
     def post(self, request, pk):
+
         admission = self.get_object()
 
-        # 1. Prevent duplicate student creation
+        # Prevent duplicate student creation
         if hasattr(admission, "student"):
             return Response(
                 {
-                    "detail": "This admission application has already been converted to a student."
+                    "detail": (
+                        "This admission application has already "
+                        "been converted to a student."
+                    )
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # 2. Update admission status directly
-        admission.status = AdmissionApplication.Status.APPROVED
-        admission.save()
-
-        # 3. Validate request data
+        # Validate request data first
         serializer = self.get_serializer(data=request.data)
+
         if not serializer.is_valid():
-            print("--- SERIALIZER ERRORS ---", serializer.errors)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-        data = serializer.validated_data
-
-        # 4. Generate unique username
-        username = f"student{admission.id:05d}"
-        if User.objects.filter(username=username).exists():
             return Response(
-                {"detail": f"Student username '{username}' already exists."},
+                serializer.errors,
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # 5. Temporary password
+        data = serializer.validated_data
+
+        # Generate unique username
+        username = f"student{admission.id:05d}"
+
+        if User.objects.filter(username=username).exists():
+            return Response(
+                {
+                    "detail": (
+                        f"Student username '{username}' already exists."
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Temporary password
         temporary_password = f"Student@{admission.id}123"
 
-        # 6. Create User record
+        # Update admission status
+        admission.status = AdmissionApplication.Status.APPROVED
+        admission.save(update_fields=["status", "updated_at"])
+
+        # Create user
         user = User.objects.create_user(
             username=username,
             password=temporary_password,
@@ -90,7 +144,7 @@ class ApproveAdmissionView(generics.GenericAPIView):
             is_active=True,
         )
 
-        # 7. Create Student record
+        # Create student
         student = Student.objects.create(
             user=user,
             admission=admission,
@@ -113,15 +167,23 @@ class ApproveAdmissionView(generics.GenericAPIView):
             is_active=True,
         )
 
-        student_id_value = getattr(student, "student_id", student.id)
+        student_id_value = getattr(
+            student,
+            "student_id",
+            student.id,
+        )
 
-        # 8. Return success response
         return Response(
             {
-                "message": "Admission approved and student login created successfully.",
+                "message": (
+                    "Admission approved and student login "
+                    "created successfully."
+                ),
                 "admission_number": admission.application_number,
                 "student_id": student_id_value,
-                "student_name": f"{student.first_name} {student.last_name}",
+                "student_name": (
+                    f"{student.first_name} {student.last_name}"
+                ),
                 "username": username,
                 "temporary_password": temporary_password,
                 "role": user.role,
@@ -130,4 +192,80 @@ class ApproveAdmissionView(generics.GenericAPIView):
                 "section": data["section"].name,
             },
             status=status.HTTP_201_CREATED,
+        )
+
+
+# --------------------------------------------------
+# 6. STUDENT / ADMIN DOCUMENT ACCESS PERMISSION
+# --------------------------------------------------
+
+class IsAdmissionOwnerOrAdmin(BasePermission):
+
+    def has_object_permission(self, request, view, admission):
+
+        # Admin access
+        admin_permission = IsAdmissionAdmin()
+
+        if admin_permission.has_permission(request, view):
+            return True
+
+        # Student can access only their own admission
+        return Student.objects.filter(
+            user=request.user,
+            admission=admission,
+        ).exists()
+
+
+# --------------------------------------------------
+# 7. GENERATE SECURE SUPABASE SIGNED URL
+# --------------------------------------------------
+
+class AdmissionDocumentSignedURLView(APIView):
+
+    permission_classes = [
+        IsAuthenticated,
+        IsAdmissionOwnerOrAdmin,
+    ]
+
+    def get(self, request, pk):
+
+        admission = get_object_or_404(
+            AdmissionApplication,
+            pk=pk,
+        )
+
+        self.check_object_permissions(request, admission)
+
+        photo_path = (
+            admission.student_photo.name
+            if admission.student_photo
+            else None
+        )
+
+        marksheet_path = (
+            admission.previous_marksheet.name
+            if admission.previous_marksheet
+            else None
+        )
+
+        photo_url = (
+            create_document_signed_url(photo_path)
+            if photo_path
+            else None
+        )
+
+        marksheet_url = (
+            create_document_signed_url(marksheet_path)
+            if marksheet_path
+            else None
+        )
+
+        return Response(
+            {
+                "admission_id": admission.id,
+                "student_photo_url": photo_url,
+                "previous_marksheet_url": marksheet_url,
+                "expires_in": 300,
+            },
+            status=status.HTTP_200_OK,
         )

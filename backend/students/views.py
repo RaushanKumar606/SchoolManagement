@@ -171,6 +171,7 @@ class MyStudentProfileView(generics.RetrieveAPIView):
                 "academic_year",
                 "school_class",
                 "section",
+                "admission",
             )
             .filter(user=self.request.user)
             .first()

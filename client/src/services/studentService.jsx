@@ -5,6 +5,16 @@ import { apiRequest } from "../utils/apiRequest";
 export const getMyStudentProfile = async () => {
   return await apiRequest("/students/me/");
 };
+// Get logged-in student's admission documents
+export const getMyStudentDocuments = async (admissionId) => {
+  if (!admissionId) {
+    throw new Error("Admission ID is required.");
+  }
+
+  return await apiRequest(
+    `/admissions/${admissionId}/documents/`
+  );
+};
 
 
 
@@ -187,6 +197,7 @@ export const getMyFeeStructure = async () => {
 
 const studentService = {
   getMyStudentProfile,
+  getMyStudentDocuments,
   getStudentDashboard,
   getMyDailyAttendance,
 

@@ -75,28 +75,35 @@ class AdminStudentSerializer(serializers.ModelSerializer):
             f"{obj.middle_name} "
             f"{obj.last_name}"
         ).strip()
-
 class StudentProfileSerializer(serializers.ModelSerializer):
+
+    admission_id = serializers.IntegerField(
+        read_only=True,
+        allow_null=True,
+    )
 
     academic_year = serializers.CharField(
         source="academic_year.name",
-        read_only=True
+        read_only=True,
     )
 
     school_class = serializers.CharField(
         source="school_class.name",
-        read_only=True
+        read_only=True,
     )
 
     section = serializers.CharField(
         source="section.name",
-        read_only=True
+        read_only=True,
     )
 
     class Meta:
         model = Student
+
         fields = [
             "student_id",
+            "admission_id",
+
             "first_name",
             "middle_name",
             "last_name",

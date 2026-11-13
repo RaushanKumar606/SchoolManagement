@@ -394,9 +394,10 @@ function Home() {
               Apply for Admission
             </Link>
 
-            <a href="#contact" className="admission-outline-btn">
-              Contact Admissions
-            </a>
+      
+            <Link to="/admission/enquiry" className="admission-white-btn">
+              Admissions Enquiry
+            </Link>
 
           </div>
 

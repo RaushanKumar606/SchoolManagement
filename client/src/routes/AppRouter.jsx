@@ -7,6 +7,11 @@ import Unauthorized from "../pages/public/Unauthorized";
 import Home from "../pages/Home";
 import Login from "../pages/public/Login";
 import About from "../pages/About";
+const AdmissionEnquiry = lazy(()=>import("../pages/admission/admissionEnquiry"))
+
+
+
+
 import AccountantRegistration from "../pages/admin/AccountantRegistration";
 
 const AdminTimetable = lazy(() => import("../pages/admin/AdminTimetable"));
@@ -222,6 +227,7 @@ function AppRoutes() {
         <Route path="/register" element={<TeacherRegister />} />
         <Route path="/about" element={<About />} />
         <Route path="/change-password" element={<ChangePassword />} />
+         <Route path="/admission/enquiry" element={<AdmissionEnquiry />} />
         <Route path="/admission/apply" element={<AdmissionForm />}
 
 

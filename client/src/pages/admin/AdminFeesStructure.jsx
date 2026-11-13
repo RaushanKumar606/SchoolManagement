@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { academicAdminService } from "../../services/academicAdminService";
-
+import "./AdminFeesStructure.css";
 import {
   getFeeStructures,
   createFeeStructure,

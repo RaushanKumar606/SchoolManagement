@@ -15,6 +15,18 @@ class AdmissionApplication(models.Model):
         max_length=100,
         blank=True
     )
+
+    student_photo = models.ImageField(
+    upload_to="admissions/student_photos/",
+    null=True,
+    blank=True
+   )
+
+    previous_marksheet = models.FileField(
+    upload_to="admissions/marksheets/",
+    null=True,
+    blank=True
+  )
     student_last_name = models.CharField(max_length=100)
 
     date_of_birth = models.DateField()

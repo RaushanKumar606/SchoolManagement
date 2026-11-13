@@ -10,10 +10,10 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveConstraint(
-            model_name='classsubject',
-            name='unique_class_subject',
-        ),
+       migrations.RemoveConstraint(
+    model_name='classsubject',
+    name='accounts_unique_class_subject',
+),
         migrations.RemoveField(
             model_name='classsubject',
             name='school_class',

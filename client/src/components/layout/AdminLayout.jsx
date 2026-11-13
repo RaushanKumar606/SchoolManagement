@@ -18,17 +18,8 @@ function AdminLayout() {
       {/* SIDEBAR */}
       <aside className="admin-sidebar">
 
-        <div className="sidebar-brand">
-          <div className="brand-logo">📚</div>
-
-          <div>
-            <h4>Data Click Education</h4>
-            <small>Management System</small>
-          </div>
-        </div>
-
         <div className="sidebar-profile">
-          <div className="profile-avatar">S</div>
+          <div className="profile-avatar">R</div>
 
           <div>
             <h5>Super Administrator</h5>
@@ -81,35 +72,6 @@ function AdminLayout() {
             📝 New Admission
           </NavLink>
 
-           <NavLink
-            to="/admin/academics"
-            className={({ isActive }) =>
-              `nav-item ${isActive ? "active" : ""}`
-            }
-          >
-            📝 AcademicManagement
-          </NavLink>
-          <NavLink
-            to="/admin/teacherAssigment"
-            className={({ isActive }) =>
-              `nav-item ${isActive ? "active" : ""}`
-            }
-          >
-            📝 TeacherAssignment 
-          </NavLink>
-
-
-<NavLink
-            to="/admin/timetable"
-            className={({ isActive }) =>
-              `nav-item ${isActive ? "active" : ""}`
-            }
-          >
-            📝 TimeTable 
-          </NavLink>
-
-
-
           {/* FEES */}
           <p className="nav-heading">FEES</p>
 
@@ -140,18 +102,28 @@ function AdminLayout() {
             ⚡ Quick Fee Collect
           </NavLink>
 
+                    {/* ACADEMIC SETUP */}
+          <p className="nav-heading">ACADEMIC SETUP</p>
 
-          {/* ACADEMICS */}
-          <p className="nav-heading">ACADEMICS</p>
 
           <NavLink
+            to="/admin/academics"
+            className={({ isActive }) =>
+              `nav-item ${isActive ? "active" : ""}`
+            }
+          >
+            📝 AcademicManagement
+          </NavLink>
+
+          
+          {/* <NavLink
             to="/admin/attendance"
             className={({ isActive }) =>
               `nav-item ${isActive ? "active" : ""}`
             }
           >
             📅 Attendance
-          </NavLink>
+          </NavLink> */}
 
           <NavLink
             to="/admin/exams"
@@ -159,7 +131,45 @@ function AdminLayout() {
               `nav-item ${isActive ? "active" : ""}`
             }
           >
-            📝 Marks Entry
+            📝 Examination
+          </NavLink>
+
+
+{/* 
+          <NavLink
+            to="/admin/classes"
+            className={({ isActive }) =>
+              `nav-item ${isActive ? "active" : ""}`
+            }
+          >
+            🏫 Classes & Sections
+          </NavLink> */}
+{/* 
+          <NavLink
+            to="/admin/subjects"
+            className={({ isActive }) =>
+              `nav-item ${isActive ? "active" : ""}`
+            }
+          >
+            📚 Subjects
+          </NavLink> */}
+
+          <NavLink
+            to="/admin/teacherAssigment"
+            className={({ isActive }) =>
+              `nav-item ${isActive ? "active" : ""}`
+            }
+          >
+            📚 TeacherAssignment 
+          </NavLink>
+
+          <NavLink
+            to="/admin/timetable"
+            className={({ isActive }) =>
+              `nav-item ${isActive ? "active" : ""}`
+            }
+          >
+            🗓️ Timetable
           </NavLink>
 
 
@@ -184,36 +194,6 @@ function AdminLayout() {
             👨‍👩‍👧 Parents
           </NavLink>
 
-
-          {/* ACADEMIC SETUP */}
-          <p className="nav-heading">ACADEMIC SETUP</p>
-
-          <NavLink
-            to="/admin/classes"
-            className={({ isActive }) =>
-              `nav-item ${isActive ? "active" : ""}`
-            }
-          >
-            🏫 Classes & Sections
-          </NavLink>
-
-          <NavLink
-            to="/admin/subjects"
-            className={({ isActive }) =>
-              `nav-item ${isActive ? "active" : ""}`
-            }
-          >
-            📚 Subjects
-          </NavLink>
-
-          <NavLink
-            to="/admin/timetable"
-            className={({ isActive }) =>
-              `nav-item ${isActive ? "active" : ""}`
-            }
-          >
-            🗓️ Timetable
-          </NavLink>
 
 
           {/* ================= ACCOUNTANT ================= */}
@@ -260,7 +240,7 @@ function AdminLayout() {
 
           <div>
             <h2>Dashboard</h2>
-            <p>Welcome back, Super Administrator!</p>
+            <p> Welcome back,  <span>⭐ {user?.username}</span></p>
           </div>
 
           <div className="header-actions">
@@ -276,9 +256,10 @@ function AdminLayout() {
               <span className="icon circle blue"></span>
 
               <button
-                className="logout-button"
+                className="admin-logout-btn"
                 onClick={handleLogout}
               >
+                            <span className="admin-logout-icon">↪</span>
                 Logout
               </button>
 
