@@ -109,9 +109,6 @@ function Login() {
 
         role: role,
       };
-      console.log("LOGIN RESPONSE:", response);
-      console.log("ROLE:", role);
-      console.log("TEACHER ROLE:", ROLES.TEACHER);
       loginUser(userData);
 
       // =====================================================
@@ -155,19 +152,30 @@ function Login() {
       navigateByRole(role);
 
     } catch (error) {
+  const status = error?.response?.status;
+  const backendMessage =
+    error?.response?.data?.detail ||
+    error?.response?.data?.message;
 
-      console.error(
-        "LOGIN ERROR:",
-        error
-      );
-
-      setError(
-        error?.message ||
-        "Login failed. Please try again."
-      );
-
-    } finally {
-
+  if (!error?.response) {
+    setError("Invalid User ID or Password. Please try again.");
+  } 
+  else if (status === 400 || status === 401) {
+    setError("Invalid User ID or Password. Please try again.");
+  } 
+  else if (status === 403) {
+    setError("Your account does not have permission to log in.");
+  } 
+  else if (status === 429) {
+    setError("Too many login attempts. Please try again later.");
+  } 
+  else if (status >= 500) {
+    setError("We're experiencing a technical issue. Please try again in a few minutes.");
+  } 
+  else {
+    setError(backendMessage || "Login failed. Please try again.");
+  }
+} finally {
       setLoading(false);
 
     }

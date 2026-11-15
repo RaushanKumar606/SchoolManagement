@@ -6,40 +6,49 @@ from teacher.models import ExamMark
 
 
 
+
 class ExamSerializer(serializers.ModelSerializer):
     academic_year_name = serializers.CharField(
         source="academic_year.name",
         read_only=True
     )
-    
+
     class_name = serializers.CharField(
         source="school_class.name",
         read_only=True
     )
-    
+
     section_name = serializers.CharField(
         source="section.name",
         read_only=True
     )
+
     class Meta:
         model = Exam
         fields = [
             "id",
             "name",
+
+            "academic_year",
             "academic_year_name",
-            "class_name",
-            "section_name",
+
             "school_class",
+            "class_name",
+
             "section",
+            "section_name",
+
             "start_date",
             "end_date",
+
             "created_at",
             "updated_at",
+
             "is_admit_card_released",
             "is_timetable_published",
             "is_result_published",
-            
         ]
+
         read_only_fields = [
             "id",
             "created_at",
@@ -54,18 +63,22 @@ class ExamSerializer(serializers.ModelSerializer):
             "academic_year",
             getattr(self.instance, "academic_year", None),
         )
+
         school_class = attrs.get(
             "school_class",
             getattr(self.instance, "school_class", None),
         )
+
         section = attrs.get(
             "section",
             getattr(self.instance, "section", None),
         )
+
         start_date = attrs.get(
             "start_date",
             getattr(self.instance, "start_date", None),
         )
+
         end_date = attrs.get(
             "end_date",
             getattr(self.instance, "end_date", None),
@@ -77,7 +90,9 @@ class ExamSerializer(serializers.ModelSerializer):
             and school_class.academic_year_id != academic_year.id
         ):
             raise serializers.ValidationError({
-                "school_class": "Selected class does not belong to this academic year."
+                "school_class": (
+                    "Selected class does not belong to this academic year."
+                )
             })
 
         if (
@@ -95,8 +110,7 @@ class ExamSerializer(serializers.ModelSerializer):
             })
 
         return attrs
-    
-    
+ 
 
 class ExamMarkSerializer(serializers.ModelSerializer):
     student_name = serializers.SerializerMethodField()

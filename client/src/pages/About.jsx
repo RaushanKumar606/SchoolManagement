@@ -134,7 +134,7 @@ function About() {
             </p>
 
             <div className="principal-signature">
-              <strong>Dr. Rajesh Sharma</strong>
+              <strong>Vicky Kumar Singh</strong>
               <span>Principal, Springfield School</span>
             </div>
 

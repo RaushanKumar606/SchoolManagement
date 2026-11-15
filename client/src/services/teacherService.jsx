@@ -1,66 +1,126 @@
 
-const API_BASE_URL ="http://127.0.0.1:8000/api/auth/teacher";
-import { apiRequest } from "../utils/apiRequest";
 
+import { apiRequest } from "../utils/apiRequest";
 
 export const teacherService = {
 
+  // ===================================================
+  // TEACHER REGISTRATION
+  // ===================================================
+
   register: async (formData) => {
-    return await apiRequest(
-      `/teacher/register/`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      }
-    );
+    return await apiRequest("/teacher/register/", {
+      method: "POST",
+      body: formData,
+    });
   },
 
-  
-login: async (credentials) => {
-  const data = await apiRequest("/teacher/login/",
-   {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(credentials),
-      }
-    );
-  if (!data?.access || !data?.refresh) {
-    throw new Error(
-      "Login response is missing access or refresh token."
-    );
-  }
+  // ===================================================
+  // TEACHER LOGIN
+  // ===================================================
 
-  localStorage.setItem("access_token", data.access);
-  localStorage.setItem("refresh_token", data.refresh);
+  // login: async (credentials) => {
+  //   const data = await apiRequest("/teacher/login/", {
+  //     method: "POST",
+  //     headers: {
+  //       "Content-Type": "application/json",
+  //     },
+  //     body: JSON.stringify(credentials),
+  //   });
 
-  if (data.user_id != null) {
-    localStorage.setItem("user_id", data.user_id);
-  }
+  //   if (!data?.access || !data?.refresh) {
+  //     throw new Error(
+  //       "Login response is missing access or refresh token."
+  //     );
+  //   }
 
-  if (data.username) {
-    localStorage.setItem("username", data.username);
-  }
+  //   localStorage.setItem("access_token", data.access);
+  //   localStorage.setItem("refresh_token", data.refresh);
 
-  if (data.employee_id) {
-    localStorage.setItem("employee_id", data.employee_id);
-  } else {
-    localStorage.setItem("employee_id", employeeId);
-  }
+  //   if (data.user_id != null) {
+  //     localStorage.setItem("user_id", data.user_id);
+  //   }
 
-  if (data.role) {
-    localStorage.setItem("role", data.role);
-  }
+  //   if (data.username) {
+  //     localStorage.setItem("username", data.username);
+  //   }
 
-  return data;
-},
+  //   if (data.employee_id) {
+  //     localStorage.setItem("employee_id", data.employee_id);
+  //   } else {
+  //     localStorage.removeItem("employee_id");
+  //   }
+
+  //   if (data.role) {
+  //     localStorage.setItem("role", data.role);
+  //   }
+
+  //   return data;
+  // },
 
 
-//  TEACHER DETAILS,  
+  // ===================================================
+  // TEACHER LOGIN
+  // ===================================================
+
+  login: async (credentials) => {
+    const employeeId = credentials?.employee_id?.trim();
+    const password = credentials?.password;
+
+    if (!employeeId || !password) {
+      throw new Error("Employee ID and password are required.");
+    }
+
+    const data = await apiRequest("/teacher/login/", {
+      method: "POST",
+      body: JSON.stringify({
+        employee_id: employeeId,
+        password,
+      }),
+    });
+
+    // Validate login response
+    if (!data?.access || !data?.refresh) {
+      throw new Error(
+        "Teacher login response is missing access or refresh token."
+      );
+    }
+
+    // Save authentication tokens
+    localStorage.setItem("access_token", data.access);
+    localStorage.setItem("refresh_token", data.refresh);
+
+    // Save teacher information
+    if (data.user_id != null) {
+      localStorage.setItem("user_id", String(data.user_id));
+    }
+
+    if (data.username) {
+      localStorage.setItem("username", data.username);
+    }
+
+    if (data.employee_id) {
+      localStorage.setItem("employee_id", data.employee_id);
+    } else {
+      localStorage.setItem("employee_id", employeeId);
+    }
+
+    if (data.role) {
+      localStorage.setItem(
+        "role",
+        String(data.role).trim().toUpperCase()
+      );
+    }
+
+    return data;
+  },
+
+
+
+  // ===================================================
+  // TEACHER DETAILS
+  // ===================================================
+
   getTeacherDetails: async (employeeId) => {
     if (!employeeId) {
       throw new Error("Employee ID not found.");
@@ -74,7 +134,9 @@ login: async (credentials) => {
     );
   },
 
-// DASHBOARD,
+  // ===================================================
+  // TEACHER DASHBOARD
+  // ===================================================
 
   getTeacherDashboard: async (employeeId) => {
     if (!employeeId) {
@@ -89,11 +151,15 @@ login: async (credentials) => {
     );
   },
 
- // TIMETABLE, 
+  // ===================================================
+  // TEACHER TIMETABLE
+  // ===================================================
+
   getTeacherTimetable: async (employeeId) => {
     if (!employeeId) {
       throw new Error("Employee ID not found.");
     }
+
     return await apiRequest(
       `/teacher/${encodeURIComponent(employeeId)}/timetable/`,
       {
@@ -102,7 +168,10 @@ login: async (credentials) => {
     );
   },
 
+  // ===================================================
   // CLASS STUDENTS
+  // ===================================================
+
   getClassStudents: async (employeeId, className, section) => {
     if (!employeeId) {
       throw new Error("Employee ID not found.");
@@ -120,9 +189,9 @@ login: async (credentials) => {
     );
   },
 
-
-
- // SUBJECT 
+  // ===================================================
+  // SUBJECT STUDENTS
+  // ===================================================
 
   getSubjectStudents: async (
     employeeId,
@@ -130,11 +199,8 @@ login: async (credentials) => {
     sectionId,
     subjectId
   ) => {
-
     if (!employeeId) {
-      throw new Error(
-        "Employee ID not found."
-      );
+      throw new Error("Employee ID not found.");
     }
 
     if (!classId || !sectionId || !subjectId) {
@@ -150,109 +216,133 @@ login: async (credentials) => {
       }
     );
   },
-   
- getMyCourses: async () => {
-  return await apiRequest("/teacher/my-courses/", {
-    method: "GET",
-  });
-},
+
+  // ===================================================
+  // MY COURSES
+  // ===================================================
+
+  getMyCourses: async () => {
+    return await apiRequest("/teacher/my-courses/", {
+      method: "GET",
+    });
+  },
+
+  // ===================================================
+  // SUBJECT ALLOCATIONS
+  // ===================================================
+
   getSubjectAllocations: async () => {
-
-    return await apiRequest(
-      `/teacher/subject-allocations/`
-    );
-  },
-// ALLOCATIONS
-  createSubjectAllocation: async (
-    allocationData
-  ) => {
-
-    return await apiRequest(
-      `/teacher/subject-allocations/`,
-      {
-        method: "POST",
-        body: JSON.stringify(
-          allocationData
-        ),
-      }
-    );
+    return await apiRequest("/teacher/subject-allocations/", {
+      method: "GET",
+    });
   },
 
-  //  , MARKS,
+  createSubjectAllocation: async (allocationData) => {
+    return await apiRequest("/teacher/subject-allocations/", {
+      method: "POST",
+      body: JSON.stringify(allocationData),
+    });
+  },
+
+  // ===================================================
+  // ADD EXAM MARKS
+  // ===================================================
 
   addMarks: async (marksData) => {
-
-    return await apiRequest(
-      `/teacher/marks/add/`,
-      {
-        method: "POST",
-        body: JSON.stringify(
-          marksData
-        ),
-      }
-    );
+    return await apiRequest("/teacher/marks/add/", {
+      method: "POST",
+      body: JSON.stringify(marksData),
+    });
   },
 
-  addBulkExamMarks: async (
-    marksData
-  ) => {
+  // ===================================================
+  // ADD BULK EXAM MARKS
+  // ===================================================
 
-    return await apiRequest(
-      `/teacher/marks/add-bulk/`,
-      {
-        method: "POST",
-        body: JSON.stringify(
-          marksData
-        ),
-      }
-    );
+  addBulkExamMarks: async (marksData) => {
+    return await apiRequest("/teacher/marks/add-bulk/", {
+      method: "POST",
+      body: JSON.stringify(marksData),
+    });
   },
 
-  getExamMarks: async (
+  // ===================================================
+  // GET EXAM MARKS
+  // ===================================================
+
+ // Get exam-wise students and their existing marks
+getExamMarks: async (classId, sectionId, subjectId, examId) => {
+  if (!classId || !sectionId || !subjectId || !examId) {
+    throw new Error("Class, section, subject and exam are required.");
+  }
+
+  return await apiRequest(
+    `/exams/teacher/class/${classId}/section/${sectionId}/subject/${subjectId}/marks/?exam_id=${examId}`,
+    {
+      method: "GET",
+    }
+  );
+},
+
+// Save one student's marks
+saveExamMark: async (classId, sectionId, subjectId, payload) => {
+  if (!classId || !sectionId || !subjectId) {
+    throw new Error("Class, section and subject are required.");
+  }
+  return await apiRequest(
+    `/exams/teacher/class/${classId}/section/${sectionId}/subject/${subjectId}/marks/`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }
+  );
+},
+
+
+getAvailableExams: async (classId, sectionId, subjectId) => {
+  if (!classId || !sectionId || !subjectId) {
+    throw new Error("Class, section and subject are required.");
+  }
+
+  return await apiRequest(
+    `/exams/teacher/class/${classId}/section/${sectionId}/subject/${subjectId}/available-exams/`,
+    {
+      method: "GET",
+    }
+  );
+},
+  // ===================================================
+  // MARK BULK ATTENDANCE
+  // ===================================================
+
+  markBulkAttendance: async ({
     employeeId,
     classId,
     sectionId,
-    subjectId
-  ) => {
-
-    if (!employeeId) {
-      throw new Error(
-        "Employee ID not found."
-      );
-    }
-
-    return await apiRequest(
-      `/teacher/${encodeURIComponent(
-        employeeId
-      )}/exam-marks/${classId}/${sectionId}/${subjectId}/`
-    );
+    subjectId,
+    date,
+    attendance,
+  }) => {
+    return await apiRequest("/teacher/attendance/mark-bulk/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        employeeId,
+        classId,
+        sectionId,
+        subjectId,
+        date,
+        attendance,
+      }),
+    });
   },
 
- // MARK BULK ATTENDANCE
-markBulkAttendance: async ({
-  employeeId,
-  classId,
-  sectionId,
-  subjectId,
-  date,
-  attendance,
-}) => {
-  return await apiRequest("/teacher/attendance/mark-bulk/", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      employeeId,
-      classId,
-      sectionId,
-      subjectId,
-      date,
-      attendance,
-    }),
-  });
-},
-// ATTENDANCE,
+  // ===================================================
+  // GET CLASS ATTENDANCE
+  // ===================================================
+
   getClassAttendance: async (
     employeeId,
     classId,
@@ -260,21 +350,18 @@ markBulkAttendance: async ({
     subjectId,
     date
   ) => {
-
     if (!employeeId) {
-      throw new Error(
-        "Employee ID not found."
-      );
+      throw new Error("Employee ID not found.");
     }
 
     return await apiRequest(
-      `/teacher/attendance/${encodeURIComponent(
-        employeeId
-      )}/${classId}/${sectionId}/${subjectId}/?date=${encodeURIComponent(
-        date
-      )}`
+      `/teacher/attendance/${encodeURIComponent(employeeId)}/${classId}/${sectionId}/${subjectId}/?date=${encodeURIComponent(date)}`
     );
   },
+
+  // ===================================================
+  // ATTENDANCE HISTORY
+  // ===================================================
 
   getAttendanceHistory: async (
     employeeId,
@@ -282,21 +369,19 @@ markBulkAttendance: async ({
     sectionId,
     subjectId
   ) => {
-
     if (!employeeId) {
-      throw new Error(
-        "Employee ID not found."
-      );
+      throw new Error("Employee ID not found.");
     }
 
     return await apiRequest(
-      `/teacher/attendance-history/${encodeURIComponent(
-        employeeId
-      )}/${classId}/${sectionId}/${subjectId}/`
+      `/teacher/attendance-history/${encodeURIComponent(employeeId)}/${classId}/${sectionId}/${subjectId}/`
     );
   },
 
-   //ASSIGNMENTS
+  // ===================================================
+  // CREATE ASSIGNMENT
+  // ===================================================
+
   createAssignment: async ({
     employee_id,
     class_name,
@@ -306,65 +391,58 @@ markBulkAttendance: async ({
     description,
     due_date,
   }) => {
-
-    return await apiRequest(
-      `teacher/assignment/create/`,
-      {
-        method: "POST",
-        body: JSON.stringify({
-          employee_id,
-          class_name,
-          section,
-          subject,
-          title,
-          description,
-          due_date,
-        }),
-      }
-    );
+    return await apiRequest("/teacher/assignment/create/", {
+      method: "POST",
+      body: JSON.stringify({
+        employee_id,
+        class_name,
+        section,
+        subject,
+        title,
+        description,
+        due_date,
+      }),
+    });
   },
 
+  // ===================================================
+  // GET ASSIGNMENTS
+  // ===================================================
 
-  getAssignments: async (
-    employeeId
-  ) => {
-
+  getAssignments: async (employeeId) => {
     if (!employeeId) {
-      throw new Error(
-        "Employee ID not found."
-      );
+      throw new Error("Employee ID not found.");
     }
 
     return await apiRequest(
-      `/teacher/${encodeURIComponent(
-        employeeId
-      )}/assignments/`
+      `/teacher/${encodeURIComponent(employeeId)}/assignments/`
     );
   },
+
+  // ===================================================
+  // GET ASSIGNMENT SUBMISSIONS
+  // ===================================================
 
   getAssignmentSubmissions: async (
     employeeId,
     assignmentId
   ) => {
-
     if (!employeeId) {
-      throw new Error(
-        "Employee ID not found."
-      );
+      throw new Error("Employee ID not found.");
     }
 
     if (!assignmentId) {
-      throw new Error(
-        "Assignment ID not found."
-      );
+      throw new Error("Assignment ID not found.");
     }
 
     return await apiRequest(
-      `/teacher/${encodeURIComponent(
-        employeeId
-      )}/assignments/${assignmentId}/submissions/`
+      `/teacher/${encodeURIComponent(employeeId)}/assignments/${assignmentId}/submissions/`
     );
   },
+
+  // ===================================================
+  // REVIEW ASSIGNMENT SUBMISSION
+  // ===================================================
 
   reviewAssignmentSubmission: async (
     employeeId,
@@ -372,92 +450,113 @@ markBulkAttendance: async ({
     submissionId,
     reviewData
   ) => {
-
     if (!employeeId) {
-      throw new Error(
-        "Employee ID not found."
-      );
+      throw new Error("Employee ID not found.");
+    }
+
+    if (!assignmentId || !submissionId) {
+      throw new Error("Assignment ID and submission ID are required.");
     }
 
     return await apiRequest(
-      `/teacher/${encodeURIComponent(
-        employeeId
-      )}/assignments/${assignmentId}/submissions/${submissionId}/review/`,
+      `/teacher/${encodeURIComponent(employeeId)}/assignments/${assignmentId}/submissions/${submissionId}/review/`,
       {
         method: "PATCH",
-        body: JSON.stringify(
-          reviewData
-        ),
+        body: JSON.stringify(reviewData),
       }
     );
   },
-
 
   // ===================================================
   // ADMIN - PENDING TEACHERS
   // ===================================================
 
   getPendingTeachers: async () => {
-
     return await apiRequest(
-      `/teacher/admin/pending-teacher/`
+      "/teacher/admin/pending-teacher/",
+      {
+        method: "GET",
+      }
     );
   },
 
+  // ===================================================
+  // ADMIN - PENDING TEACHER DETAILS
+  // ===================================================
+
+  getPendingTeacherDetails: async (teacherId) => {
+    if (!teacherId) {
+      throw new Error("Teacher application ID not found.");
+    }
+
+    return await apiRequest(
+      `/teacher/admin/pending-teacher/${encodeURIComponent(teacherId)}/`,
+      {
+        method: "GET",
+      }
+    );
+  },
+
+  // ===================================================
+  // ADMIN - REJECT TEACHER
+  // ===================================================
+
+  rejectTeacher: async (teacherId, rejectionReason) => {
+    if (!teacherId || !rejectionReason?.trim()) {
+      throw new Error(
+        "Teacher ID and rejection reason are required."
+      );
+    }
+
+    return await apiRequest(
+      `/teacher/admin/reject-teacher/${encodeURIComponent(teacherId)}/`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          rejection_reason: rejectionReason.trim(),
+        }),
+      }
+    );
+  },
 
   // ===================================================
   // ADMIN - ALL APPROVED TEACHERS
   // ===================================================
 
   getTeachers: async () => {
-
     return await apiRequest(
-      `/teacher/admin/teachers/`
+      "/teacher/admin/teachers/",
+      {
+        method: "GET",
+      }
     );
   },
 
-
   // ===================================================
-  // ADMIN - VIEW TEACHER
+  // ADMIN - VIEW APPROVED TEACHER
   // ===================================================
 
-  getAdminTeacherDetails: async (
-    employeeId
-  ) => {
-
+  getAdminTeacherDetails: async (employeeId) => {
     if (!employeeId) {
-      throw new Error(
-        "Employee ID not found."
-      );
+      throw new Error("Employee ID not found.");
     }
 
     return await apiRequest(
-      `/teacher/admin/teachers/${encodeURIComponent(
-        employeeId
-      )}/`
+      `/teacher/admin/teachers/${encodeURIComponent(employeeId)}/`
     );
   },
-
 
   // ===================================================
   // ADMIN - UPDATE TEACHER
   // ===================================================
 
-  updateTeacher: async (
-    employeeId,
-    data
-  ) => {
-
+  updateTeacher: async (employeeId, data) => {
     if (!employeeId) {
-      throw new Error(
-        "Employee ID not found."
-      );
+      throw new Error("Employee ID not found.");
     }
 
     return await apiRequest(
-      `/teacher/admin/teachers/${encodeURIComponent(
-        employeeId
-      )}/update/`,
+      `/teacher/admin/teachers/${encodeURIComponent(employeeId)}/update/`,
       {
         method: "PATCH",
         body: JSON.stringify(data),
@@ -465,19 +564,13 @@ markBulkAttendance: async ({
     );
   },
 
-
   // ===================================================
   // ADMIN - APPROVE TEACHER
   // ===================================================
 
-  approveTeacher: async (
-    teacherId
-  ) => {
-
+  approveTeacher: async (teacherId) => {
     if (!teacherId) {
-      throw new Error(
-        "Teacher ID not found."
-      );
+      throw new Error("Teacher ID not found.");
     }
 
     return await apiRequest(
@@ -488,30 +581,17 @@ markBulkAttendance: async ({
     );
   },
 
+  // ===================================================
+  // LOGOUT
+  // ===================================================
+
   logout: () => {
-
-    localStorage.removeItem(
-      "access_token"
-    );
-
-    localStorage.removeItem(
-      "refresh_token"
-    );
-
-    localStorage.removeItem(
-      "user_id"
-    );
-
-    localStorage.removeItem(
-      "username"
-    );
-
-    localStorage.removeItem(
-      "employee_id"
-    );
-
-    localStorage.removeItem(
-      "role"
-    );
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
+    localStorage.removeItem("user_id");
+    localStorage.removeItem("username");
+    localStorage.removeItem("employee_id");
+    localStorage.removeItem("role");
   },
+
 };

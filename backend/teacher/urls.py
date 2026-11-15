@@ -25,6 +25,9 @@ from .views import (
     teacher_dashboard_api,
     my_teacher_timetable_api,
 
+    pending_teacher_detail,
+reject_teacher_api,
+
     
     teacher_my_courses_api,
 )
@@ -52,6 +55,18 @@ urlpatterns = [
     # =====================================================
     # ADMIN - TEACHER MANAGEMENT
     # =====================================================
+
+    path(
+    "admin/pending-teacher/<int:teacher_id>/",
+    pending_teacher_detail,
+    name="pending-teacher-detail",
+),
+
+path(
+    "admin/reject-teacher/<int:teacher_id>/",
+    reject_teacher_api,
+    name="reject-teacher",
+),
 
     path(
         "admin/pending-teacher/",

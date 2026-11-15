@@ -1,223 +1,830 @@
 
-import React, { useCallback, useEffect, useState } from "react";
+// import { useEffect, useMemo, useState } from "react";
+// import { getMyPublishedResults } from "../../services/exams";
+// import schoolLogo from "../../assets/schoolLogo.png";
+// import "./StudentResults.css";
+
+// const SCHOOL = {
+//   name: "Springfield School ",
+//   motto: "Knowledge • Character • Excellence",
+//   connected: "Affiliated to CBSE, New Delhi | School Code: 57842",
+//   address: "School Road, Sikati parsa saran, India 841219",
+//   otherInfo: "Phone: +91 +91 8102891606 | info@springfieldschool.edu",
+//    leftLogo: schoolLogo,
+//   rightLogo: schoolLogo,
+// };
+
+// function formatValue(value) {
+//   if (value === null || value === undefined || value === "") {
+//     return "—";
+//   }
+//   return value;
+// }
+
+// function SchoolLogo({ src }) {
+//   const [imageError, setImageError] = useState(false);
+
+//   if (!src || imageError) {
+//     return <div className="report-logo-placeholder">SCHOOL</div>;
+//   }
+
+//   return (
+//     <img
+//       className="report-logo"
+//       src={src}
+//       alt="School Logo"
+//       onError={() => setImageError(true)}
+//     />
+//   );
+// }
+
+// function getGradeClass(grade) {
+//   if (grade === "A+" || grade === "A") return "grade-excellent";
+//   if (grade === "B" || grade === "C") return "grade-good";
+//   if (grade === "D" || grade === "E") return "grade-average";
+//   if (grade === "F") return "grade-fail";
+//   return "";
+// }
+
+// function StudentResults() {
+//   const [data, setData] = useState(null);
+//   const [selectedExamId, setSelectedExamId] = useState("");
+//   const [loading, setLoading] = useState(true);
+//   const [error, setError] = useState("");
+
+//   useEffect(() => {
+//     let mounted = true;
+
+//     const fetchResults = async () => {
+//       try {
+//         setLoading(true);
+
+//         const response = await getMyPublishedResults();
+//         const payload = response?.data ?? response;
+
+//         if (!mounted) return;
+
+//         const examResults = Array.isArray(payload?.results)
+//           ? payload.results
+//           : [];
+
+//         setData({
+//           studentId: payload?.studentId,
+//           studentName: payload?.studentName,
+//           fatherName: payload?.fatherName,
+//           motherName: payload?.motherName,
+//           results: examResults,
+//         });
+
+//         if (examResults.length > 0) {
+//           setSelectedExamId(String(examResults[0].examId));
+//         }
+//       } catch (err) {
+//         if (mounted) {
+//           setError(
+//             err?.response?.data?.error ||
+//             err?.message ||
+//             "Unable to load student results."
+//           );
+//         }
+//       } finally {
+//         if (mounted) setLoading(false);
+//       }
+//     };
+
+//     fetchResults();
+
+//     return () => {
+//       mounted = false;
+//     };
+//   }, []);
+
+//   const selectedExam = useMemo(() => {
+//     if (!data?.results?.length) return null;
+
+//     return (
+//       data.results.find(
+//         (exam) => String(exam.examId) === selectedExamId
+//       ) || data.results[0]
+//     );
+//   }, [data, selectedExamId]);
+
+//   const subjects = selectedExam?.subjects || [];
+
+//   if (loading) {
+//     return (
+//       <div className="student-results-page">
+//         <div className="results-message">Loading student results...</div>
+//       </div>
+//     );
+//   }
+
+//   if (error) {
+//     return (
+//       <div className="student-results-page">
+//         <div className="results-message results-error">{error}</div>
+//       </div>
+//     );
+//   }
+
+//   if (!data?.results?.length) {
+//     return (
+//       <div className="student-results-page">
+//         <div className="results-message">
+//           No published results available.
+//         </div>
+//       </div>
+//     );
+//   }
+
+//   return (
+//     <div className="student-results-page">
+
+//       <div className="report-toolbar">
+//         <div>
+//           <label htmlFor="exam-select">Select Examination</label>
+//           <select
+//             id="exam-select"
+//             value={selectedExam?.examId ?? ""}
+//             onChange={(e) => setSelectedExamId(e.target.value)}
+//           >
+//             {data.results.map((exam) => (
+//               <option key={exam.examId} value={exam.examId}>
+//                 {exam.examName}
+//               </option>
+//             ))}
+//           </select>
+//         </div>
+
+//         <button
+//           type="button"
+//           className="print-result-btn"
+//           onClick={() => window.print()}
+//         >
+//           Print Report Card
+//         </button>
+//       </div>
+
+//       <div className="report-card">
+
+//         {/* SCHOOL HEADER */}
+//         <header className="report-header">
+//           <SchoolLogo src={SCHOOL.leftLogo} />
+
+//           <div className="report-school-info">
+//             <h1>{SCHOOL.name}</h1>
+//             <p>{SCHOOL.motto}</p>
+//             {/* <p>{SCHOOL.connected}</p> */}
+           
+//              {/* <p>{SCHOOL.otherInfo}</p> */}
+//             <h2>MARK SHEET FOR EXAMINATION SESSION {formatValue(selectedExam.academicYear)} ( {selectedExam.examName})</h2>
+           
+//           </div>
+//         </header>
+
+//         {/* STUDENT INFORMATION */}
+// <section className="report-section">
+//   <div className="report-student-container">
+
+//     {/* LEFT SIDE - STUDENT DETAILS */}
+//     <div className="report-student-details">
+
+//       <div className="student-info-item">
+//         <span>Student ID</span>
+//         <strong>{formatValue(data.studentId)}</strong>
+//       </div>
+
+//       <div className="student-info-item">
+//         <span>Student Name</span>
+//         <strong>{formatValue(data.studentName)}</strong>
+//       </div>
+
+//       <div className="student-info-item">
+//         <span>Father Name</span>
+//         <strong>{formatValue(data.fatherName)}</strong>
+//       </div>
+
+//       <div className="student-info-item">
+//         <span>Mother Name</span>
+//         <strong>{formatValue(data.motherName)}</strong>
+//       </div>
+
+//       <div className="student-info-item">
+//         <span>Name of School</span>
+//         <strong>Springfield School</strong>
+//       </div>
+// {/* FOUR COLUMN STUDENT DETAILS */}
+// <div className="student-four-column">
+
+//   <div className="student-info-item">
+//     <span>Roll Number</span>
+//     <strong>{formatValue(data.rollNumber)}</strong>
+//   </div>
+
+//   <div className="student-info-item">
+//     <span>Class</span>
+//     <strong>{formatValue(selectedExam.class)}</strong>
+//   </div>
+
+//   <div className="student-info-item">
+//     <span>Stream</span>
+//     <strong>{formatValue(data.stream)}</strong>
+//   </div>
+
+//   <div className="student-info-item">
+//     <span>Date of Birth</span>
+//     <strong>{formatValue(data.dateOfBirth)}</strong>
+//   </div>
+
+// </div>
+
+//     </div>
+
+//     {/* RIGHT SIDE - STUDENT PHOTO */}
+//     <div className="report-student-photo">
+//       <img
+//         src={data.studentImage || "/default-student.png"}
+//         alt="Student"
+//       />
+//       <span>Student Photograph</span>
+//     </div>
+
+//   </div>
+// </section>
+
+//         {/* SUBJECT MARKS */}
+//         <section className="report-section">
+//           <h3>ACADEMIC PERFORMANCE</h3>
+
+//           <div className="report-table-wrapper">
+//             <table className="report-marks-table">
+//               <thead>
+//                 <tr>
+                  
+//                   <th>Subject</th>
+//                   <th> Maximum Marks</th>
+//                   <th>Passing Marks</th>
+//                   <th>Obtained Marks</th>
+//                   <th>Percentage</th>
+//                   <th>Grade</th>
+//                   <th>Status</th>
+//                 </tr>
+//               </thead>
+
+//               <tbody>
+//                 {subjects.map((subject, index) => (
+//                   <tr key={`${subject.subject}-${index}`}>
+                  
+//                     <td className="subject-name">
+//                       {formatValue(subject.subject)}
+//                     </td>
+//                     <td>{formatValue(subject.totalMarks)}</td>
+//                     <td>{formatValue(subject.passingMarks)}</td>
+//                     <td>{formatValue(subject.marksObtained)}</td>
+//                     <td>{formatValue(subject.percentage)}%</td>
+
+//                     <td>
+//                       <span className={`grade-badge ${getGradeClass(subject.grade)}`}>
+//                         {formatValue(subject.grade)}
+//                       </span>
+//                     </td>
+
+//                     <td>
+//                       <span
+//                         className={`status-badge ${
+//                           subject.status === "PASS"
+//                             ? "status-pass"
+//                             : subject.status === "FAIL"
+//                             ? "status-fail"
+//                             : "status-na"
+//                         }`}
+//                       >
+//                         {formatValue(subject.status)}
+//                       </span>
+//                     </td>
+//                   </tr>
+//                 ))}
+
+//                 {subjects.length === 0 && (
+//                   <tr>
+//                     <td colSpan="8">No subject marks available.</td>
+//                   </tr>
+//                 )}
+//                 <tr><td><div>
+//               <span>Total Marks</span>
+//               <strong>{formatValue(selectedExam.totalObtained)}</strong>
+//             </div> <div className="final-result-box">
+//               <span>FINAL RESULT</span>
+//               <strong
+//                 className={
+//                   selectedExam.finalStatus === "PASS"
+//                     ? "final-pass"
+//                     : selectedExam.finalStatus === "FAIL"
+//                     ? "final-fail"
+//                     : "final-na"
+//                 }
+//               >
+//                 {formatValue(selectedExam.finalStatus)}
+//               </strong>
+//             </div></td>
+//             </tr>
+//             <tr>
+//               <td><div>
+//               <span>Overall Percentage</span>
+//               <strong>{formatValue(selectedExam.percentage)}%</strong>
+//             </div>
+//             <div>
+//               <span>Overall Grade</span>
+//               <strong className={`grade-badge ${getGradeClass(selectedExam.overallGrade)}`}>
+//                 {formatValue(selectedExam.overallGrade)}
+//               </strong>
+//             </div>
+
+// </td>
+//             </tr>
+          
+//               </tbody>
+              
+//             </table>
+//           </div>
+//         </section>
+
+//         {/* SIGNATURES */}
+//         <section className="report-signatures">
+//           <div>
+//             <div className="signature-line"></div>
+//             <strong>Class Teacher</strong>
+//           </div>
+
+//           <div>
+//             <div className="signature-line"></div>
+//             <strong>Office In-charge</strong>
+//           </div>
+
+//           <div>
+//             <div className="signature-line"></div>
+//             <strong>Principal's Signature</strong>
+//           </div>
+//         </section>
+
+//         <footer className="report-footer">
+//           This is a computer-generated student report card.
+//         </footer>
+
+//       </div>
+//     </div>
+//   );
+// }
+
+// export default StudentResults;
+
+
+
+import { useEffect, useMemo, useState } from "react";
 import { getMyPublishedResults } from "../../services/exams";
+import schoolLogo from "../../assets/schoolLogo.png";
 import "./StudentResults.css";
 
+const SCHOOL = {
+  name: "Springfield School",
+  motto: "Knowledge • Character • Excellence",
+  connected: "Affiliated to CBSE, New Delhi | School Code: 57842",
+  address: "School Road, Sikati Parsa, Saran, India 841219",
+  otherInfo: "Phone: +91 8102891606 | info@springfieldschool.edu",
+  leftLogo: schoolLogo,
+  rightLogo: schoolLogo,
+};
+
+function formatValue(value) {
+  if (value === null || value === undefined || value === "") {
+    return "—";
+  }
+  return value;
+}
+
+function SchoolLogo({ src }) {
+  const [imageError, setImageError] = useState(false);
+
+  if (!src || imageError) {
+    return <div className="report-logo-placeholder">SCHOOL</div>;
+  }
+
+  return (
+    <img
+      className="report-logo"
+      src={src}
+      alt="School Logo"
+      onError={() => setImageError(true)}
+    />
+  );
+}
+
+function getGradeClass(grade) {
+  if (grade === "A+" || grade === "A") return "grade-excellent";
+  if (grade === "B" || grade === "C") return "grade-good";
+  if (grade === "D" || grade === "E") return "grade-average";
+  if (grade === "F") return "grade-fail";
+  return "";
+}
+
+function getStatusClass(status) {
+  if (status === "PASS") return "status-pass";
+  if (status === "FAIL") return "status-fail";
+  return "status-na";
+}
+
 function StudentResults() {
-  const [results, setResults] = useState([]);
+  const [data, setData] = useState(null);
+  const [selectedExamId, setSelectedExamId] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const loadResults = useCallback(async () => {
-    setLoading(true);
-    setError("");
+  useEffect(() => {
+    let mounted = true;
 
-    try {
-      const response = await getMyPublishedResults();
+    const fetchResults = async () => {
+      try {
+        setLoading(true);
 
-      const data = Array.isArray(response)
-        ? response
-        : response?.results ??
-          response?.data ??
-          response?.results_list ??
-          [];
+        const response = await getMyPublishedResults();
+        const payload = response?.data ?? response;
 
-      setResults(Array.isArray(data) ? data : []);
-    } catch (err) {
-      setError(
-        err?.message || "Results load nahi ho sake. Please try again."
-      );
-    } finally {
-      setLoading(false);
-    }
+        if (!mounted) return;
+
+        const examResults = Array.isArray(payload?.results)
+          ? payload.results
+          : [];
+
+        setData({
+          studentId: payload?.studentId,
+          studentName: payload?.studentName,
+          fatherName: payload?.fatherName,
+          motherName: payload?.motherName,
+          rollNumber: payload?.rollNumber,
+          stream: payload?.stream,
+          dateOfBirth: payload?.dateOfBirth,
+          studentImage: payload?.studentImage,
+          results: examResults,
+        });
+
+        if (examResults.length > 0) {
+          setSelectedExamId(String(examResults[0].examId));
+        }
+      } catch (err) {
+        if (mounted) {
+          setError(
+            err?.response?.data?.error ||
+            err?.message ||
+            "Unable to load student results."
+          );
+        }
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    fetchResults();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  useEffect(() => {
-    loadResults();
-  }, [loadResults]);
+  const selectedExam = useMemo(() => {
+    if (!data?.results?.length) return null;
 
-  const getValue = (item, keys, fallback = "—") => {
-    for (const key of keys) {
-      const value = item?.[key];
-      if (value !== undefined && value !== null && value !== "") {
-        return value;
-      }
-    }
-    return fallback;
-  };
-
-  const getMarks = (item) => {
-    const obtained = Number(
-      getValue(item, ["obtained_marks", "marks_obtained", "marks", "marks_obtained_total"], 0)
+    return (
+      data.results.find(
+        (exam) => String(exam.examId) === selectedExamId
+      ) || data.results[0]
     );
-    const total = Number(
-      getValue(item, ["total_marks", "maximum_marks", "max_marks"], 0)
-    );
+  }, [data, selectedExamId]);
 
-    return { obtained, total };
-  };
-
-  const getStatus = (item) => {
-    const status = getValue(item, ["status", "result_status", "grade"], "");
-    if (status !== "") return String(status);
-
-    const { obtained, total } = getMarks(item);
-    if (!total) return "Not available";
-
-    const passingMarks = Number(
-      getValue(item, ["passing_marks", "pass_marks"], 0)
-    );
-
-    return obtained >= passingMarks ? "Pass" : "Fail";
-  };
-
-  const getPercentage = (item) => {
-    const direct = item?.percentage;
-    if (direct !== undefined && direct !== null && direct !== "") {
-      return `${Number(direct).toFixed(2)}%`;
-    }
-
-    const { obtained, total } = getMarks(item);
-    return total > 0
-      ? `${((obtained / total) * 100).toFixed(2)}%`
-      : "—";
-  };
-
-  const printResults = () => {
-    window.print();
-  };
+  const subjects = selectedExam?.subjects || [];
 
   if (loading) {
     return (
       <div className="student-results-page">
-        <div className="results-message">Loading your results...</div>
+        <div className="results-message">Loading student results...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="student-results-page">
+        <div className="results-message results-error">{error}</div>
+      </div>
+    );
+  }
+
+  if (!data?.results?.length) {
+    return (
+      <div className="student-results-page">
+        <div className="results-message">
+          No published results available.
+        </div>
       </div>
     );
   }
 
   return (
-    <main className="student-results-page">
-      <section className="results-header">
+    <div className="student-results-page">
+
+      {/* TOOLBAR */}
+      <div className="report-toolbar">
         <div>
-          <p className="results-eyebrow">ACADEMIC PERFORMANCE</p>
-          <h1>My Results</h1>
-          <p className="results-subtitle">
-            View your published examination results and marks.
-          </p>
-        </div>
+          <label htmlFor="exam-select">Select Examination</label>
 
-        <div className="results-actions">
-          <button
-            type="button"
-            className="results-btn results-btn-secondary"
-            onClick={loadResults}
+          <select
+            id="exam-select"
+            value={selectedExam?.examId ?? ""}
+            onChange={(e) => setSelectedExamId(e.target.value)}
           >
-            Refresh
-          </button>
-          <button
-            type="button"
-            className="results-btn results-btn-primary"
-            onClick={printResults}
-            disabled={results.length === 0}
-          >
-            Print / Save PDF
-          </button>
+            {data.results.map((exam) => (
+              <option key={exam.examId} value={exam.examId}>
+                {exam.examName}
+              </option>
+            ))}
+          </select>
         </div>
-      </section>
 
-      {error && (
-        <div className="results-error" role="alert">
-          <p>{error}</p>
-          <button type="button" onClick={loadResults}>
-            Try Again
-          </button>
-        </div>
-      )}
+        <button
+          type="button"
+          className="print-result-btn"
+          onClick={() => window.print()}
+        >
+          Print Report Card
+        </button>
+      </div>
 
-      {!error && results.length === 0 && (
-        <section className="results-empty">
-          <div className="results-empty-icon">📋</div>
-          <h2>No published results yet</h2>
-          <p>
-            Your results will appear here after your school publishes them.
-          </p>
-        </section>
-      )}
+      <div className="report-card">
 
-      {results.length > 0 && (
-        <section className="results-content">
-          <div className="results-summary">
-            <div className="results-summary-card">
-              <span>Published Records</span>
-              <strong>{results.length}</strong>
-            </div>
-            <div className="results-summary-card">
-              <span>Subjects Listed</span>
-              <strong>{results.length}</strong>
-            </div>
+        {/* SCHOOL HEADER */}
+        <header className="report-header">
+
+          <SchoolLogo src={SCHOOL.leftLogo} />
+
+          <div className="report-school-info">
+            <h1>{SCHOOL.name}</h1>
+            <p>{SCHOOL.motto}</p>
+            {/* <p>{SCHOOL.address}</p>
+            <p>{SCHOOL.otherInfo}</p> */}
+
+            <h2>
+              MARK SHEET FOR EXAMINATION SESSION{" "}
+              {formatValue(selectedExam.academicYear)}
+              {" "}({selectedExam.examName})
+            </h2>
           </div>
 
-          <div className="results-table-wrapper">
-            <table className="results-table">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Exam</th>
-                  <th>Subject</th>
-                  <th>Obtained Marks</th>
-                  <th>Total Marks</th>
-                  <th>Percentage</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {results.map((item, index) => {
-                  const { obtained, total } = getMarks(item);
-                  const status = getStatus(item);
-                  const isPass = status.toLowerCase().includes("pass") &&
-                    !status.toLowerCase().includes("fail");
+          <SchoolLogo src={SCHOOL.rightLogo} />
 
-                  return (
-                    <tr key={item.id ?? `${index}-${item.subject ?? "result"}`}>
-                      <td>{index + 1}</td>
-                      <td>
-                        {getValue(item, [
-                          "exam_name",
-                          "exam",
-                          "examination_name",
-                        ])}
-                      </td>
-                      <td>
-                        {getValue(item, [
-                          "subject_name",
-                          "subject",
-                        ])}
-                      </td>
-                      <td>{obtained}</td>
-                      <td>{total || "—"}</td>
-                      <td>{getPercentage(item)}</td>
-                      <td>
-                        <span
-                          className={`results-status ${
-                            isPass ? "results-status-pass" : "results-status-other"
-                          }`}
-                        >
-                          {status}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+        </header>
+
+{/* STUDENT INFORMATION */}
+<section className="report-section">
+  <h3>STUDENT INFORMATION</h3>
+
+  <div className="report-student-container">
+
+    {/* STUDENT DETAILS TABLE */}
+    <div className="student-information-left">
+
+      <table className="student-information-table">
+        <tbody>
+
+          <tr>
+            <th>Student ID</th>
+            <td>{formatValue(data.studentId)}</td>
+
+            <th>Student Name</th>
+            <td>{formatValue(data.studentName)}</td>
+          </tr>
+
+          <tr>
+            <th>Father Name</th>
+            <td>{formatValue(data.fatherName)}</td>
+
+            <th>Mother Name</th>
+            <td>{formatValue(data.motherName)}</td>
+          </tr>
+
+          <tr>
+            <th>Name of School</th>
+            <td colSpan={3}>Springfield School</td>
+          </tr>
+
+          <tr>
+            <th>Roll Number</th>
+            <td>{formatValue(data.rollNumber)}</td>
+
+            <th>Class</th>
+            <td>{formatValue(selectedExam.class)}</td>
+          </tr>
+
+          <tr>
+            <th>Stream</th>
+            <td>{formatValue(data.stream)}</td>
+
+            {/* <th>Date of Birth</th>
+            <td>{formatValue(data.dateOfBirth)}</td> */}
+          </tr>
+
+          <tr>
+            <th>Section</th>
+            <td>{formatValue(selectedExam.section)}</td>
+
+            <th>Academic Year</th>
+            <td>{formatValue(selectedExam.academicYear)}</td>
+          </tr>
+{/* 
+          <tr>
+  <th>Roll Number</th>
+  <td>{formatValue(data.rollNumber)}</td>
+  <th>Class</th>
+  <td>{formatValue(selectedExam.class)}</td>
+  <th>Date of Birth</th>
+  <td>{formatValue(data.dateOfBirth)}</td>
+</tr> */}
+
+        </tbody>
+      </table>
+
+    </div>
+
+    {/* STUDENT PHOTO */}
+    <div className="report-student-photo">
+      <img
+        src={data.studentImage || "/default-student.png"}
+        alt="Student Photograph"
+        onError={(e) => {
+          e.currentTarget.onerror = null;
+          e.currentTarget.src = "/default-student.png";
+        }}
+      />
+      <span>Student Photograph</span>
+    </div>
+
+  </div>
+</section>
+
+
+      
+{/* ACADEMIC PERFORMANCE */}
+<section className="report-section">
+  <h3>ACADEMIC PERFORMANCE</h3>
+
+  <div className="report-table-wrapper">
+
+    <table className="report-marks-table">
+
+      <thead>
+        <tr>
+          <th>Subject</th>
+          <th>Maximum Marks</th>
+          <th>Passing Marks</th>
+          <th>Obtained Marks</th>
+          <th>Percentage</th>
+          <th>Grade</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+
+      <tbody>
+
+        {subjects.map((subject, index) => (
+          <tr key={`${subject.subject}-${index}`}>
+
+            <td className="subject-name">
+              {formatValue(subject.subject)}
+            </td>
+
+            <td>{formatValue(subject.totalMarks)}</td>
+
+            <td>{formatValue(subject.passingMarks)}</td>
+
+            <td>{formatValue(subject.marksObtained)}</td>
+
+            <td>{formatValue(subject.percentage)}%</td>
+
+            <td>
+              <span className={`grade-badge ${getGradeClass(subject.grade)}`}>
+                {formatValue(subject.grade)}
+              </span>
+            </td>
+
+            <td>
+              <span className={`status-badge ${
+                subject.status === "PASS"
+                  ? "status-pass"
+                  : subject.status === "FAIL"
+                  ? "status-fail"
+                  : "status-na"
+              }`}>
+                {formatValue(subject.status)}
+              </span>
+            </td>
+
+          </tr>
+        ))}
+
+        {subjects.length === 0 && (
+          <tr>
+            <td colSpan={7}>No subject marks available.</td>
+          </tr>
+        )}
+
+      </tbody>
+
+      {/* SUMMARY */}
+      {subjects.length > 0 && (
+        <tfoot>
+
+          {/* TOTAL MARKS */}
+          <tr>
+            <th colSpan={2}>Total Maximum Marks</th>
+            <td>
+              <strong>{formatValue(selectedExam.totalMarks)}</strong>
+            </td>
+
+            <th colSpan={2}>Total Obtained Marks</th>
+            <td colSpan={2}>
+              <strong>{formatValue(selectedExam.totalObtained)}</strong>
+            </td>
+          </tr>
+
+          {/* PERCENTAGE AND GRADE */}
+          <tr>
+            <th colSpan={2}>Overall Percentage</th>
+            <td>
+              <strong>{formatValue(selectedExam.percentage)}%</strong>
+            </td>
+
+            <th colSpan={2}>Overall Grade</th>
+            <td colSpan={2}>
+              <span className={`grade-badge ${getGradeClass(selectedExam.overallGrade)}`}>
+                {formatValue(selectedExam.overallGrade)}
+              </span>
+            </td>
+          </tr>
+
+          {/* FINAL RESULT */}
+          <tr>
+            <th colSpan={2}>Final Result</th>
+            <td colSpan={2}>
+              <span className={`status-badge ${
+                selectedExam.finalStatus === "PASS"
+                  ? "status-pass"
+                  : selectedExam.finalStatus === "FAIL"
+                  ? "status-fail"
+                  : "status-na"
+              }`}>
+                {formatValue(selectedExam.finalStatus)}
+              </span>
+            </td>
+
+            <th colSpan={2}>Examination</th>
+            <td>{formatValue(selectedExam.examName)}</td>
+          </tr>
+
+        </tfoot>
+      )}
+
+    </table>
+
+  </div>
+</section>
+
+
+        {/* SIGNATURES */}
+        <section className="report-signatures">
+
+          <div>
+            <div className="signature-line"></div>
+            <strong>Class Teacher</strong>
           </div>
 
-          <p className="results-note">
-            Only results published by your school are displayed here.
-          </p>
+          <div>
+            <div className="signature-line"></div>
+            <strong>Office In-charge</strong>
+          </div>
+
+          <div>
+            <div className="signature-line"></div>
+            <strong>Principal's Signature</strong>
+          </div>
+
         </section>
-      )}
-    </main>
+
+        {/* FOOTER */}
+        <footer className="report-footer">
+          This is a computer-generated student report card.
+        </footer>
+
+      </div>
+
+    </div>
   );
 }
 

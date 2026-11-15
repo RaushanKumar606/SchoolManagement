@@ -1,3 +1,4 @@
+import logging
 from django.contrib.auth import authenticate
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -21,6 +22,17 @@ from datetime import date
 
 from django.db import transaction
 
+
+from django.db import transaction
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAdminUser
+from rest_framework.response import Response
+
+from .models import Teacher, TeacherRegistration
+from common.supabase_storage import create_document_signed_url
+
+logger = logging.getLogger(__name__)
+
 from rest_framework.decorators import (
     api_view,
     permission_classes
@@ -33,7 +45,36 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from rest_framework.decorators import (
+    api_view,
+    permission_classes,
+    parser_classes,
+)
+
+from rest_framework.parsers import (
+    MultiPartParser,
+    FormParser,
+    JSONParser,
+)
+from common.supabase_storage import create_document_signed_url
+from .models import Teacher, TeacherRegistration
+
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework import status
+
+from common.supabase_storage import (
+    upload_document,
+    delete_document,
+)
+
+from .models import TeacherRegistration
+from django.contrib.auth import get_user_model
+
 User = get_user_model()
+logger = logging.getLogger(__name__)
+
+
 import json
 from .models import (
     Teacher, TeacherRegistration, TeacherSubjectAllocation,
@@ -48,6 +89,8 @@ from academics.models import (
     Subject,
 )
 
+from applications.utils import is_teacher_hiring_open
+from rest_framework import status
 
 from students.models import Student
 from rest_framework import generics
@@ -100,56 +143,238 @@ class TeacherSubjectAllocationListCreateView(
         return queryset
 
 
-@api_view(['POST'])
-@permission_classes([AllowAny]) 
+@api_view(["POST"])
+@permission_classes([AllowAny])
+@parser_classes([MultiPartParser, FormParser, JSONParser])
 def teacher_register_api(request):
+    uploaded_paths = []
+    user = None
+
     try:
+        # 1. Check teacher hiring setting
+        if not is_teacher_hiring_open():
+            return Response(
+                {
+                    "success": False,
+                    "error": "Teacher hiring applications are currently closed."
+                },
+                status=status.HTTP_403_FORBIDDEN
+            )
+
         data = request.data
-        email = data.get('email')
-        password = data.get('password') # Frontend se password bhi aana chahiye
-        name = data.get('name')
+        files = request.FILES
 
-        if not email or not password:
-            return Response({"success": False, "error": "Email and password are required!"}, status=400)
+        # 2. Validate required text fields
+        required_fields = [
+            "name",
+            "email",
+            "password",
+            "phone",
+            "department",
+            "primary_subject",
+            "qualification",
+        ]
 
-        # 1. Check if email already exists in TeacherRegistration
-        if TeacherRegistration.objects.filter(email=email).exists():
-            return Response({"success": False, "error": "Email is already registered!"}, status=400)
+        for field in required_fields:
+            if not data.get(field):
+                return Response(
+                    {
+                        "success": False,
+                        "error": f"{field.replace('_', ' ').title()} is required."
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
-        # 2. Django User create karein (Login ke liye)
-        # Email ko hi username bana sakte hain ya alag se username le sakte hain
-        if User.objects.filter(username=email).exists():
-            return Response({"success": False, "error": "User with this email already exists!"}, status=400)
+        name = data.get("name").strip()
+        email = data.get("email").strip().lower()
+        password = data.get("password")
 
-        user = User.objects.create_user(
-            username=email,
-            email=email,
-            password=password,
-            first_name=name,
-            role='teacher' # Agar aapke User model mein role field hai
+        # 3. Check duplicate email
+        if TeacherRegistration.objects.filter(email__iexact=email).exists():
+            return Response(
+                {
+                    "success": False,
+                    "error": "Email is already registered!"
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if User.objects.filter(username__iexact=email).exists():
+            return Response(
+                {
+                    "success": False,
+                    "error": "User with this email already exists!"
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 4. Document configuration
+        document_config = {
+            "profile_photo": {
+                "types": ["image/jpeg", "image/png"],
+                "extensions": [".jpg", ".jpeg", ".png"],
+                "folder": "teacher-applications/profile",
+                "required": True,
+            },
+            "resume": {
+                "types": ["application/pdf"],
+                "extensions": [".pdf"],
+                "folder": "teacher-applications/resume",
+                "required": True,
+            },
+            "qualification_certificate": {
+                "types": ["application/pdf"],
+                "extensions": [".pdf"],
+                "folder": "teacher-applications/qualification",
+                "required": True,
+            },
+            "experience_certificate": {
+                "types": ["application/pdf"],
+                "extensions": [".pdf"],
+                "folder": "teacher-applications/experience",
+                "required": False,
+            },
+        }
+
+        max_size = 5 * 1024 * 1024  # 5 MB
+
+        # 5. Validate all files before uploading
+        for field, config in document_config.items():
+            uploaded_file = files.get(field)
+
+            if not uploaded_file:
+                if config["required"]:
+                    return Response(
+                        {
+                            "success": False,
+                            "error": f"{field.replace('_', ' ').title()} is required."
+                        },
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                continue
+
+            extension = "." + uploaded_file.name.rsplit(".", 1)[-1].lower() \
+                if "." in uploaded_file.name else ""
+
+            if uploaded_file.content_type not in config["types"]:
+                return Response(
+                    {
+                        "success": False,
+                        "error": f"Invalid file type for {field}."
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            if extension not in config["extensions"]:
+                return Response(
+                    {
+                        "success": False,
+                        "error": f"Invalid file extension for {field}."
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            if uploaded_file.size > max_size:
+                return Response(
+                    {
+                        "success": False,
+                        "error": f"{field} must not exceed 5 MB."
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        # 6. Upload documents to Supabase
+        document_paths = {
+            "profile_photo_path": None,
+            "resume_path": None,
+            "qualification_certificate_path": None,
+            "experience_certificate_path": None,
+        }
+
+        for field, config in document_config.items():
+            uploaded_file = files.get(field)
+
+            if uploaded_file:
+                path = upload_document(
+                    uploaded_file,
+                    config["folder"]
+                )
+
+                uploaded_paths.append(path)
+
+                document_paths[f"{field}_path"] = path
+
+        # 7. Create user and registration
+        with transaction.atomic():
+            user = User.objects.create_user(
+                username=email,
+                email=email,
+                password=password,
+                first_name=name,
+                role="teacher",
+                is_active=False,
+            )
+
+            TeacherRegistration.objects.create(
+                user=user,
+                name=name,
+                email=email,
+                phone=data.get("phone"),
+                department=data.get("department"),
+                primary_subject=data.get("primary_subject"),
+                qualification=data.get("qualification"),
+                status="Pending",
+                **document_paths
+            )
+
+        return Response(
+            {
+                "success": True,
+                "message": (
+                    "Teacher registration submitted successfully! "
+                    "Please wait for Admin approval."
+                )
+            },
+            status=status.HTTP_201_CREATED
         )
-        user.is_active = False # Admin approve karega tabhi active hoga (Optional)
-        user.save()
 
-        # 3. TeacherRegistration table mein data save karke User se link karein
-        TeacherRegistration.objects.create(
-            user=user, # User link kar diya
-            name=name,
-            email=email,
-            phone=data.get('phone'),
-            department=data.get('department'),
-            primary_subject=data.get('primary_subject'),
-            qualification=data.get('qualification'),
-            status='Pending'
+    except ValueError as error:
+        for path in uploaded_paths:
+            try:
+                delete_document(path)
+            except Exception:
+                logger.exception("Supabase cleanup failed: %s", path)
+
+        return Response(
+            {
+                "success": False,
+                "error": str(error)
+            },
+            status=status.HTTP_400_BAD_REQUEST
         )
 
-        return Response({
-            "success": True, 
-            "message": "Registration submitted successfully! Please wait for Admin approval."
-        }, status=201)
+    except Exception:
+        for path in uploaded_paths:
+            try:
+                delete_document(path)
+            except Exception:
+                logger.exception("Supabase cleanup failed: %s", path)
 
-    except Exception as e:
-        return Response({"success": False, "error": str(e)}, status=400)
+        if user:
+            try:
+                user.delete()
+            except Exception:
+                logger.exception("User cleanup failed.")
+
+        logger.exception("Teacher registration failed.")
+
+        return Response(
+            {
+                "success": False,
+                "error": "Unable to submit teacher registration. Please try again."
+            },
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 
 # B. Admin: Pending Teachers ki list dekhne ke liye
@@ -161,6 +386,65 @@ def pending_teachers_list(request):
     )
     return Response({"success": True, "teachers": list(teachers)})
 
+
+@api_view(["GET"])
+@permission_classes([IsAdminUser])
+def pending_teacher_detail(request, teacher_id):
+
+    try:
+        registration = TeacherRegistration.objects.get(
+            id=teacher_id,
+            status="Pending"
+        )
+
+        data = {
+            "id": registration.id,
+            "name": registration.name,
+            "email": registration.email,
+            "phone": registration.phone,
+            "department": registration.department,
+            "primary_subject": registration.primary_subject,
+            "qualification": registration.qualification,
+            "status": registration.status,
+            "created_at": registration.created_at,
+
+            # Supabase signed document URLs
+            "profile_photo": create_document_signed_url(
+                registration.profile_photo_path
+            ),
+
+            "resume": create_document_signed_url(
+                registration.resume_path
+            ),
+
+            "qualification_certificate": create_document_signed_url(
+                registration.qualification_certificate_path
+            ),
+
+            "experience_certificate": create_document_signed_url(
+                registration.experience_certificate_path
+            ),
+        }
+
+        return Response({
+            "success": True,
+            "teacher": data
+        })
+
+    except TeacherRegistration.DoesNotExist:
+        return Response({
+            "success": False,
+            "error": "Pending teacher application not found."
+        }, status=404)
+
+    except Exception:
+        logger.exception("Unable to fetch pending teacher details")
+
+        return Response({
+            "success": False,
+            "error": "Unable to load teacher application details."
+        }, status=500)
+ 
 
 # C. Admin: Teacher ko Approve karne ke liye
 
@@ -300,128 +584,297 @@ School Administration
             "error": str(e)
         }, status=400)
 
-
-
-# pending_teachers_list
-@api_view(['GET'])
+@api_view(["POST"])
 @permission_classes([IsAdminUser])
-def admin_teachers_list(request):
-
-    teachers = Teacher.objects.select_related("user").all().order_by("-id")
-
-    data = []
-
-
-    for teacher in teachers:
-        data.append({
-            "id": teacher.id,
-            "name": teacher.name,
-            "employee_id": teacher.employee_id,
-            "department": teacher.department,
-            "primary_subject": teacher.primary_subject,
-            "email": teacher.user.email if teacher.user else "",
-            "is_active": teacher.user.is_active if teacher.user else False,
-        })
-
-    return Response({
-        "success": True,
-        "teachers": data
-    })
-
-
-@api_view(['GET'])
-@permission_classes([IsAdminUser])
-def admin_teacher_detail(request, employee_id):
-
+def reject_teacher_api(request, teacher_id):
     try:
-        teacher = Teacher.objects.select_related("user").get(
-            employee_id=employee_id
+        registration = TeacherRegistration.objects.get(
+            id=teacher_id
         )
 
-        data = {
+        if registration.status != "Pending":
+            return Response({
+                "success": False,
+                "error": "Only pending applications can be rejected."
+            }, status=400)
+
+        reason = request.data.get("rejection_reason", "").strip()
+
+        if not reason:
+            return Response({
+                "success": False,
+                "error": "Please provide a rejection reason."
+            }, status=400)
+
+        registration.status = "Rejected"
+        registration.rejection_reason = reason
+        registration.save(
+            update_fields=["status", "rejection_reason"]
+        )
+
+        return Response({
+            "success": True,
+            "message": "Teacher application rejected successfully.",
+            "teacher_id": registration.id,
+            "status": registration.status,
+            "rejection_reason": registration.rejection_reason
+        }, status=200)
+
+    except TeacherRegistration.DoesNotExist:
+        return Response({
+            "success": False,
+            "error": "Teacher application not found."
+        }, status=404)
+
+    except Exception:
+        logger.exception("Reject teacher API failed")
+
+        return Response({
+            "success": False,
+            "error": "Unable to reject teacher application."
+        }, status=500)
+
+# pending_teachers_list
+@api_view(["GET"])
+@permission_classes([IsAdminUser])
+def admin_teachers_list(request):
+    try:
+        teachers = (
+            Teacher.objects
+            .select_related("user")
+            .filter(user__is_active=True)
+            .order_by("-id")
+        )
+
+        data = []
+
+        for teacher in teachers:
+            registration = TeacherRegistration.objects.filter(
+                user_id=teacher.user_id
+            ).first() if teacher.user_id else None
+
+            data.append({
+                "id": teacher.id,
+                "name": teacher.name,
+                "employee_id": teacher.employee_id,
+                "email": teacher.user.email if teacher.user else "",
+                "phone": teacher.phone or "",
+                "department": teacher.department or "",
+                "primary_subject": teacher.primary_subject or "",
+                "qualification": teacher.qualification or "",
+                "is_active": teacher.user.is_active if teacher.user else False,
+                "status": registration.status if registration else "Approved",
+                "profile_photo": bool(
+                    registration and registration.profile_photo_path
+                ),
+            })
+
+        return Response({
+            "success": True,
+            "count": len(data),
+            "teachers": data,
+        })
+
+    except Exception:
+        logger.exception("Admin teachers list API failed")
+
+        return Response({
+            "success": False,
+            "error": "Unable to load teachers.",
+        }, status=500)
+
+# ADMIN TEACHER DETAIL VIEW
+@api_view(["GET"])
+@permission_classes([IsAdminUser])
+def admin_teacher_detail(request, employee_id):
+    try:
+        teacher = (
+            Teacher.objects
+            .select_related("user")
+            .get(employee_id=employee_id)
+        )
+
+        registration = None
+
+        if teacher.user_id:
+            registration = TeacherRegistration.objects.filter(
+                user_id=teacher.user_id
+            ).first()
+
+        def get_signed_url(path):
+            if not path:
+                return None
+
+            try:
+                return create_document_signed_url(path)
+            except Exception:
+                logger.exception("Document signed URL generation failed")
+                return None
+
+        # Teacher allocations
+        allocations = (
+            teacher.assigned_classes
+            .select_related("school_class", "section", "subject")
+            .order_by(
+                "school_class__display_order",
+                "section__name",
+                "subject__name",
+            )
+        )
+
+        classes = []
+
+        for item in allocations:
+            classes.append({
+                "allocationId": item.id,
+                "classId": item.school_class_id,
+                "className": item.school_class.name,
+                "sectionId": item.section_id,
+                "section": item.section.name,
+                "subjectId": item.subject_id,
+                "subject": item.subject.name,
+                "subjectCode": item.subject.code,
+            })
+
+        teacher_data = {
             "id": teacher.id,
             "name": teacher.name,
             "employee_id": teacher.employee_id,
-            "department": teacher.department,
-            "primary_subject": teacher.primary_subject,
             "email": teacher.user.email if teacher.user else "",
             "phone": teacher.phone or "",
+            "department": teacher.department or "",
+            "primary_subject": teacher.primary_subject or "",
             "qualification": teacher.qualification or "",
             "is_active": teacher.user.is_active if teacher.user else False,
+            "status": registration.status if registration else "Approved",
+
+            "profile_photo": get_signed_url(
+                registration.profile_photo_path
+            ) if registration else None,
+
+            "documents": {
+                "resume": get_signed_url(
+                    registration.resume_path
+                ) if registration else None,
+
+                "qualification_certificate": get_signed_url(
+                    registration.qualification_certificate_path
+                ) if registration else None,
+
+                "experience_certificate": get_signed_url(
+                    registration.experience_certificate_path
+                ) if registration else None,
+            },
+
+            "classes": classes,
         }
 
         return Response({
             "success": True,
-            "teacher": data
+            "teacher": teacher_data,
         })
 
     except Teacher.DoesNotExist:
         return Response({
             "success": False,
-            "error": "Teacher not found."
+            "error": "Teacher not found.",
         }, status=404)
 
+    except Exception:
+        logger.exception("Admin teacher detail API failed")
 
-@api_view(['PATCH'])
-@permission_classes([IsAdminUser])
-def admin_teacher_update(request, employee_id):
-
-    try:
-        teacher = Teacher.objects.select_related("user").get(
-            employee_id=employee_id
-        )
-
-        # Teacher fields
-        if "name" in request.data:
-            teacher.name = request.data["name"]
-
-        if "department" in request.data:
-            teacher.department = request.data["department"]
-
-        if "primary_subject" in request.data:
-            teacher.primary_subject = request.data["primary_subject"]
-
-        if "phone" in request.data:
-            teacher.phone = request.data["phone"]
-
-        if "qualification" in request.data:
-            teacher.qualification = request.data["qualification"]
-
-        teacher.save()
-
-        # User email update
-        if teacher.user and "email" in request.data:
-            teacher.user.email = request.data["email"]
-            teacher.user.save(update_fields=["email"])
-
-        return Response({
-            "success": True,
-            "message": "Teacher updated successfully.",
-            "teacher": {
-                "name": teacher.name,
-                "employee_id": teacher.employee_id,
-                "department": teacher.department,
-                "primary_subject": teacher.primary_subject,
-                "email": teacher.user.email if teacher.user else "",
-                "phone": teacher.phone or "",
-                "qualification": teacher.qualification or "",
-                "is_active": teacher.user.is_active if teacher.user else False,
-            }
-        })
-
-    except Teacher.DoesNotExist:
         return Response({
             "success": False,
-            "error": "Teacher not found."
-        }, status=404)
-
-    except Exception as e:
-        return Response({
-            "success": False,
-            "error": str(e)
+            "error": "Unable to load teacher details.",
         }, status=500)
 
+@api_view(["PATCH"])
+@permission_classes([IsAdminUser])
+def admin_teacher_update(request, employee_id):
+    try:
+        with transaction.atomic():
+            teacher = (
+                Teacher.objects
+                .select_related("user")
+                .get(employee_id=employee_id)
+            )
 
+            registration = None
+
+            if teacher.user_id:
+                registration = TeacherRegistration.objects.filter(
+                    user_id=teacher.user_id
+                ).first()
+
+            allowed_fields = [
+                "name",
+                "department",
+                "primary_subject",
+                "phone",
+                "qualification",
+            ]
+
+            for field in allowed_fields:
+                if field in request.data:
+                    value = str(request.data[field]).strip()
+
+                    setattr(teacher, field, value)
+
+                    if registration:
+                        setattr(registration, field, value)
+
+            if "email" in request.data:
+                email = str(request.data["email"]).strip().lower()
+
+                if not email:
+                    return Response({
+                        "success": False,
+                        "error": "Email is required.",
+                    }, status=400)
+
+                if teacher.user:
+                    teacher.user.email = email
+                    teacher.user.save(update_fields=["email"])
+
+                if registration:
+                    registration.email = email
+
+            teacher.save()
+
+            if registration:
+                registration.save()
+
+            return Response({
+                "success": True,
+                "message": "Teacher updated successfully.",
+                "teacher": {
+                    "id": teacher.id,
+                    "name": teacher.name,
+                    "employee_id": teacher.employee_id,
+                    "email": teacher.user.email if teacher.user else "",
+                    "phone": teacher.phone or "",
+                    "department": teacher.department or "",
+                    "primary_subject": teacher.primary_subject or "",
+                    "qualification": teacher.qualification or "",
+                    "is_active": teacher.user.is_active if teacher.user else False,
+                },
+            })
+
+    except Teacher.DoesNotExist:
+        return Response({
+            "success": False,
+            "error": "Teacher not found.",
+        }, status=404)
+
+    except Exception:
+        logger.exception("Admin teacher update API failed")
+
+        return Response({
+            "success": False,
+            "error": "Unable to update teacher.",
+        }, status=500)
+
+    
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def teacher_login_api(request):
@@ -506,6 +959,7 @@ def teacher_login_api(request):
         }, status=500)
     
 
+
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def teacher_detail_api(request, employee_id):
@@ -516,6 +970,65 @@ def teacher_detail_api(request, employee_id):
             .get(employee_id=employee_id)
         )
 
+        # Security: A teacher can only access their own profile.
+        # Admin access can be handled separately if required.
+        if (
+            teacher.user_id != request.user.id
+            and not request.user.is_staff
+        ):
+            return Response(
+                {
+                    "success": False,
+                    "error": "You are not allowed to access this teacher profile."
+                },
+                status=403
+            )
+
+        # Find corresponding registration
+        registration = None
+
+        if teacher.user_id:
+            registration = (
+                TeacherRegistration.objects
+                .filter(user_id=teacher.user_id)
+                .first()
+            )
+
+        if not registration:
+            registration = (
+                TeacherRegistration.objects
+                .filter(employee_id=teacher.employee_id)
+                .first()
+            )
+
+        # Generate temporary signed URLs
+        profile_photo_url = None
+        resume_url = None
+        qualification_certificate_url = None
+        experience_certificate_url = None
+
+        if registration:
+            if registration.profile_photo_path:
+                profile_photo_url = create_document_signed_url(
+                    registration.profile_photo_path
+                )
+
+            if registration.resume_path:
+                resume_url = create_document_signed_url(
+                    registration.resume_path
+                )
+
+            if registration.qualification_certificate_path:
+                qualification_certificate_url = create_document_signed_url(
+                    registration.qualification_certificate_path
+                )
+
+            if registration.experience_certificate_path:
+                experience_certificate_url = create_document_signed_url(
+                    registration.experience_certificate_path
+                )
+
+        # Teacher allocations
         allocations = (
             teacher.assigned_classes
             .select_related(
@@ -561,11 +1074,21 @@ def teacher_detail_api(request, employee_id):
                 ),
 
                 "phone": teacher.phone or "",
-                "department": teacher.department,
-                "subject": teacher.primary_subject,
+                "department": teacher.department or "",
+                "subject": teacher.primary_subject or "",
                 "qualification": teacher.qualification or "",
 
                 "mustChangePassword": teacher.must_change_password,
+
+                # Profile photo
+                "profilePhoto": profile_photo_url,
+
+                # Teacher documents
+                "documents": {
+                    "resume": resume_url,
+                    "qualificationCertificate": qualification_certificate_url,
+                    "experienceCertificate": experience_certificate_url,
+                },
 
                 "classes": classes_list,
             }
@@ -580,11 +1103,13 @@ def teacher_detail_api(request, employee_id):
             status=404
         )
 
-    except Exception as e:
+    except Exception:
+        logger.exception("Teacher detail API failed")
+
         return Response(
             {
                 "success": False,
-                "error": str(e)
+                "error": "Unable to load teacher profile."
             },
             status=500
         )

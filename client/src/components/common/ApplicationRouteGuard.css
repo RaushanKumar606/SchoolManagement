@@ -1,0 +1,37 @@
+
+.application-route-loading,
+.application-route-message {
+  min-height: 75vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px;
+  text-align: center;
+}
+
+.application-route-message h2 {
+  color: #1e293b;
+  margin-bottom: 12px;
+}
+
+.application-route-message p {
+  max-width: 500px;
+  color: #64748b;
+  line-height: 1.7;
+}
+
+.application-route-message a {
+  margin-top: 18px;
+  padding: 11px 24px;
+  background: #2563eb;
+  color: #ffffff;
+  text-decoration: none;
+  border-radius: 7px;
+  font-weight: 600;
+}
+
+.application-route-icon {
+  font-size: 48px;
+  margin-bottom: 15px;
+}

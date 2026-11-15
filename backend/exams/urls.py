@@ -12,9 +12,11 @@ from .views import (
     publish_exam_timetable_api,
     exam_schedules_api,
     exam_available_subjects_api,
+    teacher_available_exams_api,
 )
 
 urlpatterns = [
+    
     path("", exam_list_create_api, name="exam-list-create"),
 
 
@@ -43,11 +45,16 @@ path(
         publish_exam_results_api,
         name="publish-exam-results",
     ),
-    path(
-        "teacher/class/<int:class_id>/section/<int:section_id>/subject/<int:subject_id>/marks/",
-        teacher_exam_marks_api,
-        name="teacher-exam-marks",
-    ),
+   path(
+    "teacher/class/<int:class_id>/section/<int:section_id>/subject/<int:subject_id>/marks/",
+    teacher_exam_marks_api,
+    name="teacher-exam-marks",
+),
+path(
+    "teacher/class/<int:class_id>/section/<int:section_id>/subject/<int:subject_id>/available-exams/",
+    teacher_available_exams_api,
+    name="teacher-available-exams",
+),
 
 
     

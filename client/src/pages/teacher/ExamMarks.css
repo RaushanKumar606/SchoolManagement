@@ -1,0 +1,238 @@
+
+.exam-marks-page {
+  padding: 24px;
+  width: 100%;
+  box-sizing: border-box;
+  color: #1f2937;
+}
+
+.exam-marks-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 22px;
+}
+
+.exam-marks-header h2 {
+  margin: 0 0 6px;
+  font-size: 25px;
+  font-weight: 700;
+}
+
+.exam-marks-header p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.exam-marks-filters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
+  gap: 18px;
+  padding: 20px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+.exam-marks-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.exam-marks-field label {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.exam-marks-field select {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 7px;
+  background: #ffffff;
+  font-size: 14px;
+  outline: none;
+}
+
+.exam-marks-field select:focus,
+.exam-marks-table input:focus {
+  border-color: #2563eb;
+}
+
+.exam-marks-field select:disabled {
+  background: #f3f4f6;
+  cursor: not-allowed;
+}
+
+.exam-marks-alert {
+  padding: 12px 15px;
+  margin-bottom: 16px;
+  border-radius: 7px;
+  font-size: 14px;
+}
+
+.exam-marks-alert.error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.exam-marks-alert.success {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.exam-marks-message {
+  padding: 22px;
+  text-align: center;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 9px;
+  color: #6b7280;
+  margin-top: 15px;
+}
+
+.exam-marks-info {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 28px;
+  padding: 17px 20px;
+  margin-bottom: 20px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 9px;
+}
+
+.exam-marks-info div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.exam-marks-info span {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.exam-marks-info strong {
+  font-size: 14px;
+}
+
+.exam-marks-info .published-label {
+  color: #92400e;
+  background: #fef3c7;
+  padding: 9px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.exam-marks-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 9px;
+}
+
+.exam-marks-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 850px;
+}
+
+.exam-marks-table th,
+.exam-marks-table td {
+  padding: 13px 15px;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: left;
+  font-size: 14px;
+}
+
+.exam-marks-table th {
+  background: #f9fafb;
+  color: #374151;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.exam-marks-table tbody tr:hover {
+  background: #f9fafb;
+}
+
+.exam-marks-table input {
+  width: 110px;
+  padding: 9px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  outline: none;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.exam-marks-table input:disabled {
+  background: #f3f4f6;
+  color: #6b7280;
+  cursor: not-allowed;
+}
+
+.marks-status {
+  display: inline-block;
+  padding: 5px 9px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.marks-status.saved {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.marks-status.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.save-marks-btn {
+  padding: 8px 15px;
+  border: none;
+  border-radius: 6px;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.save-marks-btn:hover {
+  background: #1d4ed8;
+}
+
+.save-marks-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.readonly-text {
+  color: #6b7280;
+  font-size: 12px;
+}
+
+@media (max-width: 700px) {
+  .exam-marks-page {
+    padding: 14px;
+  }
+
+  .exam-marks-filters {
+    grid-template-columns: 1fr;
+    padding: 15px;
+  }
+
+  .exam-marks-info {
+    gap: 18px;
+  }
+}

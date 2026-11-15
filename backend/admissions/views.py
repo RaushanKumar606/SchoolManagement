@@ -38,6 +38,8 @@ from .status_serializers import AdmissionStatusSerializer
 from .student_creation_serializers import ApproveAdmissionSerializer
 
 from common.supabase_storage import create_document_signed_url
+from applications.utils import is_student_admission_open
+
 
 from rest_framework.parsers import (
     MultiPartParser,
@@ -46,15 +48,35 @@ from rest_framework.parsers import (
 )
 
 
+
 class AdmissionApplicationCreateView(generics.CreateAPIView):
+
     queryset = AdmissionApplication.objects.all()
     serializer_class = AdmissionApplicationSerializer
+
     permission_classes = [AllowAny]
+
     parser_classes = [
         MultiPartParser,
         FormParser,
         JSONParser,
     ]
+
+    def create(self, request, *args, **kwargs):
+
+        if not is_student_admission_open():
+            return Response(
+                {
+                    "success": False,
+                    "message": (
+                        "Student admission applications are currently closed."
+                    ),
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        return super().create(request, *args, **kwargs)
+
 
 
 class AdmissionApplicationListView(generics.ListAPIView):

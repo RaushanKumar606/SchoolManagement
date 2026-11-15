@@ -9,9 +9,8 @@ from rest_framework.decorators import (
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from .models import Exam
 from .serializers import ExamSerializer
-
+from .models import Exam,  ExamSchedule
 
 from django.db import transaction
 from rest_framework import status
@@ -503,11 +502,11 @@ def teacher_exam_marks_api(request, class_id, section_id, subject_id):
             status=status.HTTP_404_NOT_FOUND,
         )
 
-    if exam.is_result_published:
-        return Response(
-            {"error": "Results are already published. Marks cannot be changed."},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
+    if request.method == "POST" and exam.is_result_published:
+       return Response(
+        {"error": "Results are already published. Marks cannot be changed."},
+        status=400,
+    )
 
     students = Student.objects.filter(
         school_class=school_class,
@@ -612,17 +611,101 @@ def teacher_exam_marks_api(request, class_id, section_id, subject_id):
     )
 
 
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def teacher_available_exams_api(request, class_id, section_id, subject_id):
+    role = str(getattr(request.user, "role", "")).upper()
+
+    if role != "TEACHER":
+        return Response(
+            {"error": "Only teachers can access this endpoint."},
+            status=403,
+        )
+
+    teacher = Teacher.objects.filter(user=request.user).first()
+
+    if not teacher:
+        return Response(
+            {"error": "Teacher profile not found."},
+            status=403,
+        )
+
+    school_class = SchoolClass.objects.filter(id=class_id).first()
+    section = Section.objects.filter(
+        id=section_id,
+        school_class_id=class_id,
+    ).first()
+    subject = Subject.objects.filter(
+        id=subject_id,
+        is_active=True,
+    ).first()
+
+    if not school_class or not section or not subject:
+        return Response(
+            {"error": "Invalid class, section or subject."},
+            status=404,
+        )
+
+    assigned = TeacherSubjectAllocation.objects.filter(
+        teacher=teacher,
+        school_class=school_class,
+        section=section,
+        subject=subject,
+    ).exists()
+
+    if not assigned:
+        return Response(
+            {"error": "You are not assigned to this class, section and subject."},
+            status=403,
+        )
+
+    exams = Exam.objects.filter(
+        school_class=school_class,
+        section=section,
+        is_timetable_published=True,
+        schedules__subject=subject,
+    ).distinct().order_by("-start_date")
+
+    result = []
+
+    for exam in exams:
+        schedule = ExamSchedule.objects.filter(
+            exam=exam,
+            subject=subject,
+        ).first()
+
+        if not schedule:
+            continue
+
+        result.append({
+            "id": exam.id,
+            "name": exam.name,
+            "start_date": exam.start_date,
+            "end_date": exam.end_date,
+            "is_result_published": exam.is_result_published,
+            "total_marks": schedule.total_marks,
+            "passing_marks": schedule.passing_marks,
+            "exam_date": schedule.exam_date,
+            "start_time": schedule.start_time,
+            "end_time": schedule.end_time,
+        })
+
+    return Response({
+        "count": len(result),
+        "exams": result,
+    })
+
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def publish_exam_results_api(request, exam_id):
-    role = str(getattr(request.user, "role", "")).upper()
 
-    if role not in {"SCHOOL_ADMIN", "SUPER_ADMIN"}:
-        return Response(
-            {"error": "Only School Admin can publish exam results."},
-            status=status.HTTP_403_FORBIDDEN,
-        )
+    role = str(getattr(request.user, "role", "")).strip().upper()
+
+    if role not in ["SCHOOL_ADMIN", "SUPER_ADMIN"]:
+     return Response({
+        "error": "Only School Admin can publish exam results."
+    }, status=403)
 
     exam = Exam.objects.filter(id=exam_id).first()
 
@@ -668,11 +751,11 @@ def publish_exam_results_api(request, exam_id):
 
 
 
-
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def student_published_results_api(request):
-    role = str(getattr(request.user, "role", "")).upper()
+
+    role = str(getattr(request.user, "role", "")).strip().upper()
 
     if role != "STUDENT":
         return Response(
@@ -702,34 +785,111 @@ def student_published_results_api(request):
     results = []
 
     for exam in published_exams:
+
         marks = ExamMark.objects.filter(
             student=student,
             exam=exam,
-        ).select_related("subject").order_by("subject__name")
+        ).select_related(
+            "subject"
+        ).order_by("subject__name")
+
+        exam_schedules = {
+            schedule.subject_id: schedule
+            for schedule in ExamSchedule.objects.filter(exam=exam)
+        }
 
         subjects = []
+
         total_obtained = 0.0
         total_possible = 0.0
 
+        all_subjects_passed = True
+        passing_marks_available = True
+
         for mark in marks:
+
             obtained = float(mark.marks_obtained)
             possible = float(mark.total_marks)
 
             total_obtained += obtained
             total_possible += possible
 
+            schedule = exam_schedules.get(mark.subject_id)
+
+            passing_marks = (
+                float(schedule.passing_marks)
+                if schedule and schedule.passing_marks is not None
+                else None
+            )
+
+            subject_percentage = (
+                round(obtained / possible * 100, 2)
+                if possible > 0 else 0
+            )
+
+            # Subject grade
+            if subject_percentage >= 90:
+                grade = "A+"
+            elif subject_percentage >= 80:
+                grade = "A"
+            elif subject_percentage >= 70:
+                grade = "B"
+            elif subject_percentage >= 60:
+                grade = "C"
+            elif subject_percentage >= 50:
+                grade = "D"
+            elif subject_percentage >= 33:
+                grade = "E"
+            else:
+                grade = "F"
+
+            # Subject pass/fail
+            if passing_marks is None:
+                passing_marks_available = False
+                subject_status = "NOT AVAILABLE"
+            elif obtained >= passing_marks:
+                subject_status = "PASS"
+            else:
+                subject_status = "FAIL"
+                all_subjects_passed = False
+
             subjects.append({
                 "subject": mark.subject.name,
                 "marksObtained": obtained,
                 "totalMarks": possible,
-                "percentage": round(obtained / possible * 100, 2)
-                if possible > 0 else 0,
+                "passingMarks": passing_marks,
+                "percentage": subject_percentage,
+                "grade": grade,
+                "status": subject_status,
             })
 
         percentage = (
             round(total_obtained / total_possible * 100, 2)
             if total_possible > 0 else 0
         )
+
+        if not subjects or not passing_marks_available:
+            final_status = "NOT AVAILABLE"
+        elif all_subjects_passed:
+            final_status = "PASS"
+        else:
+            final_status = "FAIL"
+
+        # Overall grade
+        if percentage >= 90:
+            overall_grade = "A+"
+        elif percentage >= 80:
+            overall_grade = "A"
+        elif percentage >= 70:
+            overall_grade = "B"
+        elif percentage >= 60:
+            overall_grade = "C"
+        elif percentage >= 50:
+            overall_grade = "D"
+        elif percentage >= 33:
+            overall_grade = "E"
+        else:
+            overall_grade = "F"
 
         results.append({
             "examId": exam.id,
@@ -743,6 +903,8 @@ def student_published_results_api(request):
             "totalObtained": round(total_obtained, 2),
             "totalMarks": round(total_possible, 2),
             "percentage": percentage,
+            "overallGrade": overall_grade,
+            "finalStatus": final_status,
         })
 
     return Response({
@@ -754,5 +916,7 @@ def student_published_results_api(request):
                 student.last_name,
             ] if part
         ),
+        "fatherName": getattr(student, "father_name", "") or "",
+        "motherName": getattr(student, "mother_name", "") or "",
         "results": results,
     }, status=status.HTTP_200_OK)

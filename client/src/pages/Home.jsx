@@ -1,6 +1,78 @@
+
+
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import schoolLogo from "../assets/schoolLogo.png";
+
+
+const SCHOOL = {
+  rightLogo: schoolLogo,
+};
+
+
+function SchoolLogo({ src }) {
+  const [imageError, setImageError] = useState(false);
+
+  if (!src || imageError) {
+    return <div className="report-logo-placeholder">SCHOOL</div>;
+  }
+
+  return (
+    <img
+      className="report-logo"
+      src={src}
+      alt="School Logo"
+      onError={() => setImageError(true)}
+    />
+  );
+}
+
+
+
+import "./Home.css";
+import {
+  getPublicApplicationSettings,
+} from "../services/applicationSettingsService";
 
 function Home() {
+  const [applicationSettings, setApplicationSettings] = useState(null);
+
+  // Fetch application availability from backend
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchApplicationSettings = async () => {
+      try {
+        const response = await getPublicApplicationSettings();
+
+        if (isMounted) {
+          setApplicationSettings(response);
+        }
+      } catch (error) {
+        console.error("Application settings error:", error);
+
+        if (isMounted) {
+          setApplicationSettings({
+            student_admission: false,
+            teacher_hiring: false,
+          });
+        }
+      }
+    };
+
+    fetchApplicationSettings();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const studentAdmissionOpen =
+    applicationSettings?.student_admission === true;
+
+  const teacherHiringOpen =
+    applicationSettings?.teacher_hiring === true;
+
   return (
     <div className="school-home">
 
@@ -9,7 +81,7 @@ function Home() {
         <div className="nav-container">
 
           <Link to="/" className="school-brand">
-            <div className="school-logo">S</div>
+            <div className="school-logo"> <SchoolLogo src={SCHOOL.rightLogo} /></div>
 
             <div>
               <h2>Springfield School</h2>
@@ -22,7 +94,7 @@ function Home() {
             <Link to="/about">About</Link>
             <a href="#academics">Academics</a>
             <a href="#facilities">Facilities</a>
-            
+
             <Link to="/admission/apply">Admissions</Link>
             <a href="#events">Events</a>
             <a href="#contact">Contact</a>
@@ -33,9 +105,21 @@ function Home() {
               Login
             </Link>
 
-            <Link to="/register" className="admission-btn">
-              Apply Now
-            </Link>
+            {teacherHiringOpen ? (
+              <Link to="/register" className="admission-btn">
+                Teacher Hiring
+              </Link>
+            ) : (
+              <button
+                type="button"
+                className="coming-soon-btn"
+                disabled
+              >
+                {applicationSettings === null
+                  ? "Loading..."
+                  : "Teacher Hiring Coming Soon"}
+              </button>
+            )}
           </div>
 
         </div>
@@ -373,7 +457,11 @@ function Home() {
 
           <div>
             <span className="section-tag light">
-              ADMISSIONS OPEN
+              {applicationSettings === null
+                ? "ADMISSIONS"
+                : studentAdmissionOpen
+                  ? "ADMISSIONS OPEN"
+                  : "ADMISSIONS COMING SOON"}
             </span>
 
             <h2>
@@ -383,19 +471,37 @@ function Home() {
             </h2>
 
             <p>
-              Applications are now open for the upcoming
-              academic session.
+              {studentAdmissionOpen
+                ? "Applications are now open for the upcoming academic session."
+                : "Admission applications are currently unavailable. Please contact our school for more information."}
             </p>
           </div>
 
           <div className="admission-actions">
 
-            <Link to="/admission/apply" className="admission-white-btn">
-              Apply for Admission
-            </Link>
+            {studentAdmissionOpen ? (
+              <Link
+                to="/admission/apply"
+                className="admission-white-btn"
+              >
+                Apply for Admission
+              </Link>
+            ) : (
+              <button
+                type="button"
+                className="coming-soon-btn"
+                disabled
+              >
+                {applicationSettings === null
+                  ? "Loading..."
+                  : "Admission Coming Soon"}
+              </button>
+            )}
 
-      
-            <Link to="/admission/enquiry" className="admission-white-btn">
+            <Link
+              to="/admission/enquiry"
+              className="admission-white-btn"
+            >
               Admissions Enquiry
             </Link>
 
@@ -557,7 +663,7 @@ function Home() {
           <div className="footer-brand">
 
             <div className="school-brand">
-              <div className="school-logo">S</div>
+              <div className="school-logo"> <SchoolLogo src={SCHOOL.rightLogo} /></div>
 
               <div>
                 <h2>Springfield School</h2>
@@ -587,7 +693,14 @@ function Home() {
             <a href="#events">Events</a>
             <a href="#contact">Contact</a>
             <Link to="/login">Student Login</Link>
-            <Link to="/register">Register</Link>
+
+            {teacherHiringOpen ? (
+              <Link to="/register">Teacher Registration</Link>
+            ) : (
+              <span className="footer-coming-soon">
+                Teacher Hiring - Coming Soon
+              </span>
+            )}
           </div>
 
 

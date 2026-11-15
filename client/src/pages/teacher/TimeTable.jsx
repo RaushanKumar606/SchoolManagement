@@ -147,7 +147,7 @@ function TeacherTimetable() {
         ) : (
           <>
             <div className="school-timetable-count">
-              {timetable.length} teaching period
+              {timetable.length} Teaching period
               {timetable.length !== 1 ? "s" : ""}
             </div>
 

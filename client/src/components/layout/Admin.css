@@ -237,3 +237,31 @@ th { color: #888; font-weight: 500; }
 .admin-logout-icon {
   font-size: 19px;
 }
+
+
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  color: #475569;
+  text-decoration: none;
+  border-radius: 8px;
+  transition: 0.2s ease;
+}
+
+.sidebar-link:hover {
+  background: #f1f5f9;
+  color: #2563eb;
+}
+
+.sidebar-link.active {
+  background: #eff6ff;
+  color: #2563eb;
+  font-weight: 600;
+}
+
+.sidebar-icon {
+  font-size: 18px;
+}

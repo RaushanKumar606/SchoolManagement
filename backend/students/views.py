@@ -161,29 +161,80 @@ class MySubjectsView(APIView):
 
         return Response(subjects)
 
+# class MyStudentProfileView(generics.RetrieveAPIView):
+#     serializer_class = StudentProfileSerializer
+#     permission_classes = [IsAuthenticated]
+
+#     def get_object(self):
+#         student = (
+#             Student.objects.select_related(
+#                 "academic_year",
+#                 "school_class",
+#                 "section",
+#                 "admission",
+#             )
+#             .filter(user=self.request.user)
+#             .first()
+#         )
+
+#         if student is None:
+#             raise NotFound(
+#                 "Student profile not found for this user. "
+#                 "Please contact the school administrator."
+#             )
+
+#         return student
+
+
 class MyStudentProfileView(generics.RetrieveAPIView):
     serializer_class = StudentProfileSerializer
     permission_classes = [IsAuthenticated]
 
     def get_object(self):
-        student = (
-            Student.objects.select_related(
-                "academic_year",
-                "school_class",
-                "section",
-                "admission",
+        try:
+            return (
+                Student.objects
+                .select_related(
+                    "academic_year",
+                    "school_class",
+                    "section",
+                    "admission",
+                )
+                .only(
+                    "id",
+                    "user",
+                    "student_id",
+                    "academic_year__name",
+                    "school_class__name",
+                    "section__name",
+                    "admission_id",
+                    "first_name",
+                    "middle_name",
+                    "last_name",
+                    "date_of_birth",
+                    "gender",
+                    "father_name",
+                    "mother_name",
+                    "parent_phone",
+                    "parent_email",
+                    "address",
+                    "city",
+                    "state",
+                    "postal_code",
+                    "is_active",
+                    "admission_date",
+                )
+                .get(user=self.request.user)
             )
-            .filter(user=self.request.user)
-            .first()
-        )
 
-        if student is None:
+        except Student.DoesNotExist:
             raise NotFound(
                 "Student profile not found for this user. "
                 "Please contact the school administrator."
             )
 
-        return student
+
+
 
 
 @api_view(["GET"])

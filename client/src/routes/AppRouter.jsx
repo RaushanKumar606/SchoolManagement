@@ -7,11 +7,14 @@ import Unauthorized from "../pages/public/Unauthorized";
 import Home from "../pages/Home";
 import Login from "../pages/public/Login";
 import About from "../pages/About";
-const AdmissionEnquiry = lazy(()=>import("../pages/admission/admissionEnquiry"))
+import ApplicationRouteGuard from "../components/common/ApplicationRouteGuard";
+const AdmissionEnquiry = lazy(() => import("../pages/admission/admissionEnquiry"))
 
 
 
-
+const AdminApplicationSettings = lazy(() =>
+  import("../pages/admin/AdminApplicationSettings")
+);
 import AccountantRegistration from "../pages/admin/AccountantRegistration";
 
 const AdminTimetable = lazy(() => import("../pages/admin/AdminTimetable"));
@@ -27,6 +30,8 @@ const Admission_Enquiry = lazy(() =>
 const AcademicManagement = lazy(() =>
   import("../pages/admin/AcademicManagement")
 );
+
+
 const TeacherAssignment = lazy(() => import("../pages/admin/AdminTeacherAssin"))
 
 const Acountant = lazy(() =>
@@ -110,7 +115,7 @@ const StudentProfile = lazy(() =>
   import("../pages/student/StudentProfile")
 );
 
-const StudentAdmidCard =lazy(()=>import("../pages/student/StudentAdmitCards"))
+const StudentAdmidCard = lazy(() => import("../pages/student/StudentAdmitCards"))
 const StudentAttendance = lazy(() =>
   import("../pages/student/StudentAttendance")
 );
@@ -224,14 +229,29 @@ function AppRoutes() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/unauthorized" element={<Unauthorized />} />
-        <Route path="/register" element={<TeacherRegister />} />
+        <Route
+          path="/register"
+          element={
+            <ApplicationRouteGuard applicationType="teacher_hiring">
+              <TeacherRegister />
+            </ApplicationRouteGuard>
+          }
+        />
+
+        <Route
+          path="/admission/apply"
+          element={
+            <ApplicationRouteGuard applicationType="student_admission">
+              <AdmissionForm />
+            </ApplicationRouteGuard>
+          }
+        />
         <Route path="/about" element={<About />} />
         <Route path="/change-password" element={<ChangePassword />} />
-         <Route path="/admission/enquiry" element={<AdmissionEnquiry />} />
-        <Route path="/admission/apply" element={<AdmissionForm />}
+        <Route path="/admission/enquiry" element={<AdmissionEnquiry />} />
 
 
-        />
+
 
         {/* ================= PROTECTED ROUTES ================= */}
 
@@ -250,6 +270,10 @@ function AppRoutes() {
               path="/admin"
               element={<AdminLayout />}
             >
+              <Route
+                path="application-settings"
+                element={<AdminApplicationSettings />}
+              />
 
 
               {/* {Admission_Enquiry} */}
@@ -265,7 +289,7 @@ function AppRoutes() {
                 element={<AcademicManagement />}
               />
 
-               <Route
+              <Route
                 path="timetable"
                 element={<AdminTimetable />}
               />
@@ -382,7 +406,7 @@ function AppRoutes() {
                 element={<TeacherMyCourses />}
               />
 
-            
+
               <Route
                 path="attendance"
                 element={<Attendance />}
@@ -432,9 +456,9 @@ function AppRoutes() {
               path="fees-invoice"
               element={<FeesInvoice />}
             />
-            <Route 
-            path="fees"
-            element={<AccountantTotalCollection />}
+            <Route
+              path="fees"
+              element={<AccountantTotalCollection />}
             />
             <Route
               path="student-fees-payment"

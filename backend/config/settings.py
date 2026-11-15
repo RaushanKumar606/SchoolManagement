@@ -27,6 +27,7 @@ INSTALLED_APPS = [
 
     "rest_framework",
     "corsheaders",
+    "applications",
 
     "accounts",
     "admissions",
@@ -104,8 +105,9 @@ DATABASES = {
         "OPTIONS": {
             "sslmode": config("DB_SSLMODE", default="require"),
         },
-        "CONN_MAX_AGE": 60,
+        "CONN_MAX_AGE": 0,
         "CONN_HEALTH_CHECKS": True,
+        "DISABLE_SERVER_SIDE_CURSORS": True,
     }
 }
 

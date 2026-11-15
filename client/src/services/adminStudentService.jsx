@@ -54,6 +54,17 @@ const getStudentById = async (studentId) => {
 };
 
 
+// Get student admission documents
+const getAdmissionDocuments = async (admissionId) => {
+  if (!admissionId) {
+    throw new Error("Admission ID is required");
+  }
+
+  return await apiRequest(
+    `/admissions/${admissionId}/documents/`
+  );
+};
+
 
 // Update student
 
@@ -147,4 +158,5 @@ export const adminService = {
   deleteStudent,
   getClasses,
   getSections,
+  getAdmissionDocuments,
 };

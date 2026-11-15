@@ -1,0 +1,145 @@
+.unauthorized-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 25px;
+  background: linear-gradient(135deg, #eff6ff, #f5f3ff, #eef2ff);
+  font-family: "Inter", "Segoe UI", sans-serif;
+}
+
+.unauthorized-card {
+  width: 100%;
+  max-width: 480px;
+  padding: 50px 40px 35px;
+  text-align: center;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 24px;
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.08);
+  animation: unauthorizedFade 0.5s ease;
+}
+
+.unauthorized-icon {
+  width: 100px;
+  height: 100px;
+  margin: 0 auto 25px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #dc2626;
+  background: #fef2f2;
+  border: 1px solid #fee2e2;
+  border-radius: 50%;
+}
+
+.unauthorized-code {
+  display: inline-block;
+  padding: 7px 15px;
+  color: #dc2626;
+  background: #fef2f2;
+  border-radius: 30px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+}
+
+.unauthorized-card h1 {
+  margin: 18px 0 12px;
+  color: #111827;
+  font-size: 32px;
+  font-weight: 750;
+  letter-spacing: -0.8px;
+}
+
+.unauthorized-message {
+  max-width: 350px;
+  margin: 0 auto;
+  color: #64748b;
+  font-size: 15px;
+  line-height: 1.8;
+}
+
+.unauthorized-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 32px;
+}
+
+.unauthorized-actions button {
+  min-height: 46px;
+  padding: 0 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.unauthorized-back-btn {
+  color: #ffffff;
+  background: #2563eb;
+}
+
+.unauthorized-back-btn:hover {
+  background: #1d4ed8;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(37, 99, 235, 0.2);
+}
+
+.unauthorized-home-btn {
+  color: #334155;
+  background: #f1f5f9;
+}
+
+.unauthorized-home-btn:hover {
+  background: #e2e8f0;
+  transform: translateY(-2px);
+}
+
+.unauthorized-footer {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 38px;
+  padding-top: 20px;
+  border-top: 1px solid #f1f5f9;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+@keyframes unauthorizedFade {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 480px) {
+  .unauthorized-card {
+    padding: 40px 22px 28px;
+  }
+
+  .unauthorized-card h1 {
+    font-size: 27px;
+  }
+
+  .unauthorized-actions {
+    flex-direction: column;
+  }
+
+  .unauthorized-actions button {
+    width: 100%;
+  }
+}

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { adminService } from "../../services/adminStudentService";
 import "./Student.css";
 
+
 function Student() {
   // =========================================================
   // STUDENT STATES
@@ -11,6 +12,12 @@ function Student() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [studentDocuments, setStudentDocuments] = useState({
+  student_photo_url: null,
+  previous_marksheet_url: null,
+});
+
+const [documentLoading, setDocumentLoading] = useState(false);
 
   // =========================================================
   // SEARCH / FILTER STATES
@@ -331,32 +338,55 @@ function Student() {
   }, [students]);
 
   // =========================================================
-  // VIEW STUDENT
-  // =========================================================
+// VIEW STUDENT WITH IMAGE AND PDF
+// =========================================================
 
-  const handleView = async (student) => {
-    try {
-      setError("");
+const handleView = async (student) => {
+  try {
+    setError("");
+    setStudentDocuments({
+      student_photo_url: null,
+      previous_marksheet_url: null,
+    });
 
-      const data =
-        await adminService.getStudentById(
-          student.id
-        );
+    setDocumentLoading(true);
 
-      setSelectedStudent(data);
-      setShowDetails(true);
-    } catch (err) {
-      console.error(
-        "Student details error:",
-        err
-      );
+    const data = await adminService.getStudentById(student.id);
+    console.log("ADMISSION ID:", data.admission_id);
+    setSelectedStudent(data);
+    setShowDetails(true);
 
-      setError(
-        err.message ||
-          "Failed to load student details"
-      );
+    // Student ke admission record ki ID
+    // const admissionId =
+    //   data.admission_id || data.admission?.id;
+
+     if (data.admission_id) {
+      try {
+        const documents =
+          await adminService.getAdmissionDocuments( data.admission_id);
+            console.log("STUDENT DOCUMENTS:", documents);
+      console.log("PHOTO URL:", documents.student_photo_url);
+
+        setStudentDocuments({
+          student_photo_url: documents.student_photo_url,
+          previous_marksheet_url: documents.previous_marksheet_url,
+        });
+  
+      } catch (documentError) {
+        console.error("Student documents error:", documentError);
+        setError("Student details loaded, but documents could not be loaded.");
+      }
     }
-  };
+  } catch (err) {
+    console.error("Student details error:", err);
+
+    setError(
+      err.message || "Failed to load student details"
+    );
+  } finally {
+    setDocumentLoading(false);
+  }
+};
 
   // =========================================================
   // OPEN EDIT
@@ -802,6 +832,10 @@ function Student() {
                   </th>
 
                   <th>
+                    Image
+                  </th>
+
+                  <th>
                     Name
                   </th>
 
@@ -844,6 +878,23 @@ function Student() {
                           }
                         </strong>
                       </td>
+                        {/* STUDENT IMAGE */}
+                       <td>
+  {documentLoading ? (
+    <p>Loading...</p>
+  ) : studentDocuments?.student_photo_url ? (
+    <img
+      src={studentDocuments.student_photo_url}
+      alt="Student"
+      className="student-modal-photo"
+    />
+    
+  ) : (
+    <div className="student-modal-photo-placeholder">
+     
+    </div>
+  )}
+</td>
 
                       {/* NAME */}
 
@@ -990,255 +1041,209 @@ function Student() {
           STUDENT DETAILS MODAL
       ===================================================== */}
 
-      {showDetails &&
-        selectedStudent && (
-          <div className="student-modal-overlay">
+     
+{showDetails && selectedStudent && (
+  <div className="student-modal-overlay">
+    <div className="student-modal">
 
-            <div className="student-modal">
+      {/* HEADER */}
+      <div className="student-modal-header">
+        <h2>Student Details</h2>
 
-              {/* HEADER */}
+        <button type="button" onClick={closeDetails}>
+          ×
+        </button>
+      </div>
 
-              <div className="student-modal-header">
+      {/* STUDENT PHOTO */}
+      <div className="student-modal-profile">
+        {documentLoading ? (
+          <p>Loading student photo...</p>
+        ) : studentDocuments?.student_photo_url ? (
+          <img
+            src={studentDocuments?.student_photo_url}
+            alt="Student"
+            className="student-modal-photo"
+          />
+        ) : (
+          <div className="student-modal-photo-placeholder">
+            No Photo
+          </div>
+        )}
 
-                <h2>
-                  Student Details
-                </h2>
+        <h3>{selectedStudent.student_name}</h3>
+        <p>{selectedStudent.student_id}</p>
+      </div>
 
-                <button
-                  type="button"
-                  onClick={
-                    closeDetails
-                  }
+      {/* DETAILS */}
+      <div className="student-details-grid">
+
+        <div>
+          <label>Student ID</label>
+          <p>{selectedStudent.student_id || "-"}</p>
+        </div>
+
+        <div>
+          <label>Name</label>
+          <p>{selectedStudent.student_name || "-"}</p>
+        </div>
+
+        <div>
+          <label>Class</label>
+          <p>{selectedStudent.class_name || "-"}</p>
+        </div>
+
+        <div>
+          <label>Section</label>
+          <p>{selectedStudent.section_name || "-"}</p>
+        </div>
+
+        <div>
+          <label>Academic Year</label>
+          <p>{selectedStudent.academic_year_name || "-"}</p>
+        </div>
+
+        <div>
+          <label>Date of Birth</label>
+          <p>{selectedStudent.date_of_birth || "-"}</p>
+        </div>
+
+        <div>
+          <label>Gender</label>
+          <p>{selectedStudent.gender || "-"}</p>
+        </div>
+
+        <div>
+          <label>Father Name</label>
+          <p>{selectedStudent.father_name || "-"}</p>
+        </div>
+
+        <div>
+          <label>Mother Name</label>
+          <p>{selectedStudent.mother_name || "-"}</p>
+        </div>
+
+        <div>
+          <label>Parent Phone</label>
+          <p>{selectedStudent.parent_phone || "-"}</p>
+        </div>
+
+        <div>
+          <label>Parent Email</label>
+          <p>{selectedStudent.parent_email || "-"}</p>
+        </div>
+
+        <div>
+          <label>City</label>
+          <p>{selectedStudent.city || "-"}</p>
+        </div>
+
+        <div>
+          <label>State</label>
+          <p>{selectedStudent.state || "-"}</p>
+        </div>
+
+        <div>
+          <label>Postal Code</label>
+          <p>{selectedStudent.postal_code || "-"}</p>
+        </div>
+
+        <div>
+          <label>Status</label>
+          <p>
+            {selectedStudent.is_active ? "Active" : "Inactive"}
+          </p>
+        </div>
+
+        <div className="student-address">
+          <label>Address</label>
+          <p>{selectedStudent.address || "-"}</p>
+        </div>
+
+      </div>
+
+      {/* ADMISSION DOCUMENTS */}
+      <div className="student-modal-documents">
+        <h3>Admission Documents</h3>
+
+        {documentLoading ? (
+          <p>Loading documents...</p>
+        ) : (
+          <div className="student-modal-document-grid">
+
+            {/* STUDENT PHOTO */}
+            <div className="student-modal-document-card">
+              <h4>Student Photo</h4>
+
+              {studentDocuments.student_photo_url ? (
+                <a
+                  href={studentDocuments.student_photo_url}
+                  target="_blank"
+                  rel="noreferrer"
                 >
-                  ×
-                </button>
+                  <img
+                    src={studentDocuments.student_photo_url}
+                    alt="Student admission photo"
+                    className="student-modal-document-image"
+                  />
+                </a>
+              ) : (
+                <p>Photo not available</p>
+              )}
+            </div>
 
-              </div>
+            {/* PREVIOUS MARKSHEET */}
+            <div className="student-modal-document-card">
+              <h4>Previous Marksheet</h4>
 
-              {/* DETAILS */}
+              {studentDocuments.previous_marksheet_url ? (
+                <>
+                  <div className="student-pdf-icon">
+                    PDF
+                  </div>
 
-              <div className="student-details-grid">
+                  <p>Previous marksheet uploaded</p>
 
-                <div>
-                  <label>
-                    Student ID
-                  </label>
-
-                  <p>
-                    {
-                      selectedStudent.student_id
-                    }
-                  </p>
-                </div>
-
-                <div>
-                  <label>
-                    Name
-                  </label>
-
-                  <p>
-                    {
-                      selectedStudent.student_name
-                    }
-                  </p>
-                </div>
-
-                <div>
-                  <label>
-                    Class
-                  </label>
-
-                  <p>
-                    {
-                      selectedStudent.class_name
-                    }
-                  </p>
-                </div>
-
-                <div>
-                  <label>
-                    Section
-                  </label>
-
-                  <p>
-                    {
-                      selectedStudent.section_name
-                    }
-                  </p>
-                </div>
-
-                <div>
-                  <label>
-                    Academic Year
-                  </label>
-
-                  <p>
-                    {
-                      selectedStudent.academic_year_name
-                    }
-                  </p>
-                </div>
-
-                <div>
-                  <label>
-                    Date of Birth
-                  </label>
-
-                  <p>
-                    {
-                      selectedStudent.date_of_birth
-                    }
-                  </p>
-                </div>
-
-                <div>
-                  <label>
-                    Gender
-                  </label>
-
-                  <p>
-                    {
-                      selectedStudent.gender
-                    }
-                  </p>
-                </div>
-
-                <div>
-                  <label>
-                    Father Name
-                  </label>
-
-                  <p>
-                    {
-                      selectedStudent.father_name
-                    }
-                  </p>
-                </div>
-
-                <div>
-                  <label>
-                    Mother Name
-                  </label>
-
-                  <p>
-                    {
-                      selectedStudent.mother_name
-                    }
-                  </p>
-                </div>
-
-                <div>
-                  <label>
-                    Parent Phone
-                  </label>
-
-                  <p>
-                    {
-                      selectedStudent.parent_phone
-                    }
-                  </p>
-                </div>
-
-                <div>
-                  <label>
-                    Parent Email
-                  </label>
-
-                  <p>
-                    {
-                      selectedStudent.parent_email
-                    }
-                  </p>
-                </div>
-
-                <div>
-                  <label>
-                    City
-                  </label>
-
-                  <p>
-                    {selectedStudent.city}
-                  </p>
-                </div>
-
-                <div>
-                  <label>
-                    State
-                  </label>
-
-                  <p>
-                    {selectedStudent.state}
-                  </p>
-                </div>
-
-                <div>
-                  <label>
-                    Postal Code
-                  </label>
-
-                  <p>
-                    {
-                      selectedStudent.postal_code
-                    }
-                  </p>
-                </div>
-
-                <div>
-                  <label>
-                    Status
-                  </label>
-
-                  <p>
-                    {selectedStudent.is_active
-                      ? "Active"
-                      : "Inactive"}
-                  </p>
-                </div>
-
-                <div className="student-address">
-                  <label>
-                    Address
-                  </label>
-
-                  <p>
-                    {
-                      selectedStudent.address
-                    }
-                  </p>
-                </div>
-
-              </div>
-
-              {/* FOOTER */}
-
-              <div className="student-modal-footer">
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    handleEdit(
-                      selectedStudent
-                    )
-                  }
-                >
-                  Edit Student
-                </button>
-
-                <button
-                  type="button"
-                  onClick={
-                    closeDetails
-                  }
-                >
-                  Close
-                </button>
-
-              </div>
-
+                  <a
+                    href={studentDocuments.previous_marksheet_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="student-document-view-btn"
+                  >
+                    View Marksheet PDF
+                  </a>
+                </>
+              ) : (
+                <p>Marksheet not available</p>
+              )}
             </div>
 
           </div>
         )}
+      </div>
+
+      {/* FOOTER */}
+      <div className="student-modal-footer">
+
+        <button
+          type="button"
+          onClick={() => handleEdit(selectedStudent)}
+        >
+          Edit Student
+        </button>
+
+        <button
+          type="button"
+          onClick={closeDetails}
+        >
+          Close
+        </button>
+
+      </div>
+
+    </div>
+  </div>
+)}
 
       {/* =====================================================
           EDIT STUDENT MODAL

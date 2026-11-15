@@ -16,6 +16,26 @@ class TeacherRegistration(models.Model):
     department = models.CharField(max_length=100)
     primary_subject = models.CharField(max_length=100)
     qualification = models.CharField(max_length=100)
+    profile_photo_path = models.CharField(
+        max_length=500,
+        blank=True,
+        null=True
+    )
+    resume_path = models.CharField(
+        max_length=500,
+        blank=True,
+        null=True
+    )
+    qualification_certificate_path = models.CharField(
+        max_length=500,
+        blank=True,
+        null=True
+    )
+    experience_certificate_path = models.CharField(
+        max_length=500,
+        blank=True,
+        null=True
+    )
 
     employee_id = models.CharField(
         max_length=50,
@@ -33,6 +53,10 @@ class TeacherRegistration(models.Model):
         ],
         default="Pending"
     )
+    rejection_reason = models.TextField(
+    blank=True,
+    null=True
+)
 
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -77,6 +101,7 @@ class Teacher(models.Model):
         null=True,
         blank=True
     )
+    
 
     primary_subject = models.CharField(max_length=100)
 

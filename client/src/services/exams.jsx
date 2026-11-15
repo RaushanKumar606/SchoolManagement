@@ -82,3 +82,5 @@ export const getExamAvailableSubjects = (examId) => {
 
   return apiRequest(`/exams/${examId}/available-subjects/`);
 };
+
+

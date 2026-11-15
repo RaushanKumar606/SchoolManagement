@@ -21,7 +21,12 @@ urlpatterns = [
     name="accountant-create",
 ),  
 
-path("api/auth/exams/", include("exams.urls")),
+path(
+    "api/auth/application-settings/",
+    include("applications.urls"),
+),
+
+    path("api/auth/exams/", include("exams.urls")),
 
     path("api/auth/payroll/", include("payroll.urls")),
       

@@ -41,6 +41,21 @@ function AdminLayout() {
             🏠 Dashboard
           </NavLink>
 
+   {/* TOGGLE BUTTOM */}
+
+          <p className="nav-heading"></p>
+          <NavLink
+            to="/admin/application-settings"
+            className={({ isActive }) =>
+              isActive ? "sidebar-link active" : "sidebar-link"
+            }
+          >
+            <span className="sidebar-icon">⚙️</span>
+            <span>Application Settings</span>
+          </NavLink>
+
+
+
 
           {/* STUDENTS */}
           <p className="nav-heading">STUDENTS</p>
@@ -102,7 +117,7 @@ function AdminLayout() {
             ⚡ Quick Fee Collect
           </NavLink>
 
-                    {/* ACADEMIC SETUP */}
+          {/* ACADEMIC SETUP */}
           <p className="nav-heading">ACADEMIC SETUP</p>
 
 
@@ -115,7 +130,7 @@ function AdminLayout() {
             📝 AcademicManagement
           </NavLink>
 
-          
+
           {/* <NavLink
             to="/admin/attendance"
             className={({ isActive }) =>
@@ -135,7 +150,7 @@ function AdminLayout() {
           </NavLink>
 
 
-{/* 
+          {/* 
           <NavLink
             to="/admin/classes"
             className={({ isActive }) =>
@@ -144,7 +159,7 @@ function AdminLayout() {
           >
             🏫 Classes & Sections
           </NavLink> */}
-{/* 
+          {/* 
           <NavLink
             to="/admin/subjects"
             className={({ isActive }) =>
@@ -160,7 +175,7 @@ function AdminLayout() {
               `nav-item ${isActive ? "active" : ""}`
             }
           >
-            📚 TeacherAssignment 
+            📚 TeacherAssignment
           </NavLink>
 
           <NavLink
@@ -198,8 +213,8 @@ function AdminLayout() {
 
           {/* ================= ACCOUNTANT ================= */}
 
-  <p className="nav-heading">FINANCE</p>
-  <NavLink
+          <p className="nav-heading">FINANCE</p>
+          <NavLink
             to="/admin/accountants/register"
             className={({ isActive }) =>
               `nav-item ${isActive ? "active" : ""}`
@@ -259,7 +274,7 @@ function AdminLayout() {
                 className="admin-logout-btn"
                 onClick={handleLogout}
               >
-                            <span className="admin-logout-icon">↪</span>
+                <span className="admin-logout-icon">↪</span>
                 Logout
               </button>
 

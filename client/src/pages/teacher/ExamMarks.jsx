@@ -1,466 +1,472 @@
 
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { teacherService } from "../../services/teacherService";
+import "./ExamMarks.css";
+
+function getList(response, key) {
+  if (Array.isArray(response)) return response;
+  if (Array.isArray(response?.[key])) return response[key];
+  if (Array.isArray(response?.results)) return response.results;
+  return [];
+}
+
+function getErrorMessage(error) {
+  return (
+    error?.response?.data?.error ||
+    error?.data?.error ||
+    error?.message ||
+    "Something went wrong."
+  );
+}
 
 function ExamMarks() {
-  const navigate = useNavigate();
-
   const [allocations, setAllocations] = useState([]);
+  const [selectedAllocationId, setSelectedAllocationId] = useState("");
+
+  const [exams, setExams] = useState([]);
+  const [selectedExamId, setSelectedExamId] = useState("");
+
   const [students, setStudents] = useState([]);
-
-  const [selectedAllocation, setSelectedAllocation] = useState(null);
-
-  const [examName, setExamName] = useState("");
-  const [totalMarks, setTotalMarks] = useState(100);
-
   const [marks, setMarks] = useState({});
 
-  const [loading, setLoading] = useState(true);
-  const [studentsLoading, setStudentsLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [loadingAllocations, setLoadingAllocations] = useState(true);
+  const [loadingExams, setLoadingExams] = useState(false);
+  const [loadingStudents, setLoadingStudents] = useState(false);
 
+  const [savingStudentId, setSavingStudentId] = useState(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const employeeId = localStorage.getItem("employee_id");
+  const selectedAllocation = allocations.find(
+    (item) => String(item.id) === String(selectedAllocationId)
+  );
 
-  // ================================
-  // Load Teacher Allocations
-  // ================================
+  const selectedExam = exams.find(
+    (item) => String(item.id) === String(selectedExamId)
+  );
+
+  const isPublished = Boolean(selectedExam?.is_result_published);
+
+  // 1. Load teacher allocations
   useEffect(() => {
-    if (!employeeId) {
-      navigate("/login");
-      return;
-    }
+    loadAllocations();
+  }, []);
 
-    fetchAllocations();
-  }, [employeeId, navigate]);
-
-  const fetchAllocations = async () => {
+  const loadAllocations = async () => {
     try {
-      setLoading(true);
+      setLoadingAllocations(true);
       setError("");
 
-      const res = await teacherService.getSubjectAllocations();
+      const response = await teacherService.getSubjectAllocations();
+      const list = getList(response, "allocations");
 
-      if (res.success) {
-        const allocationData =
-          res.data?.results ||
-          res.data ||
-          res.results ||
-          [];
-
-        setAllocations(
-          Array.isArray(allocationData)
-            ? allocationData
-            : []
-        );
-      } else {
-        setError(res.message || "Unable to load class allocations.");
-      }
+      setAllocations(list);
     } catch (err) {
-      console.error(err);
-      setError("Failed to load class allocations.");
+      setError(getErrorMessage(err));
     } finally {
-      setLoading(false);
+      setLoadingAllocations(false);
     }
   };
 
-  // ================================
-  // Select Class / Subject
-  // ================================
-  const handleSelectAllocation = async (allocation) => {
-    setSelectedAllocation(allocation);
-    setStudents([]);
-    setMarks({});
-    setSuccess("");
-    setError("");
-
-    const schoolClass =
-      allocation.school_class ||
-      allocation.schoolClass ||
-      allocation.class;
-
-    const section =
-      allocation.section;
-
-    const subject =
-      allocation.subject;
-
-    if (!schoolClass || !section || !subject) {
-      setError("Invalid class, section or subject allocation.");
+  // 2. Load exams when allocation changes
+  useEffect(() => {
+    if (!selectedAllocation) {
+      setExams([]);
+      setSelectedExamId("");
+      setStudents([]);
+      setMarks({});
       return;
     }
 
+    loadAvailableExams();
+  }, [selectedAllocationId]);
+
+  const loadAvailableExams = async () => {
     try {
-      setStudentsLoading(true);
+      setLoadingExams(true);
+      setError("");
+      setSuccess("");
 
-      const className =
-        typeof schoolClass === "object"
-          ? schoolClass.name
-          : schoolClass;
+      setExams([]);
+      setSelectedExamId("");
+      setStudents([]);
+      setMarks({});
 
-      const sectionName =
-        typeof section === "object"
-          ? section.name
-          : section;
-
-      const subjectId =
-        typeof subject === "object"
-          ? subject.id
-          : subject;
-
-      const res = await teacherService.getSubjectStudents(
-        employeeId,
-        className,
-        sectionName,
-        subjectId
+      const response = await teacherService.getAvailableExams(
+        selectedAllocation.school_class,
+        selectedAllocation.section,
+        selectedAllocation.subject
       );
 
-      if (res.success) {
-        const studentData =
-          res.data?.results ||
-          res.data ||
-          res.students ||
-          [];
-
-        setStudents(
-          Array.isArray(studentData)
-            ? studentData
-            : []
-        );
-      } else {
-        setError(res.message || "Unable to load students.");
-      }
+      const list = getList(response, "exams");
+      setExams(list);
     } catch (err) {
-      console.error(err);
-      setError("Failed to load students.");
+      setError(getErrorMessage(err));
     } finally {
-      setStudentsLoading(false);
+      setLoadingExams(false);
     }
   };
 
-  // ================================
-  // Marks Input
-  // ================================
-  const handleMarksChange = (studentId, value) => {
-    if (value === "") {
-      setMarks((prev) => ({
-        ...prev,
-        [studentId]: "",
-      }));
+  // 3. Load students and marks when exam changes
+  useEffect(() => {
+    if (!selectedAllocation || !selectedExamId) {
+      setStudents([]);
+      setMarks({});
       return;
     }
 
-    const numericValue = Number(value);
+    loadExamMarks();
+  }, [selectedExamId]);
 
-    if (numericValue < 0) return;
+  const loadExamMarks = async () => {
+    try {
+      setLoadingStudents(true);
+      setError("");
+      setSuccess("");
 
-    if (numericValue > Number(totalMarks)) {
-      return;
-    }
+      setStudents([]);
+      setMarks({});
 
-    setMarks((prev) => ({
-      ...prev,
-      [studentId]: numericValue,
-    }));
-  };
+      const response = await teacherService.getExamMarks(
+        selectedAllocation.school_class,
+        selectedAllocation.section,
+        selectedAllocation.subject,
+        selectedExamId
+      );
 
-  // ================================
-  // Save Bulk Marks
-  // ================================
-  const handleSaveMarks = async () => {
-    setError("");
-    setSuccess("");
+      const studentList = getList(response, "students");
 
-    if (!selectedAllocation) {
-      setError("Please select a class and subject.");
-      return;
-    }
+      setStudents(studentList);
 
-    if (!examName.trim()) {
-      setError("Please enter exam name.");
-      return;
-    }
+      const initialMarks = {};
 
-    if (!totalMarks || Number(totalMarks) <= 0) {
-      setError("Please enter valid total marks.");
-      return;
-    }
-
-    if (students.length === 0) {
-      setError("No students found in this class.");
-      return;
-    }
-
-    const schoolClass =
-      selectedAllocation.school_class ||
-      selectedAllocation.schoolClass ||
-      selectedAllocation.class;
-
-    const section =
-      selectedAllocation.section;
-
-    const subject =
-      selectedAllocation.subject;
-
-    const classId =
-      typeof schoolClass === "object"
-        ? schoolClass.id
-        : selectedAllocation.school_class_id ||
-          selectedAllocation.class_id;
-
-    const sectionId =
-      typeof section === "object"
-        ? section.id
-        : selectedAllocation.section_id;
-
-    const subjectId =
-      typeof subject === "object"
-        ? subject.id
-        : selectedAllocation.subject_id ||
-          subject;
-
-    const examMarks = students
-      .filter((student) => {
-        const studentId =
-          student.id || student.student_id;
-
-        return (
-          marks[studentId] !== undefined &&
-          marks[studentId] !== ""
-        );
-      })
-      .map((student) => {
-        const studentId =
-          student.id || student.student_id;
-
-        return {
-          student_id: student.id,
-          subject_id: subjectId,
-          exam_name: examName.trim(),
-          marks_obtained: Number(marks[studentId]),
-          total_marks: Number(totalMarks),
-        };
+      studentList.forEach((student) => {
+        initialMarks[student.studentId] =
+          student.marksObtained === null ||
+          student.marksObtained === undefined
+            ? ""
+            : String(student.marksObtained);
       });
 
-    if (examMarks.length === 0) {
-      setError("Please enter marks for at least one student.");
+      setMarks(initialMarks);
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setLoadingStudents(false);
+    }
+  };
+
+  // 4. Update marks input
+  const handleMarksChange = (studentId, value) => {
+    setMarks((previous) => ({
+      ...previous,
+      [studentId]: value,
+    }));
+
+    setError("");
+    setSuccess("");
+  };
+
+  // 5. Save one student's marks
+  const handleSaveMarks = async (student) => {
+    if (!selectedAllocation || !selectedExam) {
+      setError("Please select class, section, subject and exam.");
+      return;
+    }
+
+    if (isPublished) {
+      setError("Published exam results cannot be edited.");
+      return;
+    }
+
+    const enteredMarks = marks[student.studentId];
+
+    if (enteredMarks === "" || enteredMarks === undefined) {
+      setError(`Please enter marks for ${student.name}.`);
+      return;
+    }
+
+    const marksObtained = Number(enteredMarks);
+    const totalMarks = Number(selectedExam.total_marks);
+
+    if (!Number.isFinite(marksObtained)) {
+      setError("Please enter valid numeric marks.");
+      return;
+    }
+
+    if (
+      !Number.isFinite(totalMarks) ||
+      totalMarks <= 0 ||
+      marksObtained < 0 ||
+      marksObtained > totalMarks
+    ) {
+      setError(`Marks must be between 0 and ${totalMarks}.`);
       return;
     }
 
     try {
-      setSaving(true);
+      setSavingStudentId(student.studentId);
+      setError("");
+      setSuccess("");
 
-      const payload = {
-        employee_id: employeeId,
-        class_id: classId,
-        section_id: sectionId,
-        subject_id: subjectId,
-        exam_name: examName.trim(),
-        total_marks: Number(totalMarks),
-        marks: examMarks,
-      };
+      await teacherService.saveExamMark(
+        selectedAllocation.school_class,
+        selectedAllocation.section,
+        selectedAllocation.subject,
+        {
+          exam_id: selectedExam.id,
+          student_id: student.studentId,
+          marks_obtained: marksObtained,
+          total_marks: totalMarks,
+        }
+      );
 
-      const res =
-        await teacherService.addBulkExamMarks(payload);
+      setSuccess(`Marks saved successfully for ${student.name}.`);
 
-      if (res.success) {
-        setSuccess(
-          `Marks saved successfully for ${examMarks.length} student(s).`
-        );
-      } else {
-        setError(
-          res.message || "Failed to save exam marks."
-        );
-      }
+      // Refresh the marks list after saving
+      await loadExamMarks();
     } catch (err) {
-      console.error(err);
-      setError("Failed to save exam marks.");
+      setError(getErrorMessage(err));
     } finally {
-      setSaving(false);
+      setSavingStudentId(null);
     }
   };
 
-  // ================================
-  // Student Helpers
-  // ================================
-  const getStudentId = (student) =>
-    student.id || student.student_id;
-
-  const getStudentName = (student) => {
-    if (student.name) return student.name;
-
-    return [
-      student.first_name,
-      student.middle_name,
-      student.last_name,
-    ]
-      .filter(Boolean)
-      .join(" ");
-  };
-
-  // ================================
-  // Loading
-  // ================================
-  if (loading) {
+  if (loadingAllocations) {
     return (
-      <div className="teacher-page">
-        <div className="teacher-page-header">
-          <h2>Exam Marks</h2>
-        </div>
-
-        <div className="teacher-loading">
-          Loading class allocations...
-        </div>
+      <div className="exam-marks-page">
+        <div className="exam-marks-message">Loading teacher allocations...</div>
       </div>
     );
   }
 
   return (
-    <div className="teacher-page">
-      {/* Header */}
-      <div className="teacher-page-header">
+    <div className="exam-marks-page">
+      <div className="exam-marks-header">
         <div>
-          <h2>Exam Marks</h2>
-          <p>
-            Enter and manage examination marks for your
-            assigned classes.
-          </p>
+          <h2>Exam Marks Entry</h2>
+          <p>Enter and manage student examination marks.</p>
         </div>
-
-        <button
-          className="back-btn"
-          onClick={() => navigate("/teacher/dashboard")}
-        >
-          ← Dashboard
-        </button>
       </div>
 
-      {/* Error */}
       {error && (
-        <div className="alert error-alert">
+        <div className="exam-marks-alert error">
           {error}
         </div>
       )}
 
-      {/* Success */}
       {success && (
-        <div className="alert success-alert">
+        <div className="exam-marks-alert success">
           {success}
         </div>
       )}
 
-      {/* Class Allocation */}
-      <section className="exam-section">
-        <h3>Select Class & Subject</h3>
+      {/* Allocation selection */}
+      <div className="exam-marks-filters">
+        <div className="exam-marks-field">
+          <label>Class / Section / Subject</label>
 
-        {allocations.length === 0 ? (
-          <div className="empty-state">
-            No class or subject has been assigned to you.
+          <select
+            value={selectedAllocationId}
+            onChange={(e) => {
+              setSelectedAllocationId(e.target.value);
+              setError("");
+              setSuccess("");
+            }}
+          >
+            <option value="">Select allocation</option>
+
+            {allocations.map((allocation) => (
+              <option key={allocation.id} value={allocation.id}>
+                {allocation.class_name} - {allocation.section_name} -{" "}
+                {allocation.subject_name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Exam selection */}
+        <div className="exam-marks-field">
+          <label>Examination</label>
+
+          <select
+            value={selectedExamId}
+            disabled={!selectedAllocation || loadingExams}
+            onChange={(e) => {
+              setSelectedExamId(e.target.value);
+              setError("");
+              setSuccess("");
+            }}
+          >
+            <option value="">
+              {loadingExams ? "Loading exams..." : "Select exam"}
+            </option>
+
+            {exams.map((exam) => (
+              <option key={exam.id} value={exam.id}>
+                {exam.name}
+                {exam.is_result_published ? " (Published)" : ""}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {!loadingAllocations && allocations.length === 0 && (
+        <div className="exam-marks-message">
+          No subject allocations found for your account.
+        </div>
+      )}
+
+      {selectedAllocation && !loadingExams && exams.length === 0 && (
+        <div className="exam-marks-message">
+          No timetable-published exams found for this allocation.
+        </div>
+      )}
+
+      {loadingExams && (
+        <div className="exam-marks-message">Loading available exams...</div>
+      )}
+
+      {/* Selected exam information */}
+      {selectedExam && (
+        <div className="exam-marks-info">
+          <div>
+            <span>Exam</span>
+            <strong>{selectedExam.name}</strong>
           </div>
-        ) : (
-          <div className="allocation-grid">
-            {allocations.map((allocation) => {
-              const schoolClass =
-                allocation.school_class ||
-                allocation.schoolClass ||
-                allocation.class;
 
-              const section = allocation.section;
-              const subject = allocation.subject;
-
-              const allocationId =
-                allocation.id ||
-                allocation.allocationId;
-
-              const isSelected =
-                selectedAllocation &&
-                (
-                  selectedAllocation.id ||
-                  selectedAllocation.allocationId
-                ) === allocationId;
-
-              return (
-                <button
-                  key={allocationId}
-                  type="button"
-                  className={`allocation-card ${
-                    isSelected ? "selected" : ""
-                  }`}
-                  onClick={() =>
-                    handleSelectAllocation(allocation)
-                  }
-                >
-                  <div className="allocation-class">
-                    {typeof schoolClass === "object"
-                      ? schoolClass.name
-                      : schoolClass}
-                  </div>
-
-                  <div className="allocation-section">
-                    Section:{" "}
-                    {typeof section === "object"
-                      ? section.name
-                      : section}
-                  </div>
-
-                  <div className="allocation-subject">
-                    Subject:{" "}
-                    {typeof subject === "object"
-                      ? subject.name
-                      : subject}
-                  </div>
-                </button>
-              );
-            })}
+          <div>
+            <span>Total Marks</span>
+            <strong>{selectedExam.total_marks}</strong>
           </div>
-        )}
-      </section>
 
-      {/* Exam Details */}
-      {selectedAllocation && (
-        <section className="exam-section">
-          <h3>Exam Details</h3>
+          <div>
+            <span>Passing Marks</span>
+            <strong>{selectedExam.passing_marks}</strong>
+          </div>
 
-          <div className="exam-form">
-            <div className="form-group">
-              <label>Exam Name</label>
+          <div>
+            <span>Exam Date</span>
+            <strong>{selectedExam.exam_date || "Not available"}</strong>
+          </div>
 
-              <input
-                type="text"
-                placeholder="e.g. Unit Test 1"
-                value={examName}
-                onChange={(e) =>
-                  setExamName(e.target.value)
-                }
-              />
+          {isPublished && (
+            <div className="published-label">
+              Results Published - Read Only
             </div>
+          )}
+        </div>
+      )}
 
-            <div className="form-group">
-              <label>Total Marks</label>
+      {/* Student marks table */}
+      {loadingStudents && (
+        <div className="exam-marks-message">
+          Loading students and marks...
+        </div>
+      )}
 
-              <input
-                type="number"
-                min="1"
-                value={totalMarks}
-                onChange={(e) => {
-                  const value = Number(e.target.value);
+      {!loadingStudents && selectedExam && students.length > 0 && (
+        <div className="exam-marks-table-wrapper">
+          <table className="exam-marks-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Admission ID</th>
+                <th>Student Name</th>
+                <th>Marks Obtained</th>
+                <th>Total Marks</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
 
-                  setTotalMarks(value);
+            <tbody>
+              {students.map((student, index) => {
+                const hasMarks =
+                  student.hasMarks ||
+                  (student.marksObtained !== null &&
+                    student.marksObtained !== undefined);
 
-                  setMarks({});
-                }}
-              />
-            </div>
-          </div>
-        </section>
+                const obtained = marks[student.studentId];
+
+                return (
+                  <tr key={student.studentId}>
+                    <td>{index + 1}</td>
+
+                    <td>{student.admissionId}</td>
+
+                    <td>{student.name}</td>
+
+                    <td>
+                      <input
+                        type="number"
+                        min="0"
+                        max={selectedExam.total_marks}
+                        step="0.01"
+                        value={obtained ?? ""}
+                        disabled={isPublished}
+                        placeholder="Enter marks"
+                        onChange={(e) =>
+                          handleMarksChange(
+                            student.studentId,
+                            e.target.value
+                          )
+                        }
+                      />
+                    </td>
+
+                    <td>{selectedExam.total_marks}</td>
+
+                    <td>
+                      <span
+                        className={
+                          hasMarks
+                            ? "marks-status saved"
+                            : "marks-status pending"
+                        }
+                      >
+                        {hasMarks ? "Saved" : "Pending"}
+                      </span>
+                    </td>
+
+                    <td>
+                      {!isPublished && (
+                        <button
+                          type="button"
+                          className="save-marks-btn"
+                          disabled={
+                            savingStudentId === student.studentId
+                          }
+                          onClick={() => handleSaveMarks(student)}
+                        >
+                          {savingStudentId === student.studentId
+                            ? "Saving..."
+                            : hasMarks
+                            ? "Update"
+                            : "Save"}
+                        </button>
+                      )}
+
+                      {isPublished && (
+                        <span className="readonly-text">Read only</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {!loadingStudents && selectedExam && students.length === 0 && (
+        <div className="exam-marks-message">
+          No active students found in this class and section.
+        </div>
       )}
     </div>
-
-)
+  );
 }
 
 export default ExamMarks;
-

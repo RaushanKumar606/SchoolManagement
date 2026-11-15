@@ -38,7 +38,9 @@ class TeacherRegistrationSerializer(serializers.ModelSerializer):
         )
         return teacher_profile
 
+
 class TeacherSubjectAllocationSerializer(serializers.ModelSerializer):
+
     teacher_name = serializers.CharField(
         source="teacher.name",
         read_only=True
@@ -74,34 +76,54 @@ class TeacherSubjectAllocationSerializer(serializers.ModelSerializer):
         ]
 
     def validate(self, attrs):
-        school_class = attrs.get("school_class")
-        section = attrs.get("section")
-        subject = attrs.get("subject")
-        teacher = attrs.get("teacher")
+        school_class = attrs.get(
+            "school_class",
+            getattr(self.instance, "school_class", None)
+        )
 
-        # Section must belong to selected class
+        section = attrs.get(
+            "section",
+            getattr(self.instance, "section", None)
+        )
+
+        subject = attrs.get(
+            "subject",
+            getattr(self.instance, "subject", None)
+        )
+
+        teacher = attrs.get(
+            "teacher",
+            getattr(self.instance, "teacher", None)
+        )
+
+        if not all([school_class, section, subject, teacher]):
+            raise serializers.ValidationError(
+                "Teacher, class, section and subject are required."
+            )
+
         if section.school_class_id != school_class.id:
             raise serializers.ValidationError({
                 "section": "Selected section does not belong to this class."
             })
 
-        # Subject must be assigned to selected class
         if not school_class.class_subjects.filter(
             subject=subject
         ).exists():
             raise serializers.ValidationError({
-                "subject": (
-                    "This subject is not assigned to the selected class."
-                )
+                "subject": "This subject is not assigned to the selected class."
             })
 
-        # Prevent duplicate allocation
-        if TeacherSubjectAllocation.objects.filter(
+        duplicate = TeacherSubjectAllocation.objects.filter(
             teacher=teacher,
             school_class=school_class,
             section=section,
             subject=subject,
-        ).exists():
+        )
+
+        if self.instance:
+            duplicate = duplicate.exclude(pk=self.instance.pk)
+
+        if duplicate.exists():
             raise serializers.ValidationError({
                 "allocation": (
                     "This teacher is already assigned to "
