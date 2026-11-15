@@ -98,7 +98,7 @@ const Assignments = lazy(() =>
   import("../pages/teacher/Assignments")
 );
 const TimeTable = lazy(() =>
-  import("../pages/teacher/Timetable")
+  import("../pages/teacher/TeacherTimetable")
 );
 
 // STUDENT KA ALL PAGE 
