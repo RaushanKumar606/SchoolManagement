@@ -86,7 +86,7 @@ const refreshAccessToken = async () => {
 
   try {
     response = await fetch(
-      `${API_URL}/api/auth/token/refresh/`,
+      `${API_URL}/token/refresh/`,
       {
         method: "POST",
         headers: {
@@ -203,7 +203,7 @@ export const apiRequest = async (
       }
     }
 
-    return fetch(`${API_URL}/api/auth/${endpoint}`, {
+    return fetch(`${API_URL}${endpoint}`, {
       ...options,
       headers,
     });
