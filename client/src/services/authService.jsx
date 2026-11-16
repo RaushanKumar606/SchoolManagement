@@ -6,7 +6,7 @@ import { apiRequest } from "../utils/apiRequest";
 // LOGIN
 // =====================================================
 export const login = async (username, password) => {
-  const data = await apiRequest("/login/", {
+  const data = await apiRequest("/api/auth/login/", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -78,7 +78,7 @@ export const changePassword = async (
   currentPassword,
   newPassword
 ) => {
-  return await apiRequest("/accounts/change-password/", {
+  return await apiRequest("/api/auth/accounts/change-password/", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
