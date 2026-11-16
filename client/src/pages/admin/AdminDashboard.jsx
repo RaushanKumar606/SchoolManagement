@@ -1359,8 +1359,8 @@ import { useCallback, useEffect, useState } from "react";
 import { teacherService } from "../../services/teacherService";
 import { academicAdminService } from "../../services/academicAdminService";
 
-const API_URL = "http://127.0.0.1:8000/api";
-
+// const API_URL = "http://127.0.0.1:8000/api";
+const API_URL = import.meta.env.VITE_API_BASE_URL;
 function getList(data) {
   if (Array.isArray(data)) return data;
   if (Array.isArray(data?.results)) return data.results;
@@ -1476,7 +1476,7 @@ function AdminDashboard() {
         throw new Error("Access token not found. Please login again.");
       }
 
-      const response = await fetch(`${API_URL}/auth/admissions/list/`, {
+      const response = await fetch(`${API_URL}/api/auth/admissions/list/`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -1494,7 +1494,6 @@ function AdminDashboard() {
 
       setApplications(getList(data));
     } catch (err) {
-      console.error("Admission Error:", err);
       setError(err.message || "Failed to load applications.");
       setApplications([]);
     } finally {
@@ -1755,7 +1754,7 @@ function AdminDashboard() {
       }
 
       const response = await fetch(
-        `${API_URL}/auth/admissions/${selectedApp.id}/create-student/`,
+        `${API_URL}/api/auth/admissions/${selectedApp.id}/create-student/`,
         {
           method: "POST",
           headers: {
@@ -1896,7 +1895,6 @@ function AdminDashboard() {
 
       await fetchTeacherData();
     } catch (err) {
-      console.error("Approve Teacher Error:", err);
       setTeacherError(err.message || "Failed to approve teacher.");
       window.alert(`Error: ${err.message}`);
     } finally {
@@ -1969,7 +1967,6 @@ function AdminDashboard() {
 
       await fetchTeacherData();
     } catch (err) {
-      console.error("Reject Teacher Error:", err);
       window.alert(`Error: ${err.message}`);
     } finally {
       setTeacherRejecting(false);
