@@ -234,7 +234,7 @@ import { apiRequest } from "../utils/apiRequest";
 // ==========================================
 
 export const getMyStudentProfile = () => {
-  return apiRequest("/students/me/");
+  return apiRequest("/api/auth/students/me/");
 };
 
 // ==========================================
@@ -247,7 +247,7 @@ export const getMyStudentDocuments = (admissionId) => {
   }
 
   return apiRequest(
-    `/admissions/${encodeURIComponent(admissionId)}/documents/`
+    `/api/auth/admissions/${encodeURIComponent(admissionId)}/documents/`
   );
 };
 
@@ -256,7 +256,7 @@ export const getMyStudentDocuments = (admissionId) => {
 // ==========================================
 
 export const getStudentDashboard = () => {
-  return apiRequest("/students/dashboard/");
+  return apiRequest("/api/auth/students/dashboard/");
 };
 
 // ==========================================
@@ -264,7 +264,7 @@ export const getStudentDashboard = () => {
 // ==========================================
 
 export const getMyStudentSubjects = () => {
-  return apiRequest("/students/my-subjects/");
+  return apiRequest("/api/auth/students/my-subjects/");
 };
 
 // ==========================================
@@ -272,7 +272,7 @@ export const getMyStudentSubjects = () => {
 // ==========================================
 
 export const getMyStudentAssignments = () => {
-  return apiRequest("/students/my-assignments/");
+  return apiRequest("/api/auth/students/my-assignments/");
 };
 
 // ==========================================
@@ -298,7 +298,7 @@ export const submitAssignment = (
   }
 
   return apiRequest(
-    `/students/assignments/${encodeURIComponent(assignmentId)}/submit/`,
+    `/api/auth/students/assignments/${encodeURIComponent(assignmentId)}/submit/`,
     {
       method: "POST",
       body: formData,
@@ -311,7 +311,7 @@ export const submitAssignment = (
 // ==========================================
 
 export const getMyExamResults = () => {
-  return apiRequest("/students/my-exam-results/");
+  return apiRequest("/api/auth/students/my-exam-results/");
 };
 
 export const getMyExamResultDetail = (examName) => {
@@ -320,7 +320,7 @@ export const getMyExamResultDetail = (examName) => {
   }
 
   return apiRequest(
-    `/students/my-exam-result/${encodeURIComponent(examName)}/`
+    `/api/auth/students/my-exam-result/${encodeURIComponent(examName)}/`
   );
 };
 
@@ -339,7 +339,7 @@ export const getMyDailyAttendance = (date) => {
 };
 
 export const getMyAttendance = () => {
-  return apiRequest("/students/my-attendance/");
+  return apiRequest("/api/auth/students/my-attendance/");
 };
 
 // ==========================================
@@ -347,7 +347,7 @@ export const getMyAttendance = () => {
 // ==========================================
 
 export const getMyStudentTimetable = (day = null) => {
-  let endpoint = "/students/my-timetable/";
+  let endpoint = "/api/auth/students/my-timetable/";
 
   if (day) {
     endpoint += `?day=${encodeURIComponent(day.toUpperCase())}`;
@@ -400,7 +400,7 @@ export const createFeeOnlineOrder = (invoiceId, amount) => {
   }
 
   return apiRequest(
-    "/fees/online-payment/create-order/",
+    "/api/auth/fees/online-payment/create-order/",
     {
       method: "POST",
       body: JSON.stringify({
@@ -417,7 +417,7 @@ export const verifyFeeOnlinePayment = (paymentData) => {
   }
 
   return apiRequest(
-    "/fees/online-payment/verify/",
+    "/api/auth/fees/online-payment/verify/",
     {
       method: "POST",
       body: JSON.stringify(paymentData),

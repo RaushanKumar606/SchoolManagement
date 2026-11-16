@@ -9,7 +9,7 @@ export const teacherService = {
   // ===================================================
 
   register: async (formData) => {
-    return await apiRequest("/teacher/register/", {
+    return await apiRequest("/api/auth/teacher/register/", {
       method: "POST",
       body: formData,
     });
@@ -71,7 +71,7 @@ export const teacherService = {
       throw new Error("Employee ID and password are required.");
     }
 
-    const data = await apiRequest("/teacher/login/", {
+    const data = await apiRequest("/api/auth/teacher/login/", {
       method: "POST",
       body: JSON.stringify({
         employee_id: employeeId,
@@ -127,7 +127,7 @@ export const teacherService = {
     }
 
     return await apiRequest(
-      `/teacher/${encodeURIComponent(employeeId)}/`,
+      `/api/auth/teacher/${encodeURIComponent(employeeId)}/`,
       {
         method: "GET",
       }
@@ -144,7 +144,7 @@ export const teacherService = {
     }
 
     return await apiRequest(
-      `/teacher/${encodeURIComponent(employeeId)}/dashboard/`,
+      `/api/auth/teacher/${encodeURIComponent(employeeId)}/dashboard/`,
       {
         method: "GET",
       }
@@ -161,7 +161,7 @@ export const teacherService = {
     }
 
     return await apiRequest(
-      `/teacher/${encodeURIComponent(employeeId)}/timetable/`,
+      `/api/auth/teacher/${encodeURIComponent(employeeId)}/timetable/`,
       {
         method: "GET",
       }
@@ -182,7 +182,7 @@ export const teacherService = {
     }
 
     return await apiRequest(
-      `/teacher/${encodeURIComponent(employeeId)}/class/${encodeURIComponent(className)}/${encodeURIComponent(section)}/students/`,
+      `/api/auth/teacher/${encodeURIComponent(employeeId)}/class/${encodeURIComponent(className)}/${encodeURIComponent(section)}/students/`,
       {
         method: "GET",
       }
@@ -210,7 +210,7 @@ export const teacherService = {
     }
 
     return await apiRequest(
-      `/teacher/${encodeURIComponent(employeeId)}/class/${classId}/${sectionId}/subject/${subjectId}/students/`,
+      `/api/auth/teacher/${encodeURIComponent(employeeId)}/class/${classId}/${sectionId}/subject/${subjectId}/students/`,
       {
         method: "GET",
       }
@@ -222,7 +222,7 @@ export const teacherService = {
   // ===================================================
 
   getMyCourses: async () => {
-    return await apiRequest("/teacher/my-courses/", {
+    return await apiRequest("/api/auth/teacher/my-courses/", {
       method: "GET",
     });
   },
@@ -232,13 +232,13 @@ export const teacherService = {
   // ===================================================
 
   getSubjectAllocations: async () => {
-    return await apiRequest("/teacher/subject-allocations/", {
+    return await apiRequest("/api/auth/teacher/subject-allocations/", {
       method: "GET",
     });
   },
 
   createSubjectAllocation: async (allocationData) => {
-    return await apiRequest("/teacher/subject-allocations/", {
+    return await apiRequest("/api/auth/teacher/subject-allocations/", {
       method: "POST",
       body: JSON.stringify(allocationData),
     });
@@ -249,7 +249,7 @@ export const teacherService = {
   // ===================================================
 
   addMarks: async (marksData) => {
-    return await apiRequest("/teacher/marks/add/", {
+    return await apiRequest("/api/auth/teacher/marks/add/", {
       method: "POST",
       body: JSON.stringify(marksData),
     });
@@ -260,7 +260,7 @@ export const teacherService = {
   // ===================================================
 
   addBulkExamMarks: async (marksData) => {
-    return await apiRequest("/teacher/marks/add-bulk/", {
+    return await apiRequest("/api/auth/teacher/marks/add-bulk/", {
       method: "POST",
       body: JSON.stringify(marksData),
     });
@@ -277,7 +277,7 @@ getExamMarks: async (classId, sectionId, subjectId, examId) => {
   }
 
   return await apiRequest(
-    `/exams/teacher/class/${classId}/section/${sectionId}/subject/${subjectId}/marks/?exam_id=${examId}`,
+    `/api/auth/exams/teacher/class/${classId}/section/${sectionId}/subject/${subjectId}/marks/?exam_id=${examId}`,
     {
       method: "GET",
     }
@@ -290,7 +290,7 @@ saveExamMark: async (classId, sectionId, subjectId, payload) => {
     throw new Error("Class, section and subject are required.");
   }
   return await apiRequest(
-    `/exams/teacher/class/${classId}/section/${sectionId}/subject/${subjectId}/marks/`,
+    `/api/auth/exams/teacher/class/${classId}/section/${sectionId}/subject/${subjectId}/marks/`,
     {
       method: "POST",
       body: JSON.stringify(payload),
@@ -305,7 +305,7 @@ getAvailableExams: async (classId, sectionId, subjectId) => {
   }
 
   return await apiRequest(
-    `/exams/teacher/class/${classId}/section/${sectionId}/subject/${subjectId}/available-exams/`,
+    `/api/auth/exams/teacher/class/${classId}/section/${sectionId}/subject/${subjectId}/available-exams/`,
     {
       method: "GET",
     }
@@ -323,7 +323,7 @@ getAvailableExams: async (classId, sectionId, subjectId) => {
     date,
     attendance,
   }) => {
-    return await apiRequest("/teacher/attendance/mark-bulk/", {
+    return await apiRequest("/api/auth/teacher/attendance/mark-bulk/", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -355,7 +355,7 @@ getAvailableExams: async (classId, sectionId, subjectId) => {
     }
 
     return await apiRequest(
-      `/teacher/attendance/${encodeURIComponent(employeeId)}/${classId}/${sectionId}/${subjectId}/?date=${encodeURIComponent(date)}`
+      `/api/auth/teacher/attendance/${encodeURIComponent(employeeId)}/${classId}/${sectionId}/${subjectId}/?date=${encodeURIComponent(date)}`
     );
   },
 
@@ -374,7 +374,7 @@ getAvailableExams: async (classId, sectionId, subjectId) => {
     }
 
     return await apiRequest(
-      `/teacher/attendance-history/${encodeURIComponent(employeeId)}/${classId}/${sectionId}/${subjectId}/`
+      `/api/auth/teacher/attendance-history/${encodeURIComponent(employeeId)}/${classId}/${sectionId}/${subjectId}/`
     );
   },
 
@@ -391,7 +391,7 @@ getAvailableExams: async (classId, sectionId, subjectId) => {
     description,
     due_date,
   }) => {
-    return await apiRequest("/teacher/assignment/create/", {
+    return await apiRequest("/api/auth/teacher/assignment/create/", {
       method: "POST",
       body: JSON.stringify({
         employee_id,
@@ -415,7 +415,7 @@ getAvailableExams: async (classId, sectionId, subjectId) => {
     }
 
     return await apiRequest(
-      `/teacher/${encodeURIComponent(employeeId)}/assignments/`
+      `/api/auth/teacher/${encodeURIComponent(employeeId)}/assignments/`
     );
   },
 
@@ -436,7 +436,7 @@ getAvailableExams: async (classId, sectionId, subjectId) => {
     }
 
     return await apiRequest(
-      `/teacher/${encodeURIComponent(employeeId)}/assignments/${assignmentId}/submissions/`
+      `/api/auth/teacher/${encodeURIComponent(employeeId)}/assignments/${assignmentId}/submissions/`
     );
   },
 
@@ -459,7 +459,7 @@ getAvailableExams: async (classId, sectionId, subjectId) => {
     }
 
     return await apiRequest(
-      `/teacher/${encodeURIComponent(employeeId)}/assignments/${assignmentId}/submissions/${submissionId}/review/`,
+      `/api/auth/teacher/${encodeURIComponent(employeeId)}/assignments/${assignmentId}/submissions/${submissionId}/review/`,
       {
         method: "PATCH",
         body: JSON.stringify(reviewData),
@@ -473,7 +473,7 @@ getAvailableExams: async (classId, sectionId, subjectId) => {
 
   getPendingTeachers: async () => {
     return await apiRequest(
-      "/teacher/admin/pending-teacher/",
+      "/api/auth/teacher/admin/pending-teacher/",
       {
         method: "GET",
       }
@@ -490,7 +490,7 @@ getAvailableExams: async (classId, sectionId, subjectId) => {
     }
 
     return await apiRequest(
-      `/teacher/admin/pending-teacher/${encodeURIComponent(teacherId)}/`,
+      `/api/auth/teacher/admin/pending-teacher/${encodeURIComponent(teacherId)}/`,
       {
         method: "GET",
       }
@@ -509,7 +509,7 @@ getAvailableExams: async (classId, sectionId, subjectId) => {
     }
 
     return await apiRequest(
-      `/teacher/admin/reject-teacher/${encodeURIComponent(teacherId)}/`,
+      `/api/auth/teacher/admin/reject-teacher/${encodeURIComponent(teacherId)}/`,
       {
         method: "POST",
         body: JSON.stringify({
@@ -525,7 +525,7 @@ getAvailableExams: async (classId, sectionId, subjectId) => {
 
   getTeachers: async () => {
     return await apiRequest(
-      "/teacher/admin/teachers/",
+      "/api/auth/teacher/admin/teachers/",
       {
         method: "GET",
       }
@@ -542,7 +542,7 @@ getAvailableExams: async (classId, sectionId, subjectId) => {
     }
 
     return await apiRequest(
-      `/teacher/admin/teachers/${encodeURIComponent(employeeId)}/`
+      `/api/auth/teacher/admin/teachers/${encodeURIComponent(employeeId)}/`
     );
   },
 
@@ -556,7 +556,7 @@ getAvailableExams: async (classId, sectionId, subjectId) => {
     }
 
     return await apiRequest(
-      `/teacher/admin/teachers/${encodeURIComponent(employeeId)}/update/`,
+      `/api/auth/teacher/admin/teachers/${encodeURIComponent(employeeId)}/update/`,
       {
         method: "PATCH",
         body: JSON.stringify(data),
@@ -574,7 +574,7 @@ getAvailableExams: async (classId, sectionId, subjectId) => {
     }
 
     return await apiRequest(
-      `/teacher/admin/approve-teacher/${encodeURIComponent(teacherId)}/`,
+      `/api/auth/teacher/admin/approve-teacher/${encodeURIComponent(teacherId)}/`,
       {
         method: "POST",
       }

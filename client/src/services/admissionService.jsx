@@ -11,7 +11,7 @@ export async function submitAdmission(applicationData) {
     }
   });
 
-  const response = await fetch(`${API_URL}/admissions/apply/`, {
+  const response = await fetch(`${API_URL}/api/auth/admissions/apply/`, {
     method: "POST",
     body: formData,
   });

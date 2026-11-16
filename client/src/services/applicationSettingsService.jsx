@@ -2,7 +2,7 @@ import { apiRequest } from "../utils/apiRequest";
 
 // Public API
 export const getPublicApplicationSettings = async () => {
-  return apiRequest("/application-settings/", {
+  return apiRequest("/api/auth/application-settings/", {
     method: "GET",
     auth: false,
   });
@@ -10,14 +10,14 @@ export const getPublicApplicationSettings = async () => {
 
 // Admin API
 export const getAdminApplicationSettings = async () => {
-  return apiRequest("/application-settings/admin/", {
+  return apiRequest("/api/auth/application-settings/admin/", {
     method: "GET",
   });
 };
 
 // Update settings
 export const updateApplicationSettings = async (data) => {
-  return apiRequest("/application-settings/admin/", {
+  return apiRequest("/api/auth/application-settings/admin/", {
     method: "PATCH",
     body: JSON.stringify(data),
   });

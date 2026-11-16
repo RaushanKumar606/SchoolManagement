@@ -18,17 +18,17 @@ function getList(response) {
 }
 
 export async function getFeeInvoices() {
-  return getList(await apiRequest(`/fees/invoices/`));
+  return getList(await apiRequest(`/api/auth/fees/invoices/`));
 }
 
 export async function getFeePayments() {
-  return getList(await apiRequest(`/fees/payments/`));
+  return getList(await apiRequest(`/api/auth/fees/payments/`));
 }
 
 export async function getFeeStructures() {
-  return getList(await apiRequest(`/fees/structures/`));
+  return getList(await apiRequest(`/api/auth/fees/structures/`));
 }
 
 export async function getFeeDashboard() {
-  return unwrap(await apiRequest(`/fees/dashboard/`));
+  return unwrap(await apiRequest(`/api/auth/fees/dashboard/`));
 }

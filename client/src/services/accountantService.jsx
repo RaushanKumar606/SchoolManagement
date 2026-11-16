@@ -7,7 +7,7 @@ import { apiRequest } from "../utils/apiRequest";
 // =========================================================
 
 export const getFeeDashboard = async () => {
-  return await apiRequest("/fees/dashboard/");
+  return await apiRequest("/api/auth/fees/dashboard/");
 };
 
 
@@ -24,18 +24,18 @@ export const getFeeInvoices = async (filters = {}) => {
   ).toString();
 
   return await apiRequest(
-    `/fees/invoices/${query ? `?${query}` : ""}`
+    `/api/auth/fees/invoices/${query ? `?${query}` : ""}`
   );
 };
 
 // Get fee payments
 export const getFeePayments = async () => {
-  return await apiRequest("/fees/payments/");
+  return await apiRequest("/api/auth/fees/payments/");
 };
 
 // Collect student's fee (Cash / UPI / Bank etc.)
 export const collectStudentFee = async (paymentData) => {
-  return await apiRequest("/fees/payments/", {
+  return await apiRequest("/api/auth/fees/payments/", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -49,7 +49,7 @@ export const collectStudentFee = async (paymentData) => {
 // =========================================================
 
 export const getPayrollEmployees = async () => {
-  return await apiRequest("/payroll/employees/");
+  return await apiRequest("/api/auth/payroll/employees/");
 };
 
 // =========================================================
@@ -57,29 +57,29 @@ export const getPayrollEmployees = async () => {
 // =========================================================
 
 export const getSalaryStructures = async () => {
-  return await apiRequest("/payroll/salary-structures/");
+  return await apiRequest("/api/auth/payroll/salary-structures/");
 };
 
 export const createSalaryStructure = async (data) => {
-  return await apiRequest("/payroll/salary-structures/", {
+  return await apiRequest("/api/auth/payroll/salary-structures/", {
     method: "POST",
     body: JSON.stringify(data),
   });
 };
 
 export const getSalaryStructure = async (id) => {
-  return await apiRequest(`/payroll/salary-structures/${id}/`);
+  return await apiRequest(`/api/auth/payroll/salary-structures/${id}/`);
 };
 
 export const updateSalaryStructure = async (id, data) => {
-  return await apiRequest(`/payroll/salary-structures/${id}/`, {
+  return await apiRequest(`/api/auth/payroll/salary-structures/${id}/`, {
     method: "PUT",
     body: JSON.stringify(data),
   });
 };
 
 export const deleteSalaryStructure = async (id) => {
-  return await apiRequest(`/payroll/salary-structures/${id}/`, {
+  return await apiRequest(`/api/auth/payroll/salary-structures/${id}/`, {
     method: "DELETE",
   });
 };
@@ -89,29 +89,29 @@ export const deleteSalaryStructure = async (id) => {
 // =========================================================
 
 export const getSalarySlips = async () => {
-  return await apiRequest("/payroll/salary-slips/");
+  return await apiRequest("/api/auth/payroll/salary-slips/");
 };
 
 export const createSalarySlip = async (data) => {
-  return await apiRequest("/payroll/salary-slips/", {
+  return await apiRequest("/api/auth/payroll/salary-slips/", {
     method: "POST",
     body: JSON.stringify(data),
   });
 };
 
 export const getSalarySlip = async (id) => {
-  return await apiRequest(`/payroll/salary-slips/${id}/`);
+  return await apiRequest(`/api/auth/payroll/salary-slips/${id}/`);
 };
 
 export const updateSalarySlip = async (id, data) => {
-  return await apiRequest(`/payroll/salary-slips/${id}/`, {
+  return await apiRequest(`/api/auth/payroll/salary-slips/${id}/`, {
     method: "PUT",
     body: JSON.stringify(data),
   });
 };
 
 export const deleteSalarySlip = async (id) => {
-  return await apiRequest(`/payroll/salary-slips/${id}/`, {
+  return await apiRequest(`/api/auth/payroll/salary-slips/${id}/`, {
     method: "DELETE",
   });
 };
@@ -122,7 +122,7 @@ export const deleteSalarySlip = async (id) => {
 
 export const approveSalarySlip = async (id) => {
   return await apiRequest(
-    `/payroll/salary-slips/${id}/approve/`,
+    `/api/auth/payroll/salary-slips/${id}/approve/`,
     {
       method: "POST",
     }
@@ -135,7 +135,7 @@ export const approveSalarySlip = async (id) => {
 
 export const paySalary = async (id, data) => {
   return await apiRequest(
-    `/payroll/salary-slips/${id}/pay/`,
+    `/api/auth/payroll/salary-slips/${id}/pay/`,
     {
       method: "POST",
       body: JSON.stringify(data),
@@ -148,7 +148,7 @@ export const paySalary = async (id, data) => {
 // =========================================================
 
 export const getMySalary = async () => {
-  return await apiRequest("/payroll/my-salary/");
+  return await apiRequest("/api/auth/payroll/my-salary/");
 };
 
 // =========================================================
@@ -156,23 +156,23 @@ export const getMySalary = async () => {
 // =========================================================
 
 export const getBankDetails = async () => {
-  return await apiRequest("/payroll/bank-details/");
+  return await apiRequest("/api/auth/payroll/bank-details/");
 };
 
 export const createBankDetails = async (data) => {
-  return await apiRequest("/payroll/bank-details/", {
+  return await apiRequest("/api/auth/payroll/bank-details/", {
     method: "POST",
     body: JSON.stringify(data),
   });
 };
 
 export const getBankDetail = async (id) => {
-  return await apiRequest(`/payroll/bank-details/${id}/`);
+  return await apiRequest(`/api/auth/payroll/bank-details/${id}/`);
 };
 
 export const updateBankDetails = async (id, data) => {
   return await apiRequest(
-    `/payroll/bank-details/${id}/`,
+    `/api/auth/payroll/bank-details/${id}/`,
     {
       method: "PATCH",
       body: JSON.stringify(data),
@@ -182,7 +182,7 @@ export const updateBankDetails = async (id, data) => {
 
 export const deleteBankDetails = async (id) => {
   return await apiRequest(
-    `/payroll/bank-details/${id}/`,
+    `/api/auth/payroll/bank-details/${id}/`,
     {
       method: "DELETE",
     }

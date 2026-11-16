@@ -2,61 +2,13 @@
 const API_URL = "http://127.0.0.1:8000/api";
 
 import { apiRequest } from "../utils/apiRequest";
-// const fetchApplications = async () => {
-// try {
-//   setLoading(true);
-//   setError("");
-
-//   const token = localStorage.getItem("access_token");
-
-//   if (!token) {
-//     throw new Error("You are not logged in. Access token not found.");
-//   }
-
-//   const response = await fetch(`${API_URL}/auth/admissions/list/`, {
-//     method: "GET",
-//     headers: {
-//       "Content-Type": "application/json",
-//       Authorization: `Bearer ${token}`,
-//     },
-//   });
-
-//   const data = await response.json();
-
-//   if (!response.ok) {
-//     throw new Error(
-//       data.detail || data.message || "Failed to load applications"
-//     );
-//   }
-
-//   if (Array.isArray(data)) {
-//     setApplications(data);
-//   } else if (Array.isArray(data.results)) {
-//     setApplications(data.results);
-//   } else {
-//     setApplications([]);
-//     setError("Unexpected data format received from server.");
-//   }
-// } catch (err) {
-//   console.error("Admission Error:", err);
-//   setError(err.message);
-//   setApplications([]);
-// } finally {
-//   setLoading(false);
-// }
-//   };
-
-
-// =====================================================
-// AUTH HEADER
-// =====================================================
 
 const fetchApplications = async () => {
   try {
     setLoading(true);
     setError("");
 
-    const data = await apiRequest("/admissions/list/", {
+    const data = await apiRequest("/api/auth/admissions/list/", {
       method: "GET",
     });
 
@@ -88,67 +40,6 @@ export const AdminService = {
 
 
 
-
-  // getAdmissionsList: async () => {
-  //   try {
-      
-  //     const token = localStorage.getItem("access_token");
-
-     
-  //     const response = await fetch(`${API_URL}/admissions/list/`, {
-  //       method: "GET",
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //         Authorization: `Bearer ${token}`,
-  //       },
-  //     });
-
-  //     const data = await response.json();
-
-  //   } catch (err) {
-  //     console.error("Admission Error:", err);
-  //   } 
-  // },
-
-
-  // createStudentFromAdmission: async (
-  //   admissionId,
-  //   academicYearId,
-  //   classId,
-  //   sectionId
-  // ) => {
-  //   const token = localStorage.getItem("access_token");
-
-  //   const response = await fetch(
-  //     `${API_URL}/admissions/${admissionId}/create-student/`,
-  //     {
-  //       method: "POST",
-
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //         Authorization: `Bearer ${token}`,
-  //       },
-
-  //       body: JSON.stringify({
-  //         academic_year_id: parseInt(academicYearId),
-  //         class_id: parseInt(classId),
-  //         section_id: parseInt(sectionId),
-  //       }),
-  //     }
-  //   );
-
-  //   const data = await response.json();
-
-  //   if (!response.ok) {
-  //     throw new Error(
-  //       data.detail ||
-  //       data.error ||
-  //       "Failed to create student"
-  //     );
-  //   }
-
-  //   return data;
-  // },
 
   //   =============================================
 

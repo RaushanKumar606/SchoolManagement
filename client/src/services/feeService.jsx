@@ -23,7 +23,7 @@ export const getFeeStructures = async (filters = {}) => {
   const query = params.toString();
 
   return apiRequest(
-    `/fees/structures/${query ? `?${query}` : ""}`,
+    `/api/auth/fees/structures/${query ? `?${query}` : ""}`,
     { method: "GET" }
   );
 };
@@ -32,7 +32,7 @@ export const getFeeStructures = async (filters = {}) => {
 // CREATE FEE STRUCTURE
 // =====================================
 export const createFeeStructure = async (feeData) => {
-  return apiRequest(`/fees/structures/`, {
+  return apiRequest(`/api/auth/fees/structures/`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -45,7 +45,7 @@ export const createFeeStructure = async (feeData) => {
 // UPDATE FEE STRUCTURE
 // =====================================
 export const updateFeeStructure = async (id, feeData) => {
-  return apiRequest(`/fees/structures/${id}/`, {
+  return apiRequest(`/api/auth/fees/structures/${id}/`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
@@ -58,7 +58,7 @@ export const updateFeeStructure = async (id, feeData) => {
 // DELETE FEE STRUCTURE
 // =====================================
 export const deleteFeeStructure = async (id) => {
-  return apiRequest(`/fees/structures/${id}/`, {
+  return apiRequest(`/api/auth/fees/structures/${id}/`, {
     method: "DELETE",
   });
 };

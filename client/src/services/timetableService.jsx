@@ -20,7 +20,7 @@ const buildQuery = (filters = {}) => {
 // Admin: Get timetable list with optional filters
 export const getAdminTimetables = (filters = {}) => {
   return apiRequest(
-    `/academics/admin/timetables/${buildQuery(filters)}`,
+    `/api/auth/academics/admin/timetables/${buildQuery(filters)}`,
     { method: "GET" }
   );
 };
@@ -31,14 +31,14 @@ export const getAdminTimetableById = (id) => {
     throw new Error("Timetable ID is required.");
   }
 
-  return apiRequest(`/academics/admin/timetables/${id}/`, {
+  return apiRequest(`/api/auth/academics/admin/timetables/${id}/`, {
     method: "GET",
   });
 };
 
 // Admin: Create timetable
 export const createTimetable = (data) => {
-  return apiRequest(`/academics/admin/timetables/`, {
+  return apiRequest(`/api/auth/academics/admin/timetables/`, {
     method: "POST",
     body: JSON.stringify(data),
   });
@@ -50,7 +50,7 @@ export const updateTimetable = (id, data) => {
     throw new Error("Timetable ID is required.");
   }
 
-  return apiRequest(`/academics/admin/timetables/${id}/`, {
+  return apiRequest(`/api/auth/academics/admin/timetables/${id}/`, {
     method: "PUT",
     body: JSON.stringify(data),
   });
@@ -62,7 +62,7 @@ export const patchTimetable = (id, data) => {
     throw new Error("Timetable ID is required.");
   }
 
-  return apiRequest(`/academics/admin/timetables/${id}/`, {
+  return apiRequest(`/api/auth/academics/admin/timetables/${id}/`, {
     method: "PATCH",
     body: JSON.stringify(data),
   });
@@ -74,7 +74,7 @@ export const deleteTimetable = (id) => {
     throw new Error("Timetable ID is required.");
   }
 
-  return apiRequest(`/academics/admin/timetables/${id}/`, {
+  return apiRequest(`/api/auth/academics/admin/timetables/${id}/`, {
     method: "DELETE",
   });
 };
@@ -82,7 +82,7 @@ export const deleteTimetable = (id) => {
 // Teacher/Student: Read-only timetable
 export const getMyTimetable = (filters = {}) => {
   return apiRequest(
-    `/academics/timetables/${buildQuery(filters)}`,
+    `/api/auth/academics/timetables/${buildQuery(filters)}`,
     { method: "GET" }
   );
 };

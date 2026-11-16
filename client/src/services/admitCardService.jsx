@@ -6,7 +6,7 @@ export const admitCardService = {
   // Student: released admit cards fetch karna
   async getStudentAdmitCards() {
     return apiRequest(
-      `/exams/student/admit-cards/`,
+      `/api/auth/exams/student/admit-cards/`,
       {
         method: "GET",
       }
@@ -20,7 +20,7 @@ export const admitCardService = {
     }
 
     return apiRequest(
-      `/exams/${examId}/admit-card/release/`,
+      `/api/auth/exams/${examId}/admit-card/release/`,
       {
         method: "POST",
       }

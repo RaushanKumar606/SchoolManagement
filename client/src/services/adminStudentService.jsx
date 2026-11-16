@@ -31,7 +31,7 @@ const getStudents = async (params = {}) => {
   }
 
   const endpoint =
-    `/students/admin/students/${
+    `/api/auth/students/admin/students/${
       query.toString() ? `?${query.toString()}` : ""
     }`;
 
@@ -46,7 +46,7 @@ const getStudentById = async (studentId) => {
     throw new Error("Student ID is required");
   }
 
-  const endpoint = `/students/admin/students/${studentId}/`;
+  const endpoint = `/api/auth/students/admin/students/${studentId}/`;
 
   return await apiRequest(endpoint, {
     method: "GET",
@@ -61,7 +61,7 @@ const getAdmissionDocuments = async (admissionId) => {
   }
 
   return await apiRequest(
-    `/admissions/${admissionId}/documents/`
+    `/api/auth/admissions/${admissionId}/documents/`
   );
 };
 
@@ -73,7 +73,7 @@ const updateStudent = async (studentId, studentData) => {
     throw new Error("Student ID is required");
   }
 
-  const endpoint = `/students/admin/students/${studentId}/`;
+  const endpoint = `/api/auth/students/admin/students/${studentId}/`;
 
   return await apiRequest(endpoint, {
     method: "PATCH",
@@ -89,7 +89,7 @@ const deleteStudent = async (studentId) => {
     throw new Error("Student ID is required");
   }
 
-  const endpoint = `/students/admin/students/${studentId}/`;
+  const endpoint = `/api/auth/students/admin/students/${studentId}/`;
 
   await apiRequest(endpoint, {
     method: "DELETE",
@@ -100,7 +100,7 @@ const deleteStudent = async (studentId) => {
 
 
 const getClasses = async () => {
-  return await apiRequest("/academics/classes/", {
+  return await apiRequest("/api/auth/academics/classes/", {
     method: "GET",
   });
 };
@@ -114,7 +114,7 @@ const getSections = async (classId = "") => {
   }
 
   const endpoint =
-    `/academics/sections/${
+    `/api/auth/academics/sections/${
       query.toString() ? `?${query.toString()}` : ""
     }`;
 
@@ -125,31 +125,6 @@ const getSections = async (classId = "") => {
 
 
 
-// const getSections = async (classId = "") => {
-//   const token = getToken();
-
-//   const url = classId
-//     ? `${API_URL}/academics/sections/?school_class=${classId}`
-//     : `${API_URL}/academics/sections/`;
-
-//   const response = await fetch(url, {
-//     method: "GET",
-//     headers: {
-//       "Content-Type": "application/json",
-//       Authorization: `Bearer ${token}`,
-//     },
-//   });
-
-//   const data = await response.json();
-
-//   if (!response.ok) {
-//     throw new Error(
-//       data?.detail || "Failed to fetch sections"
-//     );
-//   }
-
-//   return data;
-// };
 
 export const adminService = {
   getStudents,
