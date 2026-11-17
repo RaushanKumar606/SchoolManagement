@@ -2,40 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import schoolLogo from "../assets/schoolLogo.png";
-
-
-const SCHOOL = {
-  rightLogo: schoolLogo,
-};
-
-
-function SchoolLogo({ src }) {
-  const [imageError, setImageError] = useState(false);
-
-  if (!src || imageError) {
-    return <div className="report-logo-placeholder">SCHOOL</div>;
-  }
-
-  return (
-    <img
-      className="report-logo"
-      src={src}
-      alt="School Logo"
-      onError={() => setImageError(true)}
-    />
-  );
-}
-
-
-
+import {getPublicApplicationSettings} from "../services/applicationSettingsService";
+import Navbar from "../components/Navbar/Navbar";
+import Footer from "../components/Footer/Footer";
 import "./Home.css";
-import {
-  getPublicApplicationSettings,
-} from "../services/applicationSettingsService";
+
 
 function Home() {
   const [applicationSettings, setApplicationSettings] = useState(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Fetch application availability from backend
   useEffect(() => {
@@ -49,8 +24,6 @@ function Home() {
           setApplicationSettings(response);
         }
       } catch (error) {
-        console.error("Application settings error:", error);
-
         if (isMounted) {
           setApplicationSettings({
             student_admission: false,
@@ -76,54 +49,9 @@ function Home() {
   return (
     <div className="school-home">
 
-      {/* ================= NAVBAR ================= */}
-      <header className="navbar">
-        <div className="nav-container">
-
-          <Link to="/" className="school-brand">
-            <div className="school-logo"> <SchoolLogo src={SCHOOL.rightLogo} /></div>
-
-            <div>
-              <h2>Springfield School</h2>
-              <span>Knowledge • Character • Excellence</span>
-            </div>
-          </Link>
-
-          <nav className="nav-menu">
-            <Link to="/">Home</Link>
-            <Link to="/about">About</Link>
-            <a href="#academics">Academics</a>
-            <a href="#facilities">Facilities</a>
-
-            <Link to="/admission/apply">Admissions</Link>
-            <a href="#events">Events</a>
-            <a href="#contact">Contact</a>
-          </nav>
-
-          <div className="nav-actions">
-            <Link to="/login" className="login-link">
-              Login
-            </Link>
-
-            {teacherHiringOpen ? (
-              <Link to="/register" className="admission-btn">
-                Teacher Hiring
-              </Link>
-            ) : (
-              <button
-                type="button"
-                className="coming-soon-btn"
-                disabled
-              >
-                {applicationSettings === null
-                  ? "Loading..."
-                  : "Teacher Hiring Coming Soon"}
-              </button>
-            )}
-          </div>
-
-        </div>
-      </header>
+     
+{/* ================= NAVBAR ================= */}
+<Navbar/>
 
 
       {/* ================= HERO ================= */}
@@ -494,7 +422,7 @@ function Home() {
               >
                 {applicationSettings === null
                   ? "Loading..."
-                  : "Admission Coming Soon"}
+                  : "Admission Soon"}
               </button>
             )}
 
@@ -654,77 +582,8 @@ function Home() {
 
       </section>
 
-
-      {/* ================= FOOTER ================= */}
-      <footer className="footer">
-
-        <div className="section-container footer-grid">
-
-          <div className="footer-brand">
-
-            <div className="school-brand">
-              <div className="school-logo"> <SchoolLogo src={SCHOOL.rightLogo} /></div>
-
-              <div>
-                <h2>Springfield School</h2>
-                <span>Knowledge • Character • Excellence</span>
-              </div>
-            </div>
-
-            <p>
-              Inspiring young minds to learn, lead and make
-              a positive difference in the world.
-            </p>
-
-          </div>
-
-
-          <div className="footer-column">
-            <h4>Quick Links</h4>
-            <a href="#about">About Us</a>
-            <a href="#academics">Academics</a>
-            <a href="#facilities">Facilities</a>
-            <a href="#admission">Admissions</a>
-          </div>
-
-
-          <div className="footer-column">
-            <h4>Information</h4>
-            <a href="#events">Events</a>
-            <a href="#contact">Contact</a>
-            <Link to="/login">Student Login</Link>
-
-            {teacherHiringOpen ? (
-              <Link to="/register">Teacher Registration</Link>
-            ) : (
-              <span className="footer-coming-soon">
-                Teacher Hiring - Coming Soon
-              </span>
-            )}
-          </div>
-
-
-          <div className="footer-column">
-            <h4>Contact</h4>
-            <p>📍 123 School Road</p>
-            <p>📞 +91 98765 43210</p>
-            <p>✉️ info@springfieldschool.edu</p>
-          </div>
-
-        </div>
-
-
-        <div className="footer-bottom">
-          <p>
-            © 2026 Springfield School. All rights reserved.
-          </p>
-
-          <p>
-            Privacy Policy &nbsp; • &nbsp; Terms
-          </p>
-        </div>
-
-      </footer>
+      {/* FOOTER */}
+<Footer />
 
     </div>
   );

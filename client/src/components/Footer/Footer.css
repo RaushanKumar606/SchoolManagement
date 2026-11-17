@@ -1,0 +1,217 @@
+
+/* ================= FOOTER ================= */
+
+.footer {
+  width: 100%;
+  background: #102b4e;
+  color: #ffffff;
+  padding-top: 65px;
+  margin-top: 0;
+}
+
+/* FOOTER GRID */
+
+.footer-grid {
+  max-width: 1400px;
+  margin: auto;
+  padding: 0 35px 50px;
+
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr 1.3fr;
+  gap: 40px;
+}
+
+/* BRAND */
+
+.footer-school-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: #ffffff;
+}
+
+.footer-school-brand .school-logo img {
+  width: 55px;
+  height: 55px;
+  object-fit: contain;
+}
+
+.footer-school-brand h2 {
+  font-size: 20px;
+  margin: 0;
+  color: #ffffff;
+}
+
+.footer-school-brand span {
+  display: block;
+  font-size: 10px;
+  color: #cbd5e1;
+  margin-top: 5px;
+}
+
+.footer-brand > p {
+  margin-top: 22px;
+  color: #cbd5e1;
+  font-size: 14px;
+  line-height: 1.8;
+  max-width: 300px;
+}
+
+/* FOOTER COLUMNS */
+
+.footer-column {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.footer-column h4 {
+  color: #e8b34d;
+  font-size: 17px;
+  margin: 0 0 8px;
+}
+
+.footer-column a {
+  color: #cbd5e1;
+  font-size: 14px;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.footer-column a:hover {
+  color: #e8b34d;
+  padding-left: 5px;
+}
+
+.footer-column p {
+  margin: 0;
+  color: #cbd5e1;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.footer-contact p {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+}
+
+.footer-coming-soon {
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+/* BOTTOM */
+
+.footer-bottom {
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+
+  padding: 20px 35px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+
+  max-width: 1400px;
+  margin: auto;
+}
+
+.footer-bottom p {
+  margin: 0;
+  font-size: 12px;
+  color: #cbd5e1;
+}
+
+.footer-bottom div {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.footer-bottom a {
+  color: #cbd5e1;
+  font-size: 12px;
+  text-decoration: none;
+}
+
+.footer-bottom a:hover {
+  color: #e8b34d;
+}
+
+/* ================= TABLET ================= */
+
+@media (max-width: 900px) {
+
+  .footer-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 40px 30px;
+    padding-left: 25px;
+    padding-right: 25px;
+  }
+
+}
+
+/* ================= MOBILE ================= */
+
+@media (max-width: 550px) {
+
+  .footer {
+    padding-top: 40px;
+  }
+
+  .footer-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 35px 18px;
+    padding: 0 18px 35px;
+  }
+
+  .footer-brand {
+    grid-column: 1 / -1;
+  }
+
+  .footer-school-brand h2 {
+    font-size: 18px;
+  }
+
+  .footer-brand > p {
+    font-size: 13px;
+  }
+
+  .footer-column h4 {
+    font-size: 15px;
+  }
+
+  .footer-column a,
+  .footer-column p {
+    font-size: 12px;
+  }
+
+  .footer-coming-soon {
+    font-size: 11px;
+  }
+
+  .footer-bottom {
+    flex-direction: column;
+    text-align: center;
+    padding: 20px 12px;
+  }
+
+  .footer-bottom p,
+  .footer-bottom a {
+    font-size: 11px;
+  }
+
+}
+
+@media (max-width: 360px) {
+
+  .footer-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .footer-brand {
+    grid-column: auto;
+  }
+
+}
