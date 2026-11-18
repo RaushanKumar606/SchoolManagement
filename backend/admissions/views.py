@@ -1,3 +1,8 @@
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 from django.db import transaction
 from rest_framework import generics, status
 from rest_framework.permissions import AllowAny
@@ -431,6 +436,11 @@ class ApproveAdmissionView(generics.GenericAPIView):
                 )
 
         except StudentCredentialEmailError:
+
+            logger.exception(
+        "Student approval failed due to credential email error. Admission ID: %s",
+        pk,
+    )
 
             return Response(
                 {
