@@ -9,6 +9,9 @@ import Login from "../pages/public/Login";
 import About from "../pages/About";
 import ApplicationRouteGuard from "../components/common/ApplicationRouteGuard";
 const AdmissionEnquiry = lazy(() => import("../pages/admission/admissionEnquiry"))
+const Academics = lazy(() => import("../pages/academics/Academics"))
+const Facilities = lazy(() => import("../pages/facilities/Facilities"));
+const Events = lazy(() => import("../pages/events/Events"));
 
 
 
@@ -246,7 +249,11 @@ function AppRoutes() {
             </ApplicationRouteGuard>
           }
         />
+       
         <Route path="/about" element={<About />} />
+        <Route path="/academics" element={<Academics />} />
+        <Route path="/facilities" element={<Facilities />} />
+        <Route path="/events" element={<Events />} />
         <Route path="/change-password" element={<ChangePassword />} />
         <Route path="/admission/enquiry" element={<AdmissionEnquiry />} />
 

@@ -1,31 +1,72 @@
 
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import "./Footer.css";
-import schoolLogo from "../../assets/schoolLogo.png";
-const SCHOOL = {
-  rightLogo: schoolLogo,
-};
 
+import schoolLogo from "../../assets/schoolLogo.png";
+import { getPublicApplicationSettings } from "../../services/applicationSettingsService";
+
+import "./Footer.css";
 
 function SchoolLogo({ src }) {
   const [imageError, setImageError] = useState(false);
 
   if (!src || imageError) {
-    return <div className="report-logo-placeholder">SCHOOL</div>;
+    return (
+      <div className="report-logo-placeholder">
+        SCHOOL
+      </div>
+    );
   }
 
   return (
     <img
       className="report-logo"
       src={src}
-      alt="School Logo"
+      alt="Springfield School"
       onError={() => setImageError(true)}
     />
   );
 }
 
+function Footer() {
+  const [applicationSettings, setApplicationSettings] = useState(null);
 
-function Footer({ teacherHiringOpen = false }) {
+  // Fetch application availability from backend
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchApplicationSettings = async () => {
+      try {
+        const response = await getPublicApplicationSettings();
+
+        if (isMounted) {
+          setApplicationSettings(response);
+        }
+      } catch (error) {
+        console.error("Failed to fetch application settings:", error);
+
+        if (isMounted) {
+          setApplicationSettings({
+            student_admission: false,
+            teacher_hiring: false,
+          });
+        }
+      }
+    };
+
+    fetchApplicationSettings();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const studentAdmissionOpen =
+    applicationSettings?.student_admission === true;
+
+  const teacherHiringOpen =
+    applicationSettings?.teacher_hiring === true;
+
   return (
     <footer className="footer">
 
@@ -37,7 +78,7 @@ function Footer({ teacherHiringOpen = false }) {
           <Link to="/" className="footer-school-brand">
 
             <div className="school-logo">
-              <img src={schoolLogo} alt="Springfield School" />
+              <SchoolLogo src={schoolLogo} />
             </div>
 
             <div>
@@ -56,34 +97,57 @@ function Footer({ teacherHiringOpen = false }) {
 
         {/* QUICK LINKS */}
         <div className="footer-column">
+
           <h4>Quick Links</h4>
 
           <Link to="/about">About Us</Link>
+
           <a href="/#academics">Academics</a>
+
           <a href="/#facilities">Facilities</a>
-          <Link to="/admission/apply">Admissions</Link>
+
+          {studentAdmissionOpen ? (
+            <Link to="/admission/apply">
+              Admissions
+            </Link>
+          ) : (
+            <span className="footer-coming-soon">
+              Admissions - Coming Soon
+            </span>
+          )}
+
         </div>
 
         {/* INFORMATION */}
         <div className="footer-column">
+
           <h4>Information</h4>
 
           <a href="/#events">Events</a>
+
           <a href="/#contact">Contact</a>
 
-          <Link to="/login">Student Login</Link>
+          <Link to="/login">
+            Student Login
+          </Link>
 
           {teacherHiringOpen ? (
-            <Link to="/register">Teacher Registration</Link>
+            <Link to="/register">
+              Teacher Registration
+            </Link>
           ) : (
             <span className="footer-coming-soon">
-              Teacher Hiring-Soon
+              {applicationSettings === null
+                ? "Loading..."
+                : "Teacher Hiring - Soon"}
             </span>
           )}
+
         </div>
 
         {/* CONTACT */}
         <div className="footer-column footer-contact">
+
           <h4>Contact Us</h4>
 
           <p>
@@ -111,9 +175,15 @@ function Footer({ teacherHiringOpen = false }) {
         </p>
 
         <div>
-          <Link to="/privacy-policy">Privacy Policy</Link>
+          <Link to="/privacy-policy">
+            Privacy Policy
+          </Link>
+
           <span>•</span>
-          <Link to="/terms">Terms & Conditions</Link>
+
+          <Link to="/terms">
+            Terms & Conditions
+          </Link>
         </div>
 
       </div>

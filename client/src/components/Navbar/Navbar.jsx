@@ -1,14 +1,11 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+
 import schoolLogo from "../../assets/schoolLogo.png";
+import { getPublicApplicationSettings } from "../../services/applicationSettingsService";
+
 import "./Navbar.css";
-
-
-const SCHOOL = {
-  rightLogo: schoolLogo,
-};
-
 
 function SchoolLogo({ src }) {
   const [imageError, setImageError] = useState(false);
@@ -27,102 +24,159 @@ function SchoolLogo({ src }) {
   );
 }
 
-
 function Navbar({
-  schoolLogo = "",
-  teacherHiringOpen = false,
-  applicationSettings = null,
+  schoolLogo: customSchoolLogo = "",
 }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [applicationSettings, setApplicationSettings] = useState(null);
 
   const closeMenu = () => setMobileMenuOpen(false);
 
+  // Fetch public application settings
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchApplicationSettings = async () => {
+      try {
+        const response = await getPublicApplicationSettings();
+
+        if (isMounted) {
+          setApplicationSettings(response);
+        }
+      } catch (error) {
+        console.error("Failed to fetch application settings:", error);
+
+        if (isMounted) {
+          setApplicationSettings({
+            student_admission: false,
+            teacher_hiring: false,
+          });
+        }
+      }
+    };
+
+    fetchApplicationSettings();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const studentAdmissionOpen =
+    applicationSettings?.student_admission === true;
+
+  const teacherHiringOpen =
+    applicationSettings?.teacher_hiring === true;
+
+  const logoToDisplay = customSchoolLogo || schoolLogo;
+
   return (
-   <>
-   <header className="navbar">
-     <div className="nav-container">
-   
-       {/* SCHOOL BRAND */}
-       <Link to="/" className="school-brand">
-         <div className="school-logo">
-           <SchoolLogo src={SCHOOL.rightLogo} />
-         </div>
-   
-         <div className="school-brand-text">
-           <h2>Springfield School</h2>
-           <span>Knowledge • Character • Excellence</span>
-         </div>
-       </Link>
-   
-       {/* MOBILE MENU BUTTON */}
-       <button
-         type="button"
-         className="mobile-menu-btn"
-         onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-         aria-label="Toggle navigation menu"
-         aria-expanded={mobileMenuOpen}
-       >
-         <span></span>
-         <span></span>
-         <span></span>
-       </button>
-   
-       {/* NAVIGATION */}
-       <nav className={`nav-menu ${mobileMenuOpen ? "active" : ""}`}>
-         <Link to="/" onClick={() => setMobileMenuOpen(false)}>Home</Link>
-         <Link to="/about" onClick={() => setMobileMenuOpen(false)}>About</Link>
-         <a href="#academics" onClick={() => setMobileMenuOpen(false)}>Academics</a>
-         <a href="#facilities" onClick={() => setMobileMenuOpen(false)}>Facilities</a>
-         <Link to="/admission/apply" onClick={() => setMobileMenuOpen(false)}>Admissions</Link>
-         <a href="#events" onClick={() => setMobileMenuOpen(false)}>Events</a>
-         <a href="#contact" onClick={() => setMobileMenuOpen(false)}>Contact</a>
-   
-         {/* MOBILE ACTIONS */}
-         <div className="mobile-nav-actions">
-           <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
-             Login
-           </Link>
-   
-           {teacherHiringOpen ? (
-             <Link
-               to="/register"
-               className="admission-btn"
-               onClick={() => setMobileMenuOpen(false)}
-             >
-               Teacher Hiring
-             </Link>
-           ) : (
-             <button type="button" className="coming-soon-btn" disabled>
-               {applicationSettings === null
-                 ? "Loading..."
-                 : "Teacher Hiring-Soon"}
-             </button>
-           )}
-         </div>
-       </nav>
-   
-       {/* DESKTOP ACTIONS */}
-       <div className="nav-actions">
-         <Link to="/login" className="login-link">
-           Login
-         </Link>
-   
-         {teacherHiringOpen ? (
-           <Link to="/register" className="admission-btn">
-             Teacher Hiring
-           </Link>
-         ) : (
-           <button type="button" className="coming-soon-btn" disabled>
-             {applicationSettings === null
-               ? "Loading..."
-               : "Teacher Hiring-Soon"}
-           </button>
-         )}
-       </div>
-   
-     </div>
-   </header>
-   </>
+    <header className="navbar">
+      <div className="nav-container">
+
+        {/* SCHOOL BRAND */}
+        <Link to="/" className="school-brand" onClick={closeMenu}>
+          <div className="school-logo">
+            <SchoolLogo src={logoToDisplay} />
+          </div>
+
+          <div className="school-brand-text">
+            <h2>Springfield School</h2>
+            <span>Knowledge • Character • Excellence</span>
+          </div>
+        </Link>
+
+        {/* MOBILE MENU BUTTON */}
+        <button
+          type="button"
+          className="mobile-menu-btn"
+          onClick={() => setMobileMenuOpen((prev) => !prev)}
+          aria-label="Toggle navigation menu"
+          aria-expanded={mobileMenuOpen}
+        >
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+
+        {/* NAVIGATION */}
+        <nav
+          className={`nav-menu ${mobileMenuOpen ? "active" : ""}`}
+        >
+          <Link to="/" onClick={closeMenu}>Home</Link>
+          <Link to="/about" onClick={closeMenu}>About</Link>
+          <Link to="/academics" onClick={closeMenu}>
+  Academics
+</Link>
+         <Link to="/facilities" onClick={closeMenu}>
+  Facilities
+</Link>
+
+
+          {studentAdmissionOpen && (
+            <Link to="/admission/apply" onClick={closeMenu}>
+              Admissions
+            </Link>
+          )}
+
+          <Link to="/events" onClick={closeMenu}>
+  Events
+</Link>
+          <a href="#contact" onClick={closeMenu}>Contact</a>
+
+          {/* MOBILE ACTIONS */}
+          <div className="mobile-nav-actions">
+            <Link to="/login" onClick={closeMenu}>
+              Login
+            </Link>
+
+            {teacherHiringOpen ? (
+              <Link
+                to="/register"
+                className="admission-btn"
+                onClick={closeMenu}
+              >
+                Teacher Hiring
+              </Link>
+            ) : (
+              <button
+                type="button"
+                className="coming-soon-btn"
+                disabled
+              >
+                {applicationSettings === null
+                  ? "Loading..."
+                  : "Teacher Hiring - Soon"}
+              </button>
+            )}
+          </div>
+        </nav>
+
+        {/* DESKTOP ACTIONS */}
+        <div className="nav-actions">
+          <Link to="/login" className="login-link">
+            Login
+          </Link>
+
+          {teacherHiringOpen ? (
+            <Link to="/register" className="admission-btn">
+              Teacher Hiring
+            </Link>
+          ) : (
+            <button
+              type="button"
+              className="coming-soon-btn"
+              disabled
+            >
+              {applicationSettings === null
+                ? "Loading..."
+                : "Teacher Hiring - Soon"}
+            </button>
+          )}
+        </div>
+
+      </div>
+    </header>
   );
 }
 
