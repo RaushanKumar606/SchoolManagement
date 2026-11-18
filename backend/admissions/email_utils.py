@@ -7,7 +7,6 @@ from django.utils.html import escape
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -20,19 +19,42 @@ def send_student_credentials_email(
     username,
     temporary_password,
 ):
-    parent_email = student.parent_email
+    parent_email = (student.parent_email or "").strip()
 
+    # Validate parent email
     if not parent_email:
-        raise StudentCredentialEmailError(
-            "Parent email address is missing."
+        logger.error(
+            "Credential email not sent: parent email missing. Student ID: %s",
+            student.student_id,
         )
+        raise StudentCredentialEmailError("Parent email is missing.")
 
     try:
         validate_email(parent_email)
     except ValidationError as exc:
+        logger.error(
+            "Credential email not sent: invalid parent email. Student ID: %s",
+            student.student_id,
+        )
         raise StudentCredentialEmailError(
-            "Invalid parent email address."
+            "Invalid parent email."
         ) from exc
+
+    # Validate frontend login URL
+    login_url = getattr(settings, "FRONTEND_LOGIN_URL", "")
+
+    if not login_url:
+        logger.error("FRONTEND_LOGIN_URL is missing.")
+        raise StudentCredentialEmailError(
+            "Frontend login URL is not configured."
+        )
+
+    # Validate SMTP configuration without logging secrets
+    if not settings.EMAIL_HOST_USER or not settings.EMAIL_HOST_PASSWORD:
+        logger.error("Gmail SMTP credentials are missing.")
+        raise StudentCredentialEmailError(
+            "Email credentials are not configured."
+        )
 
     student_name = (
         f"{student.first_name} {student.last_name}"
@@ -42,16 +64,13 @@ def send_student_credentials_email(
     class_name = student.school_class.name
     section_name = student.section.name
 
-    login_url = settings.FRONTEND_LOGIN_URL
-
     subject = "Student Admission Approved - Login Credentials"
 
     text_content = f"""
 Dear Parent,
 
-Congratulations! Your child's admission has been approved.
+Your child's admission has been approved.
 
-Student Details:
 Student Name: {student_name}
 Student ID: {student.student_id}
 Roll Number: {student.roll_number}
@@ -59,13 +78,12 @@ Academic Year: {academic_year}
 Class: {class_name}
 Section: {section_name}
 
-Login Credentials:
 Username: {username}
 Temporary Password: {temporary_password}
 
 Login URL: {login_url}
 
-Please log in and change the temporary password immediately.
+Please change your temporary password after login.
 
 Regards,
 School Administration
@@ -74,78 +92,28 @@ School Administration
     html_content = f"""
     <!DOCTYPE html>
     <html>
-    <body style="margin:0;padding:25px;background:#f4f6fa;
-                 font-family:Arial,sans-serif;">
+    <body>
+        <h2>Admission Approved!</h2>
+        <p>Dear Parent,</p>
+        <p>Admission approved for <strong>{escape(student_name)}</strong>.</p>
 
-      <div style="max-width:600px;margin:auto;background:white;
-                  border-radius:12px;overflow:hidden;">
+        <p>Student ID: {escape(student.student_id)}</p>
+        <p>Roll Number: {escape(student.roll_number)}</p>
+        <p>Academic Year: {escape(academic_year)}</p>
+        <p>Class: {escape(class_name)}</p>
+        <p>Section: {escape(section_name)}</p>
 
-        <div style="background:#173b70;color:white;
-                    padding:25px;text-align:center;">
-          <h2>Admission Approved!</h2>
-          <p>Your student's account is ready.</p>
-        </div>
+        <p>Username: <strong>{escape(username)}</strong></p>
+        <p>Temporary Password:
+            <strong>{escape(temporary_password)}</strong>
+        </p>
 
-        <div style="padding:25px;">
+        <p>
+            <a href="{escape(login_url)}">Login to Student Portal</a>
+        </p>
 
-          <p>Dear Parent,</p>
-
-          <p>
-            Congratulations! The admission of
-            <strong>{escape(student_name)}</strong>
-            has been approved.
-          </p>
-
-          <h3>Student Details</h3>
-
-          <table style="width:100%;border-collapse:collapse;">
-            <tr>
-              <td>Student ID</td>
-              <td><strong>{escape(student.student_id)}</strong></td>
-            </tr>
-            <tr>
-              <td>Roll Number</td>
-              <td><strong>{escape(student.roll_number)}</strong></td>
-            </tr>
-            <tr>
-              <td>Academic Year</td>
-              <td>{escape(academic_year)}</td>
-            </tr>
-            <tr>
-              <td>Class</td>
-              <td>{escape(class_name)}</td>
-            </tr>
-            <tr>
-              <td>Section</td>
-              <td>{escape(section_name)}</td>
-            </tr>
-            <tr>
-              <td>Username</td>
-              <td>{escape(username)}</td>
-            </tr>
-            <tr>
-              <td>Temporary Password</td>
-              <td><strong>{escape(temporary_password)}</strong></td>
-            </tr>
-          </table>
-
-          <div style="text-align:center;margin:30px 0;">
-            <a href="{escape(login_url)}"
-               style="background:#173b70;color:white;
-                      padding:14px 28px;text-decoration:none;
-                      border-radius:6px;">
-              Login to Student Portal
-            </a>
-          </div>
-
-          <p style="color:#b45309;">
-            Please change your temporary password after logging in.
-          </p>
-
-          <p>Regards,<br>School Administration</p>
-
-        </div>
-      </div>
+        <p>Please change your temporary password after login.</p>
+        <p>Regards,<br>School Administration</p>
     </body>
     </html>
     """
@@ -158,26 +126,28 @@ School Administration
             to=[parent_email],
         )
 
-        email.attach_alternative(
-            html_content,
-            "text/html",
-        )
+        email.attach_alternative(html_content, "text/html")
 
         sent = email.send(fail_silently=False)
 
         if sent != 1:
             raise StudentCredentialEmailError(
-                "Email server did not confirm submission."
+                "SMTP server did not confirm email submission."
             )
+
+        logger.info(
+            "Student credentials email submitted. Student ID: %s",
+            student.student_id,
+        )
+
+        return True
 
     except Exception as exc:
         logger.exception(
-            "Credential email failed for Student ID %s",
+            "Credential email failed. Student ID: %s",
             student.student_id,
         )
 
         raise StudentCredentialEmailError(
-            "Unable to send student credentials email."
+            "Unable to submit student credentials email."
         ) from exc
-
-    return True
