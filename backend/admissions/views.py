@@ -1,69 +1,69 @@
-# from django.db import transaction
-# from rest_framework import generics, status
-# from rest_framework.permissions import AllowAny
-# from rest_framework.response import Response
+from django.db import transaction
+from rest_framework import generics, status
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
 
-# from accounts.models import User
-# from students.models import Student
-# from .admin_serializers import AdmissionApplicationAdminSerializer
-# from .models import AdmissionApplication
-# from .permissions import IsAdmissionAdmin
-# from .serializers import AdmissionApplicationSerializer
-# from .status_serializers import AdmissionStatusSerializer
-# from .student_creation_serializers import ApproveAdmissionSerializer
-
-
-# import secrets
-
-# from django.db import transaction
-# from rest_framework import generics, status
-# from rest_framework.response import Response
-
-# from accounts.models import User
-# from students.models import Student, RollNumberGenerationLock
-
-# from students.roll_number_utils import generate_class_roll_number
-
-# from admissions.email_utils import (
-#     send_student_credentials_email,
-#     StudentCredentialEmailError,
-# )
+from accounts.models import User
+from students.models import Student
+from .admin_serializers import AdmissionApplicationAdminSerializer
+from .models import AdmissionApplication
+from .permissions import IsAdmissionAdmin
+from .serializers import AdmissionApplicationSerializer
+from .status_serializers import AdmissionStatusSerializer
+from .student_creation_serializers import ApproveAdmissionSerializer
 
 
+import secrets
+
+from django.db import transaction
+from rest_framework import generics, status
+from rest_framework.response import Response
+
+from accounts.models import User
+from students.models import Student, RollNumberGenerationLock
+
+from students.roll_number_utils import generate_class_roll_number
+
+from admissions.email_utils import (
+    send_student_credentials_email,
+    StudentCredentialEmailError,
+)
 
 
-# from django.db import transaction
-# from django.shortcuts import get_object_or_404
-
-# from rest_framework import generics, status
-# from rest_framework.permissions import AllowAny, IsAuthenticated, BasePermission
-# from rest_framework.parsers import (
-#     MultiPartParser,
-#     FormParser,
-#     JSONParser,
-# )
-# from rest_framework.response import Response
-# from rest_framework.views import APIView
-
-# from accounts.models import User
-# from students.models import Student
-
-# from .admin_serializers import AdmissionApplicationAdminSerializer
-# from .models import AdmissionApplication
-# from .permissions import IsAdmissionAdmin
-# from .serializers import AdmissionApplicationSerializer
-# from .status_serializers import AdmissionStatusSerializer
-# from .student_creation_serializers import ApproveAdmissionSerializer
-
-# from common.supabase_storage import create_document_signed_url
-# from applications.utils import is_student_admission_open
 
 
-# from rest_framework.parsers import (
-#     MultiPartParser,
-#     FormParser,
-#     JSONParser,
-# )
+from django.db import transaction
+from django.shortcuts import get_object_or_404
+
+from rest_framework import generics, status
+from rest_framework.permissions import AllowAny, IsAuthenticated, BasePermission
+from rest_framework.parsers import (
+    MultiPartParser,
+    FormParser,
+    JSONParser,
+)
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from accounts.models import User
+from students.models import Student
+
+from .admin_serializers import AdmissionApplicationAdminSerializer
+from .models import AdmissionApplication
+from .permissions import IsAdmissionAdmin
+from .serializers import AdmissionApplicationSerializer
+from .status_serializers import AdmissionStatusSerializer
+from .student_creation_serializers import ApproveAdmissionSerializer
+
+from common.supabase_storage import create_document_signed_url
+from applications.utils import is_student_admission_open
+
+
+from rest_framework.parsers import (
+    MultiPartParser,
+    FormParser,
+    JSONParser,
+)
 
 import secrets
 
