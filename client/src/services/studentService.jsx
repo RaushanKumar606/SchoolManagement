@@ -106,7 +106,7 @@ export const getMyDailyAttendance = (date) => {
   }
 
   return apiRequest(
-    `/students/my-attendance/?date=${encodeURIComponent(date)}`
+    `/api/auth/students/my-attendance/?date=${encodeURIComponent(date)}`
   );
 };
 
@@ -202,15 +202,15 @@ export const verifyFeeOnlinePayment = (paymentData) => {
 // ==========================================
 
 export const getMyFeeInvoice = () => {
-  return apiRequest("/fees/my-invoice/");
+  return apiRequest("/api/auth/fees/my-invoice/");
 };
 
 export const getMyFeePayments = () => {
-  return apiRequest("/fees/my-payments/");
+  return apiRequest("/api/auth/fees/my-payments/");
 };
 
 export const getMyFeeStructure = () => {
-  return apiRequest("/fees/my-structure/");
+  return apiRequest("/api/auth/fees/my-structure/");
 };
 
 // ==========================================
