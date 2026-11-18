@@ -1,6 +1,4 @@
 
-const API_URL = "http://127.0.0.1:8000/api";
-
 import { apiRequest } from "../utils/apiRequest";
 
 const fetchApplications = async () => {
