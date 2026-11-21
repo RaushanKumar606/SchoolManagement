@@ -580,9 +580,7 @@ function StudentProfile() {
       const data = await getMyStudentProfile();
 
       setStudent(data);
-
-      // Start documents request independently.
-      // Do not wait for documents API to finish.
+     
       if (data?.admission_id) {
         void loadDocuments(data.admission_id);
       }
@@ -670,7 +668,7 @@ function StudentProfile() {
           ⚠️
         </div>
 
-        <h2>Unable to load profile</h2>
+        <h2>Unable to load profile Go To Login <link to="/login">here</link></h2>
 
         <p>{error}</p>
 
@@ -785,6 +783,9 @@ function StudentProfile() {
                 <span>
                   ID: {displayValue(student.student_id)}
                 </span>
+                 <span>
+                  Roll Number: {displayValue(student.roll_number)}
+                </span>
 
                 <span className="profile-active-status">
                   <i />
@@ -897,7 +898,7 @@ function StudentProfile() {
               label="Student ID"
               value={student.student_id}
             />
-
+            
             <ProfileField
               label="Date of Birth"
               value={formatDate(student.date_of_birth)}
@@ -943,6 +944,11 @@ function StudentProfile() {
           </div>
 
           <div className="profile-details-grid">
+
+                  <ProfileField
+              label="Roll Number"
+              value={student.roll_number}
+            />
 
             <ProfileField
               label="Class"

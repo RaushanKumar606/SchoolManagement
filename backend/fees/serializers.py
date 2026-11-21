@@ -98,6 +98,7 @@ class FeeInvoiceSerializer(serializers.ModelSerializer):
 
         fields = [
             "id",
+           
             "invoice_number",
             "student",
             "student_id",
@@ -175,6 +176,11 @@ class FeePaymentSerializer(serializers.ModelSerializer):
         read_only=True,
     )
 
+    roll_number = serializers.CharField(
+        source="invoice.student.roll_number",
+        read_only=True,
+    )
+
     class_name = serializers.CharField(
         source="invoice.student.school_class.name",
         read_only=True,
@@ -184,7 +190,7 @@ class FeePaymentSerializer(serializers.ModelSerializer):
         source="invoice.student.section.name",
         read_only=True,
     )
-
+    
     class Meta:
         model = FeePayment
 
@@ -197,6 +203,7 @@ class FeePaymentSerializer(serializers.ModelSerializer):
 
             # Student
             "student_id",
+            "roll_number",
             "student_name",
             "class_name",
             "section_name",

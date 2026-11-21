@@ -1,11 +1,12 @@
 from django.db import transaction
 from django.utils import timezone
-
+import re
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
+from django.contrib.auth import get_user_model
+from django.db.models import Q
 from .models import SalaryStructure, SalarySlip,EmployeeBankDetails
 from .serializers import (
     SalaryStructureSerializer,
@@ -535,6 +536,7 @@ class SalarySlipListCreateView(APIView):
             },
             status=status.HTTP_400_BAD_REQUEST,
         )
+
 class SalarySlipDetailView(APIView):
     """
     Salary Slip Detail
@@ -694,21 +696,9 @@ class SalarySlipApproveView(APIView):
             status=status.HTTP_200_OK,
         )
 
+
+
 class SalarySlipPayView(APIView):
-    """
-    Salary Payment
-
-    Accountant:
-        Teacher / Staff / Other employee salary pay
-
-    School Admin:
-        All employee salary pay
-        including Accountant salary
-
-    Important:
-        Accountant apni / kisi Accountant ki salary
-        pay nahi kar sakta.
-    """
 
     permission_classes = [
         IsAuthenticated,
@@ -718,17 +708,24 @@ class SalarySlipPayView(APIView):
     @transaction.atomic
     def post(self, request, pk):
 
-        user_role = get_user_role(request.user)
+        user_role = str(
+            get_user_role(request.user)
+        ).upper()
 
-        # -------------------------------------------------
+        # =====================================
         # GET SALARY SLIP
-        # -------------------------------------------------
+        # =====================================
 
         try:
-            salary_slip = SalarySlip.objects.select_related(
-                "salary_structure",
-                "employee",
-            ).select_for_update().get(pk=pk)
+            salary_slip = (
+                SalarySlip.objects
+                .select_related(
+                    "salary_structure",
+                    "employee",
+                )
+                .select_for_update()
+                .get(pk=pk)
+            )
 
         except SalarySlip.DoesNotExist:
             return Response(
@@ -739,146 +736,271 @@ class SalarySlipPayView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        employee_type = (
+        # =====================================
+        # EMPLOYEE TYPE PERMISSION
+        # =====================================
+
+        employee_type = str(
             salary_slip.salary_structure.employee_type
-        )
+        ).upper()
 
-        # -------------------------------------------------
-        # ACCOUNTANT RESTRICTION
-        # -------------------------------------------------
+        if user_role == "ACCOUNTANT" and employee_type in [
+            "ACCOUNTANT",
+            "SCHOOL_ADMIN",
+        ]:
+            return Response(
+                {
+                    "success": False,
+                    "message": (
+                        "Accountant cannot pay "
+                        "Accountant or School Admin salary."
+                    ),
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
-        if user_role == "ACCOUNTANT":
-
-            # Accountant salary
-            if employee_type == "ACCOUNTANT":
-                return Response(
-                    {
-                        "success": False,
-                        "message": (
-                            "Accountant cannot pay "
-                            "Accountant salary. "
-                            "Only School Admin can pay "
-                            "Accountant salary."
-                        ),
-                    },
-                    status=status.HTTP_403_FORBIDDEN,
-                )
-
-            # School Admin salary
-            if employee_type == "SCHOOL_ADMIN":
-                return Response(
-                    {
-                        "success": False,
-                        "message": (
-                            "Accountant cannot pay "
-                            "School Admin salary."
-                        ),
-                    },
-                    status=status.HTTP_403_FORBIDDEN,
-                )
-
-        # -------------------------------------------------
-        # ALREADY PAID CHECK
-        # -------------------------------------------------
+        # =====================================
+        # STATUS VALIDATION
+        # =====================================
 
         if salary_slip.status == "PAID":
             return Response(
                 {
                     "success": False,
-                    "message": "Salary is already paid.",
+                    "message": "Salary already paid.",
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
-
-        # -------------------------------------------------
-        # APPROVAL CHECK
-        # -------------------------------------------------
 
         if salary_slip.status != "APPROVED":
             return Response(
                 {
                     "success": False,
                     "message": (
-                        "Salary must be approved "
-                        "before payment."
+                        "Only approved salary slips "
+                        "can be paid."
                     ),
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # -------------------------------------------------
+        # =====================================
         # PAYMENT METHOD
-        # -------------------------------------------------
+        # =====================================
 
         payment_method = str(
-            request.data.get(
-                "payment_method",
-                ""
-            )
-        ).upper()
+            request.data.get("payment_method", "")
+        ).strip().upper()
 
-        valid_payment_methods = {
+        allowed_methods = [
             "BANK",
             "UPI",
             "CASH",
             "CHEQUE",
-        }
+        ]
 
-        if payment_method not in valid_payment_methods:
+        if payment_method not in allowed_methods:
             return Response(
                 {
                     "success": False,
-                    "message": (
-                        "Valid payment method is required.",
-                    ),
-                    "allowed_methods": [
-                        "BANK",
-                        "UPI",
-                        "CASH",
-                        "CHEQUE",
-                    ],
+                    "message": "Invalid payment method.",
+                    "allowed_methods": allowed_methods,
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # -------------------------------------------------
-        # PAYMENT REFERENCE
-        # -------------------------------------------------
+        payment_reference = str(
+            request.data.get("payment_reference", "")
+        ).strip()
 
-        payment_reference = request.data.get(
-            "payment_reference"
+        remarks = str(
+            request.data.get("remarks", "")
+        ).strip()
+
+        # =====================================
+        # FETCH EMPLOYEE BANK DETAILS
+        # =====================================
+
+        bank_details = (
+            EmployeeBankDetails.objects
+            .filter(employee=salary_slip.employee)
+            .first()
         )
 
-        remarks = request.data.get(
-            "remarks"
-        )
+        # =====================================
+        # BANK TRANSFER VALIDATION
+        # =====================================
 
-        # -------------------------------------------------
-        # PAY SALARY
-        # -------------------------------------------------
+        if payment_method == "BANK":
 
-        salary_slip.status = "PAID"
+            if not bank_details:
+                return Response(
+                    {
+                        "success": False,
+                        "message": (
+                            "Employee bank details "
+                            "have not been added."
+                        ),
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            if not bank_details.is_verified:
+                return Response(
+                    {
+                        "success": False,
+                        "message": (
+                            "Employee bank details "
+                            "are not verified."
+                        ),
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            account_number = (
+                bank_details.account_number or ""
+            ).strip()
+
+            if not account_number.isdigit() or not (
+                8 <= len(account_number) <= 20
+            ):
+                return Response(
+                    {
+                        "success": False,
+                        "message": (
+                            "Employee bank account number "
+                            "is invalid."
+                        ),
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            ifsc_code = (
+                bank_details.ifsc_code or ""
+            ).strip().upper()
+
+            if not re.fullmatch(
+                r"^[A-Z]{4}0[A-Z0-9]{6}$",
+                ifsc_code,
+            ):
+                return Response(
+                    {
+                        "success": False,
+                        "message": (
+                            "Employee IFSC code is invalid."
+                        ),
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            if not payment_reference:
+                return Response(
+                    {
+                        "success": False,
+                        "message": (
+                            "Bank UTR/reference number is required."
+                        ),
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        # =====================================
+        # UPI VALIDATION
+        # =====================================
+
+        elif payment_method == "UPI":
+
+            if not bank_details:
+                return Response(
+                    {
+                        "success": False,
+                        "message": (
+                            "Employee bank/UPI details "
+                            "have not been added."
+                        ),
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            if not bank_details.is_verified:
+                return Response(
+                    {
+                        "success": False,
+                        "message": (
+                            "Employee bank/UPI details "
+                            "are not verified."
+                        ),
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            upi_id = (
+                bank_details.upi_id or ""
+            ).strip()
+
+            if not re.fullmatch(
+                r"^[A-Za-z0-9._-]{2,256}@[A-Za-z0-9.-]{2,64}$",
+                upi_id,
+            ):
+                return Response(
+                    {
+                        "success": False,
+                        "message": (
+                            "Employee UPI ID is missing "
+                            "or invalid."
+                        ),
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            if not payment_reference:
+                return Response(
+                    {
+                        "success": False,
+                        "message": (
+                            "UPI transaction reference "
+                            "is required."
+                        ),
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        # =====================================
+        # CHEQUE VALIDATION
+        # =====================================
+
+        elif payment_method == "CHEQUE":
+
+            if not payment_reference:
+                return Response(
+                    {
+                        "success": False,
+                        "message": "Cheque number is required.",
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        # =====================================
+        # SAVE PAYMENT
+        # =====================================
 
         salary_slip.payment_method = payment_method
-
         salary_slip.payment_reference = (
-            payment_reference
+            payment_reference or None
         )
-
         salary_slip.remarks = remarks
-
         salary_slip.paid_by = request.user
-
         salary_slip.paid_at = timezone.now()
+        salary_slip.status = "PAID"
 
         salary_slip.save(
             update_fields=[
-                "status",
                 "payment_method",
                 "payment_reference",
                 "remarks",
                 "paid_by",
                 "paid_at",
+                "status",
                 "updated_at",
             ]
         )
@@ -886,15 +1008,14 @@ class SalarySlipPayView(APIView):
         return Response(
             {
                 "success": True,
-                "message": (
-                    "Salary paid successfully."
-                ),
+                "message": "Salary paid successfully.",
                 "data": SalarySlipSerializer(
                     salary_slip
                 ).data,
             },
             status=status.HTTP_200_OK,
         )
+
 
 class MySalarySlipView(APIView):
     """
@@ -912,6 +1033,7 @@ class MySalarySlipView(APIView):
         queryset = SalarySlip.objects.select_related(
             "employee",
             "salary_structure",
+            "employee__bank_details",
         ).filter(
             employee=request.user
         )
@@ -961,27 +1083,21 @@ class PayrollEmployeeListView(APIView):
         if user_role == "ACCOUNTANT":
 
             queryset = queryset.filter(
-                role__in=[
-                    "TEACHER",
-                    "STAFF",
-                    "HR",
-                ]
+                Q(role__iexact="TEACHER") | Q(role__iexact="STAFF") |
+        Q(role__iexact="HR")
             )
 
         # ---------------------------------------------
         # SCHOOL ADMIN
         # ---------------------------------------------
         elif user_role == "SCHOOL_ADMIN":
-
-            queryset = queryset.filter(
-                role__in=[
-                    "TEACHER",
-                    "STAFF",
-                    "HR",
-                    "ACCOUNTANT",
-                    "SCHOOL_ADMIN",
-                ]
-            )
+          queryset = queryset.filter(
+        Q(role__iexact="TEACHER") |
+        Q(role__iexact="STAFF") |
+        Q(role__iexact="HR") |
+        Q(role__iexact="ACCOUNTANT") |
+        Q(role__iexact="SCHOOL_ADMIN")
+    )
 
         queryset = queryset.order_by(
             "first_name",
@@ -1019,6 +1135,7 @@ class PayrollEmployeeListView(APIView):
 # EMPLOYEE BANK DETAILS
 # =========================================================
 
+
 class EmployeeBankDetailsListCreateView(APIView):
     """
     Employee bank details list + create.
@@ -1038,47 +1155,49 @@ class EmployeeBankDetailsListCreateView(APIView):
         IsPayrollStaff,
     ]
 
+    # =====================================================
+    # GET: LIST EMPLOYEE BANK DETAILS
+    # =====================================================
+
     def get(self, request):
 
         queryset = EmployeeBankDetails.objects.select_related(
             "employee"
         ).all()
 
-        user_role = get_user_role(request.user)
+        user_role = str(
+            get_user_role(request.user)
+        ).upper()
 
-        # ---------------------------------------------
+        # -----------------------------------------
         # ACCOUNTANT
-        # ---------------------------------------------
+        # -----------------------------------------
 
         if user_role == "ACCOUNTANT":
 
             queryset = queryset.filter(
-                employee__role__in=[
-                    "TEACHER",
-                    "STAFF",
-                    "HR",
-                ]
+                Q(employee__role__iexact="TEACHER") |
+                Q(employee__role__iexact="STAFF") |
+                Q(employee__role__iexact="HR")
             )
 
-        # ---------------------------------------------
+        # -----------------------------------------
         # SCHOOL ADMIN
-        # ---------------------------------------------
+        # -----------------------------------------
 
         elif user_role == "SCHOOL_ADMIN":
 
             queryset = queryset.filter(
-                employee__role__in=[
-                    "TEACHER",
-                    "STAFF",
-                    "HR",
-                    "ACCOUNTANT",
-                    "SCHOOL_ADMIN",
-                ]
+                Q(employee__role__iexact="TEACHER") |
+                Q(employee__role__iexact="STAFF") |
+                Q(employee__role__iexact="HR") |
+                Q(employee__role__iexact="ACCOUNTANT") |
+                Q(employee__role__iexact="SCHOOL_ADMIN")
             )
 
-        # ---------------------------------------------
+        # -----------------------------------------
         # SUPER ADMIN
-        # ---------------------------------------------
+        # -----------------------------------------
 
         elif user_role == "SUPER_ADMIN":
             pass
@@ -1087,14 +1206,18 @@ class EmployeeBankDetailsListCreateView(APIView):
             return Response(
                 {
                     "success": False,
-                    "message": "You do not have permission.",
+                    "message": "Permission denied.",
                 },
                 status=status.HTTP_403_FORBIDDEN,
             )
 
+        # -----------------------------------------
+        # SERIALIZER
+        # -----------------------------------------
+
         serializer = EmployeeBankDetailsSerializer(
             queryset,
-            many=True,
+            many=True
         )
 
         return Response(
@@ -1106,9 +1229,19 @@ class EmployeeBankDetailsListCreateView(APIView):
             status=status.HTTP_200_OK,
         )
 
+    # =====================================================
+    # POST: CREATE EMPLOYEE BANK DETAILS
+    # =====================================================
+
     def post(self, request):
 
-        user_role = get_user_role(request.user)
+        user_role = str(
+            get_user_role(request.user)
+        ).upper()
+
+        # -----------------------------------------
+        # PERMISSION CHECK
+        # -----------------------------------------
 
         if user_role not in [
             "ACCOUNTANT",
@@ -1123,84 +1256,126 @@ class EmployeeBankDetailsListCreateView(APIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
+        # -----------------------------------------
+        # VALIDATE REQUEST DATA
+        # -----------------------------------------
+
         serializer = EmployeeBankDetailsSerializer(
             data=request.data
         )
 
-        if serializer.is_valid():
+        if not serializer.is_valid():
 
-            employee = serializer.validated_data.get(
-                "employee"
+            return Response(
+                {
+                    "success": False,
+                    "message": "Invalid bank details.",
+                    "errors": serializer.errors,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
-            # -----------------------------------------
-            # ACCOUNTANT RESTRICTION
-            # -----------------------------------------
+        employee = serializer.validated_data.get(
+            "employee"
+        )
 
-            if user_role == "ACCOUNTANT":
+        # -----------------------------------------
+        # EMPLOYEE ROLE
+        # -----------------------------------------
 
-                employee_role = str(
-                    getattr(employee, "role", "")
-                ).upper()
+        employee_role = str(
+            getattr(employee, "role", "")
+        ).upper()
 
-                if employee_role not in [
-                    "TEACHER",
-                    "STAFF",
-                    "HR",
-                ]:
-                    return Response(
-                        {
-                            "success": False,
-                            "message": (
-                                "Accountant can only manage "
-                                "Teacher, Staff and HR bank details."
-                            ),
-                        },
-                        status=status.HTTP_403_FORBIDDEN,
-                    )
+        # -----------------------------------------
+        # ACCOUNTANT RESTRICTION
+        # -----------------------------------------
 
-            # -----------------------------------------
-            # DUPLICATE CHECK
-            # -----------------------------------------
+        if user_role == "ACCOUNTANT":
 
-            if EmployeeBankDetails.objects.filter(
-                employee=employee
-            ).exists():
-
+            if employee_role not in [
+                "TEACHER",
+                "STAFF",
+                "HR",
+            ]:
                 return Response(
                     {
                         "success": False,
                         "message": (
-                            "Bank details already exist "
-                            "for this employee."
+                            "Accountant can only manage "
+                            "Teacher, Staff and HR bank details."
                         ),
                     },
-                    status=status.HTTP_400_BAD_REQUEST,
+                    status=status.HTTP_403_FORBIDDEN,
                 )
 
-            bank_details = serializer.save()
+        # -----------------------------------------
+        # SCHOOL ADMIN RESTRICTION
+        # -----------------------------------------
+
+        if user_role == "SCHOOL_ADMIN":
+
+            if employee_role not in [
+                "TEACHER",
+                "STAFF",
+                "HR",
+                "ACCOUNTANT",
+                "SCHOOL_ADMIN",
+            ]:
+                return Response(
+                    {
+                        "success": False,
+                        "message": (
+                            "School Admin cannot manage "
+                            "this employee's bank details."
+                        ),
+                    },
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
+        # -----------------------------------------
+        # DUPLICATE CHECK
+        # -----------------------------------------
+
+        if EmployeeBankDetails.objects.filter(
+            employee=employee
+        ).exists():
 
             return Response(
                 {
-                    "success": True,
+                    "success": False,
                     "message": (
-                        "Employee bank details "
-                        "created successfully."
+                        "Bank details already exist "
+                        "for this employee. Please update existing details."
                     ),
-                    "data": EmployeeBankDetailsSerializer(
-                        bank_details
-                    ).data,
                 },
-                status=status.HTTP_201_CREATED,
+                status=status.HTTP_400_BAD_REQUEST,
             )
+
+        # -----------------------------------------
+        # SAVE BANK DETAILS
+        # -----------------------------------------
+
+        bank_details = serializer.save()
+
+        # -----------------------------------------
+        # RESPONSE
+        # -----------------------------------------
+
+        response_serializer = EmployeeBankDetailsSerializer(
+            bank_details
+        )
 
         return Response(
             {
-                "success": False,
-                "errors": serializer.errors,
+                "success": True,
+                "message": (
+                    "Employee bank details saved successfully."
+                ),
+                "data": response_serializer.data,
             },
-            status=status.HTTP_400_BAD_REQUEST,
-        )   
+            status=status.HTTP_201_CREATED,
+        )
 
 # =========================================================
 # EMPLOYEE BANK DETAILS - DETAIL / UPDATE / DELETE
@@ -1208,23 +1383,16 @@ class EmployeeBankDetailsListCreateView(APIView):
 
 class EmployeeBankDetailsDetailView(APIView):
     """
-    GET:
-        Employee bank details dekhna
-
-    PUT/PATCH:
-        Bank details update karna
-
-    DELETE:
-        Bank details delete karna
+    Employee bank details retrieve, update and delete.
 
     Accountant:
-        Teacher / Staff / HR
+        Teacher / Staff / HR details manage.
 
     School Admin:
-        Teacher / Staff / HR / Accountant / School Admin
+        All payroll employee details manage.
 
     Super Admin:
-        All
+        All details manage.
     """
 
     permission_classes = [
@@ -1233,15 +1401,20 @@ class EmployeeBankDetailsDetailView(APIView):
     ]
 
     def get_object(self, pk):
+
         try:
             return EmployeeBankDetails.objects.select_related(
                 "employee"
             ).get(pk=pk)
+
         except EmployeeBankDetails.DoesNotExist:
             return None
 
-    def check_employee_permission(self, request, bank_details):
-        user_role = get_user_role(request.user)
+    def check_access(self, request, bank_details):
+
+        user_role = str(
+            get_user_role(request.user)
+        ).upper()
 
         employee_role = str(
             getattr(bank_details.employee, "role", "")
@@ -1269,6 +1442,7 @@ class EmployeeBankDetailsDetailView(APIView):
         return False
 
     def get(self, request, pk):
+
         bank_details = self.get_object(pk)
 
         if not bank_details:
@@ -1280,10 +1454,7 @@ class EmployeeBankDetailsDetailView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        if not self.check_employee_permission(
-            request,
-            bank_details,
-        ):
+        if not self.check_access(request, bank_details):
             return Response(
                 {
                     "success": False,
@@ -1305,12 +1476,7 @@ class EmployeeBankDetailsDetailView(APIView):
         )
 
     def put(self, request, pk):
-        return self.update(request, pk, partial=False)
 
-    def patch(self, request, pk):
-        return self.update(request, pk, partial=True)
-
-    def update(self, request, pk, partial=False):
         bank_details = self.get_object(pk)
 
         if not bank_details:
@@ -1322,10 +1488,7 @@ class EmployeeBankDetailsDetailView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        if not self.check_employee_permission(
-            request,
-            bank_details,
-        ):
+        if not self.check_access(request, bank_details):
             return Response(
                 {
                     "success": False,
@@ -1334,27 +1497,106 @@ class EmployeeBankDetailsDetailView(APIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        # Employee change ko prevent karna
-        # existing bank details kisi doosre employee
-        # ko transfer nahi honge.
-        data = request.data.copy()
-        data.pop("employee", None)
+        # Employee cannot be changed through this endpoint.
+        if "employee" in request.data:
+            return Response(
+                {
+                    "success": False,
+                    "message": (
+                        "Employee cannot be changed "
+                        "for existing bank details."
+                    ),
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         serializer = EmployeeBankDetailsSerializer(
             bank_details,
-            data=data,
-            partial=partial,
+            data=request.data,
+            partial=False,
         )
 
         if serializer.is_valid():
-            updated_details = serializer.save()
+
+            # Any bank detail update requires re-verification.
+            updated_details = serializer.save(
+                is_verified=False
+            )
 
             return Response(
                 {
                     "success": True,
                     "message": (
-                        "Employee bank details "
-                        "updated successfully."
+                        "Bank details updated. "
+                        "Admin verification is required again."
+                    ),
+                    "data": EmployeeBankDetailsSerializer(
+                        updated_details
+                    ).data,
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        return Response(
+            {
+                "success": False,
+                "errors": serializer.errors,
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    def patch(self, request, pk):
+
+        bank_details = self.get_object(pk)
+
+        if not bank_details:
+            return Response(
+                {
+                    "success": False,
+                    "message": "Bank details not found.",
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if not self.check_access(request, bank_details):
+            return Response(
+                {
+                    "success": False,
+                    "message": "You do not have permission.",
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        if "employee" in request.data:
+            return Response(
+                {
+                    "success": False,
+                    "message": (
+                        "Employee cannot be changed "
+                        "for existing bank details."
+                    ),
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = EmployeeBankDetailsSerializer(
+            bank_details,
+            data=request.data,
+            partial=True,
+        )
+
+        if serializer.is_valid():
+
+            updated_details = serializer.save(
+                is_verified=False
+            )
+
+            return Response(
+                {
+                    "success": True,
+                    "message": (
+                        "Bank details updated. "
+                        "Admin verification is required again."
                     ),
                     "data": EmployeeBankDetailsSerializer(
                         updated_details
@@ -1372,6 +1614,7 @@ class EmployeeBankDetailsDetailView(APIView):
         )
 
     def delete(self, request, pk):
+
         bank_details = self.get_object(pk)
 
         if not bank_details:
@@ -1383,10 +1626,7 @@ class EmployeeBankDetailsDetailView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        if not self.check_employee_permission(
-            request,
-            bank_details,
-        ):
+        if not self.check_access(request, bank_details):
             return Response(
                 {
                     "success": False,
@@ -1403,4 +1643,69 @@ class EmployeeBankDetailsDetailView(APIView):
                 "message": "Bank details deleted successfully.",
             },
             status=status.HTTP_200_OK,
-        )     
+        )
+
+
+class EmployeeBankDetailsVerifyView(APIView):
+
+    permission_classes = [
+        IsAuthenticated,
+        IsPayrollStaff,
+    ]
+
+    def post(self, request, pk):
+
+        user_role = str(
+            get_user_role(request.user)
+        ).upper()
+
+        if user_role not in [
+            "ACCOUNTANT",
+            "SCHOOL_ADMIN",
+            "SUPER_ADMIN",
+        ]:
+            return Response(
+                {
+                    "success": False,
+                    "message": "You do not have permission to verify bank details."
+                },
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        try:
+            bank_details = EmployeeBankDetails.objects.get(
+                pk=pk
+            )
+        except EmployeeBankDetails.DoesNotExist:
+            return Response(
+                {
+                    "success": False,
+                    "message": "Bank details not found."
+                },
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        if bank_details.is_verified:
+            return Response(
+                {
+                    "success": True,
+                    "message": "Bank details are already verified."
+                },
+                status=status.HTTP_200_OK
+            )
+
+        bank_details.is_verified = True
+        bank_details.save(update_fields=["is_verified"])
+
+        serializer = EmployeeBankDetailsSerializer(
+            bank_details
+        )
+
+        return Response(
+            {
+                "success": True,
+                "message": "Bank details verified successfully.",
+                "data": serializer.data
+            },
+            status=status.HTTP_200_OK
+        )

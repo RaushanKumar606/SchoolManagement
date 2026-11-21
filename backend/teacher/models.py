@@ -63,7 +63,6 @@ class TeacherRegistration(models.Model):
     def __str__(self):
         return f"{self.name} - {self.status}"
 
-
 class Teacher(models.Model):
     admin = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -109,7 +108,6 @@ class Teacher(models.Model):
 
     def __str__(self):
         return f"{self.name} - {self.primary_subject}"
-
 
 class TeacherSubjectAllocation(models.Model):
     teacher = models.ForeignKey(
@@ -157,9 +155,6 @@ class TeacherSubjectAllocation(models.Model):
             f"{self.subject.name}"
         )
 
-
-
-
 class Student(models.Model):
     name = models.CharField(max_length=100)
     roll_number = models.CharField(max_length=50, unique=True)
@@ -179,7 +174,6 @@ class Student(models.Model):
             f"{self.name} "
             f"(Class {self.class_name}-{self.section})"
         )
-
 
 class Attendance(models.Model):
     student = models.ForeignKey(
@@ -225,6 +219,7 @@ class Attendance(models.Model):
                     "student",
                     "date",
                     "subject",
+                    
                 ],
                 name="unique_student_date_subject_attendance"
             )
@@ -312,6 +307,11 @@ class Assignment(models.Model):
         on_delete=models.CASCADE,
         related_name="assignments",
     )
+    assignments_pdf= models.FileField(
+    upload_to="assignments/pdfs/",
+    null=True,
+    blank=True
+)
 
     due_date = models.DateField()
 
@@ -322,6 +322,11 @@ class Assignment(models.Model):
     updated_at = models.DateTimeField(
         auto_now=True
     )
+    total_marks = models.DecimalField(
+    max_digits=5,
+    decimal_places=2,
+    default=100
+)
 
     class Meta:
         ordering = ["-created_at"]
@@ -333,7 +338,6 @@ class Assignment(models.Model):
             f"{self.section.name} - "
             f"{self.subject.name}"
         )
-
 
 class AssignmentSubmission(models.Model):
     STATUS_CHOICES = [
@@ -406,7 +410,6 @@ class AssignmentSubmission(models.Model):
             f"{self.assignment.title} - "
             f"{self.student.student_id}"
         )
-
 
 class LeaveRequest(models.Model):
     student = models.ForeignKey(

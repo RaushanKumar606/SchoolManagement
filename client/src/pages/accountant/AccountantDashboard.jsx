@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiRequest } from "../../utils/apiRequest";
+import accountantService from "../../services/accountantService";
 import "./Accountant.css";
 
 
@@ -165,8 +166,7 @@ function AccountantDashboard() {
       setLoadError("");
 
       try {
-        // Uses the existing API helper, including its token-refresh logic.
-        const response = await apiRequest("/fees/dashboard/");
+       const response = await accountantService.getFeeDashboard();
 
         if (!active) return;
 

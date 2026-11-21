@@ -72,6 +72,8 @@ const TeacherDashboard = lazy(() =>
   import("../pages/teacher/TeacherDashboard")
 );
 
+import TeacherMySalary from "../pages/teacher/TeacherMySalary";
+
 const TeacherLayout = lazy(() =>
   import("../components/layout/TeacherLayout")
 );
@@ -147,7 +149,10 @@ const StudentMySubjects = lazy(() =>
 
 
 const AccountantLayout = lazy(() => import("../components/layout/AccountantLayout"));
+import AccountantProfile from "../pages/accountant/AccountantProfile";
+import TeacherSalaryManagement from "../pages/accountant/TeacherSalaryManagement";
 
+import FeePaymentHistory from "../pages/accountant/FeePaymentHistory";
 const AccountantTotalCollection = lazy(
   () => import("../pages/accountant/AccountantCollectTotalFeesByStudent")
 );
@@ -170,10 +175,6 @@ const SalaryStructure = lazy(
 
 const SalarySlip = lazy(
   () => import("../pages/accountant/SalarySlips")
-);
-
-const FeesInvoice = lazy(
-  () => import("../pages/accountant/FeesInvoices")
 );
 
 
@@ -249,7 +250,7 @@ function AppRoutes() {
             </ApplicationRouteGuard>
           }
         />
-       
+
         <Route path="/about" element={<About />} />
         <Route path="/academics" element={<Academics />} />
         <Route path="/facilities" element={<Facilities />} />
@@ -432,6 +433,11 @@ function AppRoutes() {
                 element={<TimeTable />}
               />
 
+              <Route
+                path="my-salary"
+                element={<TeacherMySalary />}
+              />
+
 
 
             </Route>
@@ -445,10 +451,16 @@ function AppRoutes() {
           <Route allowedRoles={[ROLES.ACCOUNTANT]}
             path="/accountant" element={<AccountantLayout />}>
             <Route path="dashboard" element={<AccountantDashboard />} />
+            <Route path="profile" element={<AccountantProfile />} />
             <Route
               path="employees"
               element={<Employees />}
             />
+            <Route
+              path="salary-Payroll"
+              element={<TeacherSalaryManagement />}
+            />
+
             <Route
               path="salary-structure"
               element={<SalaryStructure />}
@@ -459,9 +471,14 @@ function AppRoutes() {
               element={<SalarySlip />}
             />
 
-            <Route
+            {/* <Route
               path="fees-invoice"
               element={<FeesInvoice />}
+            /> */}
+
+            <Route
+              path="fees-invoice"
+              element={<FeePaymentHistory />}
             />
             <Route
               path="fees"

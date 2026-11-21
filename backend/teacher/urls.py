@@ -18,15 +18,19 @@ from .views import (
     TeacherSubjectAllocationListCreateView,
     teacher_subject_students_api,
     teacher_assignments_api,
+    MyAssignmentsView,
     teacher_assignment_submissions_api,
-    review_assignment_submission_api,
+    
    
     teacher_attendance_history_api,
     teacher_dashboard_api,
     my_teacher_timetable_api,
 
     pending_teacher_detail,
-reject_teacher_api,
+    reject_teacher_api,
+
+    TeacherAssignmentSubmissionsView,
+    ReviewAssignmentSubmissionView,
 
     
     teacher_my_courses_api,
@@ -197,6 +201,32 @@ path(
         create_assignment_api,
         name="create-assignment",
     ),
+path(
+        "assignment/my/",
+        MyAssignmentsView.as_view(),
+        name="my-assignments"
+    ),
+
+    path(
+        "assignment/my/<int:pk>/",
+        MyAssignmentsView.as_view(),
+        name="my-assignment-detail"
+    ),
+path(
+    "assignment/<int:assignment_id>/submissions/",
+    TeacherAssignmentSubmissionsView.as_view(),
+    name="teacher-assignment-submissions"
+),
+
+path(
+    "assignment/<int:assignment_id>/submissions/<int:submission_id>/review/",
+    ReviewAssignmentSubmissionView.as_view(),
+    name="review-assignment-submission"
+),
+
+
+
+
 
     path(
         "<str:employee_id>/assignments/",
@@ -209,13 +239,6 @@ path(
         teacher_assignment_submissions_api,
         name="teacher-assignment-submissions",
     ),
-
-    path(
-        "<str:employee_id>/assignments/<int:assignment_id>/submissions/<int:submission_id>/review/",
-        review_assignment_submission_api,
-        name="review-assignment-submission",
-    ),
-
 
     # =====================================================
     # TEACHER PROFILE

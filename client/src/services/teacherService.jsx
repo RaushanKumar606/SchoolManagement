@@ -1,63 +1,14 @@
-
-
 import { apiRequest } from "../utils/apiRequest";
-
 export const teacherService = {
-
   // ===================================================
   // TEACHER REGISTRATION
   // ===================================================
-
   register: async (formData) => {
     return await apiRequest("/api/auth/teacher/register/", {
       method: "POST",
       body: formData,
     });
   },
-
-  // ===================================================
-  // TEACHER LOGIN
-  // ===================================================
-
-  // login: async (credentials) => {
-  //   const data = await apiRequest("/teacher/login/", {
-  //     method: "POST",
-  //     headers: {
-  //       "Content-Type": "application/json",
-  //     },
-  //     body: JSON.stringify(credentials),
-  //   });
-
-  //   if (!data?.access || !data?.refresh) {
-  //     throw new Error(
-  //       "Login response is missing access or refresh token."
-  //     );
-  //   }
-
-  //   localStorage.setItem("access_token", data.access);
-  //   localStorage.setItem("refresh_token", data.refresh);
-
-  //   if (data.user_id != null) {
-  //     localStorage.setItem("user_id", data.user_id);
-  //   }
-
-  //   if (data.username) {
-  //     localStorage.setItem("username", data.username);
-  //   }
-
-  //   if (data.employee_id) {
-  //     localStorage.setItem("employee_id", data.employee_id);
-  //   } else {
-  //     localStorage.removeItem("employee_id");
-  //   }
-
-  //   if (data.role) {
-  //     localStorage.setItem("role", data.role);
-  //   }
-
-  //   return data;
-  // },
-
 
   // ===================================================
   // TEACHER LOGIN
@@ -149,6 +100,10 @@ export const teacherService = {
         method: "GET",
       }
     );
+  },
+  // Teacher Get Salary
+  getMySalary: async () => {
+    return await apiRequest("/api/auth/payroll/my-salary/");
   },
 
   // ===================================================
@@ -270,47 +225,47 @@ export const teacherService = {
   // GET EXAM MARKS
   // ===================================================
 
- // Get exam-wise students and their existing marks
-getExamMarks: async (classId, sectionId, subjectId, examId) => {
-  if (!classId || !sectionId || !subjectId || !examId) {
-    throw new Error("Class, section, subject and exam are required.");
-  }
-
-  return await apiRequest(
-    `/api/auth/exams/teacher/class/${classId}/section/${sectionId}/subject/${subjectId}/marks/?exam_id=${examId}`,
-    {
-      method: "GET",
+  // Get exam-wise students and their existing marks
+  getExamMarks: async (classId, sectionId, subjectId, examId) => {
+    if (!classId || !sectionId || !subjectId || !examId) {
+      throw new Error("Class, section, subject and exam are required.");
     }
-  );
-},
 
-// Save one student's marks
-saveExamMark: async (classId, sectionId, subjectId, payload) => {
-  if (!classId || !sectionId || !subjectId) {
-    throw new Error("Class, section and subject are required.");
-  }
-  return await apiRequest(
-    `/api/auth/exams/teacher/class/${classId}/section/${sectionId}/subject/${subjectId}/marks/`,
-    {
-      method: "POST",
-      body: JSON.stringify(payload),
+    return await apiRequest(
+      `/api/auth/exams/teacher/class/${classId}/section/${sectionId}/subject/${subjectId}/marks/?exam_id=${examId}`,
+      {
+        method: "GET",
+      }
+    );
+  },
+
+  // Save one student's marks
+  saveExamMark: async (classId, sectionId, subjectId, payload) => {
+    if (!classId || !sectionId || !subjectId) {
+      throw new Error("Class, section and subject are required.");
     }
-  );
-},
+    return await apiRequest(
+      `/api/auth/exams/teacher/class/${classId}/section/${sectionId}/subject/${subjectId}/marks/`,
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }
+    );
+  },
 
 
-getAvailableExams: async (classId, sectionId, subjectId) => {
-  if (!classId || !sectionId || !subjectId) {
-    throw new Error("Class, section and subject are required.");
-  }
-
-  return await apiRequest(
-    `/api/auth/exams/teacher/class/${classId}/section/${sectionId}/subject/${subjectId}/available-exams/`,
-    {
-      method: "GET",
+  getAvailableExams: async (classId, sectionId, subjectId) => {
+    if (!classId || !sectionId || !subjectId) {
+      throw new Error("Class, section and subject are required.");
     }
-  );
-},
+
+    return await apiRequest(
+      `/api/auth/exams/teacher/class/${classId}/section/${sectionId}/subject/${subjectId}/available-exams/`,
+      {
+        method: "GET",
+      }
+    );
+  },
   // ===================================================
   // MARK BULK ATTENDANCE
   // ===================================================
@@ -381,29 +336,65 @@ getAvailableExams: async (classId, sectionId, subjectId) => {
   // ===================================================
   // CREATE ASSIGNMENT
   // ===================================================
+createAssignment: async (formData) => {
+  try {
+    const response = await apiRequest(
+      "/api/auth/teacher/assignment/create/",
+      {
+        method: "POST",
+        body: formData,
+      }
+    );
 
-  createAssignment: async ({
-    employee_id,
-    class_name,
-    section,
-    subject,
-    title,
-    description,
-    due_date,
-  }) => {
-    return await apiRequest("/api/auth/teacher/assignment/create/", {
-      method: "POST",
-      body: JSON.stringify({
-        employee_id,
-        class_name,
-        section,
-        subject,
-        title,
-        description,
-        due_date,
-      }),
-    });
-  },
+    return response;
+
+  } catch (error) {
+    console.error("Create assignment API error:", error);
+    throw error;
+  }
+},
+
+
+// GET MY ASSIGNMENTS
+getAssignments: async () => {
+  return await apiRequest(
+    "/api/auth/teacher/assignment/my/",
+    {
+      method: "GET",
+    }
+  );
+},
+
+// VIEW SINGLE ASSIGNMENT
+getAssignmentById: async (id) => {
+  return await apiRequest(
+    `/api/auth/teacher/assignment/my/${id}/`,
+    {
+      method: "GET",
+    }
+  );
+},
+
+// UPDATE ASSIGNMENT
+updateAssignment: async (id, formData) => {
+  return await apiRequest(
+    `/api/auth/teacher/assignment/my/${id}/`,
+    {
+      method: "PATCH",
+      body: formData,
+    }
+  );
+},
+
+// DELETE ASSIGNMENT
+deleteAssignment: async (id) => {
+  return await apiRequest(
+    `/api/auth/teacher/assignment/my/${id}/`,
+    {
+      method: "DELETE",
+    }
+  );
+},
 
   // ===================================================
   // GET ASSIGNMENTS
@@ -419,53 +410,35 @@ getAvailableExams: async (classId, sectionId, subjectId) => {
     );
   },
 
-  // ===================================================
-  // GET ASSIGNMENT SUBMISSIONS
-  // ===================================================
-
-  getAssignmentSubmissions: async (
-    employeeId,
-    assignmentId
-  ) => {
-    if (!employeeId) {
-      throw new Error("Employee ID not found.");
-    }
-
-    if (!assignmentId) {
-      throw new Error("Assignment ID not found.");
-    }
-
-    return await apiRequest(
-      `/api/auth/teacher/${encodeURIComponent(employeeId)}/assignments/${assignmentId}/submissions/`
-    );
-  },
 
   // ===================================================
   // REVIEW ASSIGNMENT SUBMISSION
   // ===================================================
 
-  reviewAssignmentSubmission: async (
-    employeeId,
-    assignmentId,
-    submissionId,
-    reviewData
-  ) => {
-    if (!employeeId) {
-      throw new Error("Employee ID not found.");
+ 
+getAssignmentSubmissions: async (assignmentId) => {
+  return await apiRequest(
+    `/api/auth/teacher/assignment/${assignmentId}/submissions/`,
+    {
+      method: "GET",
     }
+  );
+},
 
-    if (!assignmentId || !submissionId) {
-      throw new Error("Assignment ID and submission ID are required.");
+reviewAssignmentSubmission: async (
+  assignmentId,
+  submissionId,
+  payload
+) => {
+  return await apiRequest(
+    `/api/auth/teacher/assignment/${assignmentId}/submissions/${submissionId}/review/`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(payload),
     }
+  );
+},
 
-    return await apiRequest(
-      `/api/auth/teacher/${encodeURIComponent(employeeId)}/assignments/${assignmentId}/submissions/${submissionId}/review/`,
-      {
-        method: "PATCH",
-        body: JSON.stringify(reviewData),
-      }
-    );
-  },
 
   // ===================================================
   // ADMIN - PENDING TEACHERS

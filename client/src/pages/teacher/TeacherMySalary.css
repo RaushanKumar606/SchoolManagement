@@ -1,0 +1,448 @@
+
+
+.teacher-my-salary {
+  padding: 25px;
+  color: #1e293b;
+  background: #f8fafc;
+  min-height: 100vh;
+}
+
+.salary-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.salary-page-header h1 {
+  margin: 0 0 7px;
+  font-size: 27px;
+  font-weight: 700;
+}
+
+.salary-page-header p {
+  margin: 0;
+  color: #64748b;
+}
+
+.salary-refresh-btn,
+.salary-view-btn,
+.salary-print-btn,
+.salary-close-btn {
+  border: none;
+  padding: 10px 17px;
+  border-radius: 7px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.salary-refresh-btn {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+.salary-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  margin-bottom: 25px;
+}
+
+.salary-summary-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 11px;
+  padding: 22px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+.salary-summary-card span {
+  color: #64748b;
+  font-size: 14px;
+}
+
+.salary-summary-card h2 {
+  margin: 12px 0 0;
+  font-size: 24px;
+  color: #1e293b;
+  overflow-wrap: anywhere;
+}
+
+.salary-history-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 11px;
+  overflow: hidden;
+}
+
+.salary-history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.salary-history-header h2 {
+  margin: 0;
+  font-size: 19px;
+}
+
+.salary-history-header span {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.salary-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.salary-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 750px;
+}
+
+.salary-table th,
+.salary-table td {
+  text-align: left;
+  padding: 15px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.salary-table th {
+  background: #f8fafc;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.salary-table td {
+  font-size: 14px;
+}
+
+.salary-table td small {
+  display: block;
+  margin-top: 5px;
+  color: #94a3b8;
+}
+
+.salary-net-amount {
+  color: #15803d;
+  font-weight: 700;
+}
+
+.salary-status {
+  display: inline-block;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.salary-status.paid {
+  color: #15803d;
+  background: #dcfce7;
+}
+
+.salary-status.approved {
+  color: #1d4ed8;
+  background: #dbeafe;
+}
+
+.salary-status.pending {
+  color: #b45309;
+  background: #fef3c7;
+}
+
+.salary-status.other {
+  color: #475569;
+  background: #e2e8f0;
+}
+
+.salary-actions {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.salary-view-btn {
+  color: #1d4ed8;
+  background: #dbeafe;
+}
+
+.salary-print-btn {
+  color: white;
+  background: #2563eb;
+}
+
+.salary-view-btn:hover,
+.salary-print-btn:hover,
+.salary-refresh-btn:hover {
+  opacity: 0.85;
+}
+
+.salary-empty {
+  text-align: center;
+  padding: 55px 20px;
+}
+
+.salary-empty-icon {
+  font-size: 45px;
+  margin-bottom: 12px;
+}
+
+.salary-empty h3 {
+  margin: 0 0 8px;
+}
+
+.salary-empty p {
+  color: #64748b;
+}
+
+.salary-error {
+  padding: 13px 16px;
+  margin-bottom: 20px;
+  color: #b91c1c;
+  background: #fee2e2;
+  border-radius: 8px;
+}
+
+.teacher-salary-loading {
+  padding: 50px;
+  text-align: center;
+  color: #64748b;
+}
+
+/* Salary Preview Modal */
+
+.salary-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(15, 23, 42, 0.65);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.salary-modal {
+  width: 100%;
+  max-width: 1000px;
+  max-height: 92vh;
+  overflow-y: auto;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.2);
+}
+
+.salary-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 22px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.salary-modal-header h2 {
+  margin: 0;
+  font-size: 19px;
+}
+
+.salary-modal-header button {
+  border: none;
+  background: #f1f5f9;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 17px;
+}
+
+.salary-slip-preview {
+  margin: 25px;
+  border: 2px solid #222;
+  color: #111;
+  font-family: Arial, sans-serif;
+}
+
+.preview-school-name,
+.preview-slip-title {
+  text-align: center;
+  font-weight: bold;
+  font-size: 24px;
+  padding: 8px;
+  border-bottom: 1px solid #222;
+}
+
+.preview-slip-title {
+  font-size: 21px;
+}
+
+.preview-employee-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  padding: 22px 12px;
+  min-height: 150px;
+  font-size: 16px;
+}
+
+.preview-employee-details p {
+  margin: 8px 0;
+  overflow-wrap: anywhere;
+}
+
+.preview-salary-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.preview-salary-columns > div:first-child {
+  border-right: 1px solid #222;
+}
+
+.preview-salary-columns h3 {
+  margin: 0;
+  padding: 10px;
+  text-align: center;
+  font-size: 18px;
+  border-top: 2px solid #222;
+  border-bottom: 1px solid #222;
+}
+
+.preview-salary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 9px;
+  font-size: 14px;
+  border-bottom: 1px solid #f1f1f1;
+}
+
+.preview-salary-row span {
+  overflow-wrap: anywhere;
+}
+
+.preview-salary-row strong {
+  white-space: nowrap;
+}
+
+.preview-total {
+  font-weight: 700;
+  border-top: 1px solid #222;
+  border-bottom: 1px solid #222;
+}
+
+.preview-net-pay {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 13px;
+  text-align: center;
+  font-size: 20px;
+  border-top: 2px solid #222;
+  border-bottom: 2px solid #222;
+}
+
+.preview-amount-words {
+  text-align: center;
+  padding: 17px 10px;
+  font-size: 14px;
+}
+
+.salary-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 18px 22px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.salary-close-btn {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+/* Responsive */
+
+@media (max-width: 768px) {
+  .teacher-my-salary {
+    padding: 15px;
+  }
+
+  .salary-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .salary-page-header h1 {
+    font-size: 23px;
+  }
+
+  .salary-modal-overlay {
+    padding: 8px;
+  }
+
+  .salary-slip-preview {
+    margin: 10px;
+  }
+
+  .preview-school-name {
+    font-size: 18px;
+  }
+
+  .preview-slip-title {
+    font-size: 16px;
+  }
+
+  .preview-employee-details {
+    font-size: 12px;
+    padding: 12px 7px;
+    gap: 7px;
+  }
+
+  .preview-salary-row {
+    font-size: 11px;
+    padding: 9px 5px;
+  }
+
+  .preview-salary-columns h3 {
+    font-size: 15px;
+  }
+
+  .preview-net-pay {
+    font-size: 16px;
+  }
+
+  .preview-amount-words {
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 450px) {
+  .salary-page-header {
+    align-items: flex-start;
+  }
+
+  .preview-employee-details {
+    grid-template-columns: 1fr;
+  }
+
+  .salary-modal-footer {
+    flex-wrap: wrap;
+  }
+
+  .salary-modal-footer button {
+    flex: 1;
+  }
+}
+
+@media print {
+  .teacher-my-salary,
+  .salary-modal-overlay {
+    display: none !important;
+  }
+}

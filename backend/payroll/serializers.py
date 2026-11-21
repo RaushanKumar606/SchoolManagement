@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from .models import SalaryStructure, SalarySlip,EmployeeBankDetails
+import re
 
 
 # =========================================================
@@ -145,76 +146,6 @@ class SalaryStructureSerializer(serializers.ModelSerializer):
 
         return attrs
 
-
-
-class EmployeeBankDetailsSerializer(serializers.ModelSerializer):
-    employee_name = serializers.SerializerMethodField()
-    employee_username = serializers.CharField(
-        source="employee.username",
-        read_only=True,
-    )
-
-    class Meta:
-        model = EmployeeBankDetails
-
-        fields = [
-            "id",
-            "employee",
-            "employee_username",
-            "employee_name",
-            "account_holder_name",
-            "account_number",
-            "ifsc_code",
-            "bank_name",
-            "branch_name",
-            "is_verified",
-            "created_at",
-            "updated_at",
-        ]
-
-        read_only_fields = [
-            "id",
-            "employee_username",
-            "employee_name",
-            "is_verified",
-            "created_at",
-            "updated_at",
-        ]
-
-    def get_employee_name(self, obj):
-        full_name = obj.employee.get_full_name()
-
-        if full_name:
-            return full_name
-
-        return obj.employee.username
-
-    def validate_ifsc_code(self, value):
-        value = value.strip().upper()
-
-        if len(value) != 11:
-            raise serializers.ValidationError(
-                "IFSC code must contain exactly 11 characters."
-            )
-
-        return value
-
-    def validate_account_number(self, value):
-        value = value.strip()
-
-        if not value.isdigit():
-            raise serializers.ValidationError(
-                "Account number must contain only digits."
-            )
-
-        if len(value) < 8 or len(value) > 20:
-            raise serializers.ValidationError(
-                "Enter a valid bank account number."
-            )
-
-        return value
-
-
 class SalarySlipSerializer(serializers.ModelSerializer):
     employee_name = serializers.SerializerMethodField()
     employee_username = serializers.CharField(
@@ -227,6 +158,7 @@ class SalarySlipSerializer(serializers.ModelSerializer):
     )
 
     salary_structure_details = serializers.SerializerMethodField()
+    bank_details = serializers.SerializerMethodField()
 
     class Meta:
         model = SalarySlip
@@ -253,6 +185,7 @@ class SalarySlipSerializer(serializers.ModelSerializer):
 
             # Status
             "status",
+            "bank_details",
 
             # Payment
             "payment_method",
@@ -273,6 +206,7 @@ class SalarySlipSerializer(serializers.ModelSerializer):
             "employee_role",
             "salary_structure_details",
             "basic_salary",
+            "bank_details",
             "total_allowance",
             "total_deduction",
             "net_salary",
@@ -283,6 +217,25 @@ class SalarySlipSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
 
+    def get_bank_details(self, obj):
+        try:
+            bank = obj.employee.bank_details
+        except EmployeeBankDetails.DoesNotExist:
+            return None
+        if not bank.is_verified:
+            return None
+        return {
+            "account_holder_name": bank.account_holder_name,
+            "account_number": bank.account_number,
+            "ifsc_code": bank.ifsc_code,
+            "bank_name": bank.bank_name,
+            "branch_name": bank.branch_name,
+            "upi_id": bank.upi_id,
+            "is_verified": bank.is_verified,
+        }
+
+
+    
     def get_employee_name(self, obj):
         full_name = obj.employee.get_full_name()
 
@@ -343,13 +296,11 @@ class SalarySlipSerializer(serializers.ModelSerializer):
 # =========================================================
 
 class EmployeeBankDetailsSerializer(serializers.ModelSerializer):
+
     employee_name = serializers.SerializerMethodField()
+
     employee_username = serializers.CharField(
         source="employee.username",
-        read_only=True,
-    )
-    employee_role = serializers.CharField(
-        source="employee.role",
         read_only=True,
     )
 
@@ -359,14 +310,14 @@ class EmployeeBankDetailsSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "employee",
-            "employee_name",
             "employee_username",
-            "employee_role",
+            "employee_name",
             "account_holder_name",
             "account_number",
             "ifsc_code",
             "bank_name",
             "branch_name",
+            "upi_id",
             "is_verified",
             "created_at",
             "updated_at",
@@ -374,9 +325,8 @@ class EmployeeBankDetailsSerializer(serializers.ModelSerializer):
 
         read_only_fields = [
             "id",
-            "employee_name",
             "employee_username",
-            "employee_role",
+            "employee_name",
             "is_verified",
             "created_at",
             "updated_at",
@@ -385,17 +335,17 @@ class EmployeeBankDetailsSerializer(serializers.ModelSerializer):
     def get_employee_name(self, obj):
         full_name = obj.employee.get_full_name()
 
-        if full_name:
-            return full_name
-
-        return obj.employee.username
+        return full_name or obj.employee.username
 
     def validate_ifsc_code(self, value):
         value = value.strip().upper()
 
-        if len(value) != 11:
+        if not re.fullmatch(
+            r"^[A-Z]{4}0[A-Z0-9]{6}$",
+            value,
+        ):
             raise serializers.ValidationError(
-                "IFSC code must contain exactly 11 characters."
+                "Enter a valid 11-character IFSC code."
             )
 
         return value
@@ -403,14 +353,27 @@ class EmployeeBankDetailsSerializer(serializers.ModelSerializer):
     def validate_account_number(self, value):
         value = value.strip()
 
-        if not value.isdigit():
-            raise serializers.ValidationError(
-                "Account number must contain only digits."
-            )
-
-        if len(value) < 8 or len(value) > 20:
+        if not value.isdigit() or not (
+            8 <= len(value) <= 20
+        ):
             raise serializers.ValidationError(
                 "Enter a valid bank account number."
             )
 
-        return value    
+        return value
+
+    def validate_upi_id(self, value):
+        if not value:
+            return value
+
+        value = value.strip()
+
+        if not re.fullmatch(
+            r"^[A-Za-z0-9._-]{2,256}@[A-Za-z0-9.-]{2,64}$",
+            value,
+        ):
+            raise serializers.ValidationError(
+                "Enter a valid UPI ID."
+            )
+
+        return value

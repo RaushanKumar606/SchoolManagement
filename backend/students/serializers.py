@@ -32,6 +32,7 @@ class AdminStudentSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "student_id",
+            "roll_number",
             "admission_id",
             "student_name",
 
@@ -70,6 +71,7 @@ class AdminStudentSerializer(serializers.ModelSerializer):
         read_only_fields = [
             "id",
             "student_id",
+            
             "admission_date",
             "created_at",
             "updated_at",
@@ -81,58 +83,6 @@ class AdminStudentSerializer(serializers.ModelSerializer):
             f"{obj.middle_name} "
             f"{obj.last_name}"
         ).strip()
-# class StudentProfileSerializer(serializers.ModelSerializer):
-
-#     admission_id = serializers.IntegerField(
-#         read_only=True,
-#         allow_null=True,
-#     )
-
-#     academic_year = serializers.CharField(
-#         source="academic_year.name",
-#         read_only=True,
-#     )
-
-#     school_class = serializers.CharField(
-#         source="school_class.name",
-#         read_only=True,
-#     )
-
-#     section = serializers.CharField(
-#         source="section.name",
-#         read_only=True,
-#     )
-
-#     class Meta:
-#         model = Student
-
-#         fields = [
-#             "student_id",
-#             "admission_id",
-
-#             "first_name",
-#             "middle_name",
-#             "last_name",
-#             "date_of_birth",
-#             "gender",
-
-#             "academic_year",
-#             "school_class",
-#             "section",
-
-#             "father_name",
-#             "mother_name",
-#             "parent_phone",
-#             "parent_email",
-
-#             "address",
-#             "city",
-#             "state",
-#             "postal_code",
-
-#             "is_active",
-#             "admission_date",
-#         ]
 
 
 
@@ -166,6 +116,7 @@ class StudentProfileSerializer(serializers.ModelSerializer):
 
         fields = [
             "student_id",
+             "roll_number",
             "admission_id",
             "first_name",
             "middle_name",

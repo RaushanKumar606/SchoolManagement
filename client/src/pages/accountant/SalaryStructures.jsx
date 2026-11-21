@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import accountantService from "../../services/accountantService";
-// import "./SalaryStructure.css";
+import "./SalaryStructure.css";
 
 function SalaryStructure() {
   const navigate = useNavigate();
@@ -15,6 +15,9 @@ function SalaryStructure() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const [employees, setEmployees] = useState([]);
+const [employeesLoading, setEmployeesLoading] = useState(false);
 
   const [showComingSoon, setShowComingSoon] = useState(false);
   const [comingSoonType, setComingSoonType] = useState("");
@@ -78,21 +81,72 @@ function SalaryStructure() {
     }
   };
 
+
+
+  const fetchEmployees = async (employeeType = filter) => {
+  try {
+    setEmployeesLoading(true);
+
+    const response =
+      await accountantService.getPayrollEmployees();
+
+    if (response?.success) {
+      const employeeList = response.data || [];
+
+      const filtered = employeeList.filter((employee) => {
+        const role = String(
+          employee.role ||
+          employee.employee_role ||
+          employee.user_role ||
+          ""
+        ).toUpperCase();
+
+        return role === employeeType;
+      });
+
+      setEmployees(filtered);
+    } else {
+      setEmployees([]);
+      setError(response?.message || "Unable to load employees.");
+    }
+  } catch (err) {
+    console.error("Employee API Error:", err);
+    setError(err?.message || "Unable to load employees.");
+  } finally {
+    setEmployeesLoading(false);
+  }
+};
+
+
+
+useEffect(() => {
+  fetchSalaryStructures();
+  fetchEmployees("TEACHER");
+}, []);
+
   // =====================================================
   // FILTER
   // =====================================================
 
   const handleFilterChange = (value) => {
-    if (
-      value === "STAFF" ||
-      value === "HR" ||value === "TEACHER"
-    ) {
-      setComingSoonType(value);
-      setShowComingSoon(true);
-      return;
-    }
+    // if (
+    //   value === "STAFF" ||
+    //   value === "HR" ||value === "TEACHER"
+    // ) {
+    //   setComingSoonType(value);
+    //   setShowComingSoon(true);
+    //   return;
+    // }
 
     setFilter(value);
+    setFormData((prev) => ({
+    ...prev,
+    employee: "",
+    employee_type: value,
+  }));
+
+  fetchEmployees(value);
+
   };
 
   // =====================================================
@@ -154,24 +208,24 @@ function SalaryStructure() {
   // OPEN CREATE FORM
   // =====================================================
 
-  const handleCreate = () => {
-    setEditingId(null);
+const handleCreate = () => {
+  setEditingId(null);
+  setFormData({
+    employee: "",
+    employee_type: filter,
+    basic_salary: "",
+    house_rent_allowance: "",
+    transport_allowance: "",
+    other_allowance: "",
+    other_deduction: "",
+    effective_from: "",
+    effective_to: "",
+    is_active: true,
+  });
 
-    setFormData({
-      employee: "",
-      employee_type: "TEACHER",
-      basic_salary: "",
-      house_rent_allowance: "",
-      transport_allowance: "",
-      other_allowance: "",
-      other_deduction: "",
-      effective_from: "",
-      effective_to: "",
-      is_active: true,
-    });
-
-    setShowForm(true);
-  };
+  fetchEmployees(filter);
+  setShowForm(true);
+};
 
   // =====================================================
   // EDIT
@@ -181,8 +235,7 @@ function SalaryStructure() {
     setEditingId(structure.id);
 
     setFormData({
-      employee:
-        structure.employee || "",
+     employee: structure.employee?.id || structure.employee || "",
 
       employee_type:
         structure.employee_type ||
@@ -224,94 +277,79 @@ function SalaryStructure() {
   // SUBMIT
   // =====================================================
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    try {
-      setProcessingId(
-        editingId || "create"
-      );
+  try {
+    setProcessingId(editingId || "create");
+    setError("");
 
-      setError("");
+    const payload = {
+      employee: Number(formData.employee),
 
-      const payload = {
-        employee: Number(
-          formData.employee
-        ),
+      // Selected employee type: TEACHER / HR / STAFF
+      employee_type: formData.employee_type,
 
-        employee_type:
-          "TEACHER",
+      basic_salary: Number(formData.basic_salary) || 0,
 
-        basic_salary:
-          formData.basic_salary || 0,
+      house_rent_allowance:
+        Number(formData.house_rent_allowance) || 0,
 
-        house_rent_allowance:
-          formData.house_rent_allowance ||
-          0,
+      transport_allowance:
+        Number(formData.transport_allowance) || 0,
 
-        transport_allowance:
-          formData.transport_allowance ||
-          0,
+      other_allowance:
+        Number(formData.other_allowance) || 0,
 
-        other_allowance:
-          formData.other_allowance ||
-          0,
+      other_deduction:
+        Number(formData.other_deduction) || 0,
 
-        other_deduction:
-          formData.other_deduction ||
-          0,
+      effective_from: formData.effective_from,
 
-        effective_from:
-          formData.effective_from,
+      effective_to: formData.effective_to || null,
 
-        effective_to:
-          formData.effective_to ||
-          null,
+      is_active: formData.is_active,
+    };
 
-        is_active:
-          formData.is_active,
-      };
+    let response;
 
-      let response;
-
-      if (editingId) {
-        response =
-          await accountantService.updateSalaryStructure(
-            editingId,
-            payload
-          );
-      } else {
-        response =
-          await accountantService.createSalaryStructure(
-            payload
-          );
-      }
-
-      if (response?.success) {
-        setShowForm(false);
-        setEditingId(null);
-
-        await fetchSalaryStructures();
-      } else {
-        setError(
-          response?.message ||
-            "Unable to save salary structure."
+    if (editingId) {
+      response =
+        await accountantService.updateSalaryStructure(
+          editingId,
+          payload
         );
-      }
-    } catch (err) {
-      console.error(
-        "Salary Structure Save Error:",
-        err
-      );
+    } else {
+      response =
+        await accountantService.createSalaryStructure(
+          payload
+        );
+    }
 
+    if (response?.success) {
+      setShowForm(false);
+      setEditingId(null);
+
+      await fetchSalaryStructures();
+    } else {
       setError(
-        err?.message ||
+        response?.message ||
           "Unable to save salary structure."
       );
-    } finally {
-      setProcessingId(null);
     }
-  };
+  } catch (err) {
+    console.error("Salary Structure Save Error:", err);
+
+    setError(
+      err?.message ||
+        "Unable to save salary structure."
+    );
+  } finally {
+    setProcessingId(null);
+  }
+};
+
 
   // =====================================================
   // DELETE
@@ -419,14 +457,10 @@ function SalaryStructure() {
               Employee Type
             </label>
 
-            <select
-              value={filter}
-              onChange={(e) =>
-                handleFilterChange(
-                  e.target.value
-                )
-              }
-            >
+   <select
+  value={filter}
+  onChange={(e) => handleFilterChange(e.target.value)}
+>
               <option value="TEACHER">
                 Teacher
               </option>
@@ -443,12 +477,12 @@ function SalaryStructure() {
           </div>
 
           {filter === "TEACHER" && (
-            <button
-              className="create-button"
-              onClick={handleCreate}
-            >
-              + Add Salary Structure
-            </button>
+           <button
+  className="create-button"
+  onClick={handleCreate}
+>
+  + Add Salary Structure
+</button>
           )}
 
         </div>
@@ -811,47 +845,65 @@ function SalaryStructure() {
 
               {/* EMPLOYEE */}
 
-              <div className="form-group">
+             {/* SELECT EMPLOYEE */}
 
-                <label>
-                  Employee ID
-                </label>
+<div className="form-group">
 
-                <input
-                  type="number"
-                  name="employee"
-                  value={
-                    formData.employee
-                  }
-                  onChange={handleChange}
-                  placeholder="Enter employee ID"
-                  required
-                  disabled={Boolean(
-                    editingId
-                  )}
-                />
+  <label>Select Employee (ID - Name)</label>
 
-              </div>
+  <select
+    name="employee"
+    value={formData.employee}
+    onChange={handleChange}
+    required
+    disabled={Boolean(editingId) || employeesLoading}
+  >
+    <option value="">
+      {employeesLoading
+        ? "Loading employees..."
+        : "Select Employee"}
+    </option>
+
+    {employees.map((employee) => (
+      <option
+        key={employee.id}
+        value={employee.id}
+      >
+        ID: {employee.employee_id || employee.id}
+        {" - "}
+        {employee.name ||
+          employee.full_name ||
+          employee.employee_name ||
+          employee.username ||
+          "N/A"}
+      </option>
+    ))}
+
+  </select>
+
+  {!employeesLoading && employees.length === 0 && (
+    <small>No employees available for this employee type.</small>
+  )}
+
+</div>
 
               {/* TYPE */}
 
-              <div className="form-group">
+             <div className="form-group">
 
-                <label>
-                  Employee Type
-                </label>
+  <label>Employee Type</label>
 
-                <select
-                  name="employee_type"
-                  value="TEACHER"
-                  disabled
-                >
-                  <option value="TEACHER">
-                    Teacher
-                  </option>
-                </select>
+  <select
+    name="employee_type"
+    value={formData.employee_type}
+    disabled
+  >
+    <option value="TEACHER">Teacher</option>
+    <option value="STAFF">Staff</option>
+    <option value="HR">HR</option>
+  </select>
 
-              </div>
+</div>
 
               <div className="form-grid">
 

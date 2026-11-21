@@ -40,6 +40,17 @@ from students.models import Student
 from .models import Student
 
 
+from django.utils import timezone
+from django.db import transaction
+from rest_framework.decorators import (
+    api_view,
+    permission_classes,
+    parser_classes,
+)
+from rest_framework.parsers import MultiPartParser, FormParser
+
+from .models import Student
+
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def student_daily_attendance_api(request):
@@ -161,30 +172,6 @@ class MySubjectsView(APIView):
 
         return Response(subjects)
 
-# class MyStudentProfileView(generics.RetrieveAPIView):
-#     serializer_class = StudentProfileSerializer
-#     permission_classes = [IsAuthenticated]
-
-#     def get_object(self):
-#         student = (
-#             Student.objects.select_related(
-#                 "academic_year",
-#                 "school_class",
-#                 "section",
-#                 "admission",
-#             )
-#             .filter(user=self.request.user)
-#             .first()
-#         )
-
-#         if student is None:
-#             raise NotFound(
-#                 "Student profile not found for this user. "
-#                 "Please contact the school administrator."
-#             )
-
-#         return student
-
 
 class MyStudentProfileView(generics.RetrieveAPIView):
     serializer_class = StudentProfileSerializer
@@ -204,6 +191,7 @@ class MyStudentProfileView(generics.RetrieveAPIView):
                     "id",
                     "user",
                     "student_id",
+                    "roll_number",
                     "academic_year__name",
                     "school_class__name",
                     "section__name",
@@ -232,9 +220,6 @@ class MyStudentProfileView(generics.RetrieveAPIView):
                 "Student profile not found for this user. "
                 "Please contact the school administrator."
             )
-
-
-
 
 
 @api_view(["GET"])
@@ -646,9 +631,6 @@ def student_dashboard_api(request):
 @permission_classes([IsAuthenticated])
 def my_student_assignments_api(request):
     try:
-        # -----------------------------------
-        # Get logged-in student's profile
-        # -----------------------------------
         student = (
             Student.objects
             .select_related(
@@ -662,18 +644,11 @@ def my_student_assignments_api(request):
         )
 
         if not student:
-            return Response(
-                {
-                    "success": False,
-                    "error": "Student profile not found."
-                },
-                status=404
-            )
+            return Response({
+                "success": False,
+                "error": "Student profile not found."
+            }, status=404)
 
-        # -----------------------------------
-        # Get assignments for student's
-        # exact class + section
-        # -----------------------------------
         assignments = (
             Assignment.objects
             .filter(
@@ -686,262 +661,226 @@ def my_student_assignments_api(request):
                 "section",
                 "subject",
             )
+            .prefetch_related("submissions")
             .order_by("-created_at")
         )
 
         assignment_list = []
 
         for assignment in assignments:
-            assignment_list.append(
-                {
-                    "id": assignment.id,
 
-                    "title": assignment.title,
-
-                    "description": assignment.description,
-
-                    "classId": assignment.school_class.id,
-                    "className": assignment.school_class.name,
-
-                    "sectionId": assignment.section.id,
-                    "section": assignment.section.name,
-
-                    "subjectId": assignment.subject.id,
-                    "subject": assignment.subject.name,
-                    "subjectCode": assignment.subject.code,
-
-                    "teacherId": assignment.teacher.id,
-                    "teacher": assignment.teacher.name,
-
-                    "dueDate": assignment.due_date,
-
-                    "createdAt": assignment.created_at,
-
-                    "updatedAt": assignment.updated_at,
-                }
+            submission = next(
+                (
+                    item for item in assignment.submissions.all()
+                    if item.student_id == student.id
+                ),
+                None
             )
 
-        # -----------------------------------
-        # Response
-        # -----------------------------------
-        return Response(
-            {
-                "success": True,
+            assignment_list.append({
+                "id": assignment.id,
+                "title": assignment.title,
+                "description": assignment.description,
 
-                "student": {
-                    "studentId": student.student_id,
-                    "name": (
-                        f"{student.first_name} "
-                        f"{student.middle_name + ' ' if student.middle_name else ''}"
-                        f"{student.last_name}"
-                    ).strip(),
-                },
+                "classId": assignment.school_class.id,
+                "className": assignment.school_class.name,
 
-                "academicYear": student.academic_year.name,
+                "sectionId": assignment.section.id,
+                "section": assignment.section.name,
 
-                "class": {
-                    "id": student.school_class.id,
-                    "name": student.school_class.name,
-                },
+                "subjectId": assignment.subject.id,
+                "subject": assignment.subject.name,
+                "subjectCode": assignment.subject.code,
 
-                "section": {
-                    "id": student.section.id,
-                    "name": student.section.name,
-                },
+                "teacherId": assignment.teacher.id,
+                "teacher": assignment.teacher.name,
 
-                "count": len(assignment_list),
+                "dueDate": assignment.due_date,
+                "createdAt": assignment.created_at,
+                "updatedAt": assignment.updated_at,
 
-                "assignments": assignment_list,
+                "totalMarks": assignment.total_marks,
+
+                "submission": {
+                    "id": submission.id,
+                    "status": submission.status,
+                    "answerText": submission.answer_text,
+                    "file": (
+                        request.build_absolute_uri(
+                            submission.file.url
+                        )
+                        if submission.file else None
+                    ),
+                    "submittedAt": submission.submitted_at,
+                    "marks": submission.marks,
+                    "teacherFeedback": submission.teacher_feedback,
+                    "reviewedAt": submission.reviewed_at,
+                } if submission else None,
+
+                "submissionStatus": (
+                    submission.status
+                    if submission
+                    else "Not Submitted"
+                ),
+            })
+
+        return Response({
+            "success": True,
+
+            "student": {
+                "studentId": student.student_id,
+                "name": (
+                    f"{student.first_name} "
+                    f"{student.middle_name + ' ' if student.middle_name else ''}"
+                    f"{student.last_name}"
+                ).strip(),
             },
-            status=200
-        )
+
+            "academicYear": student.academic_year.name,
+
+            "class": {
+                "id": student.school_class.id,
+                "name": student.school_class.name,
+            },
+
+            "section": {
+                "id": student.section.id,
+                "name": student.section.name,
+            },
+
+            "count": len(assignment_list),
+            "assignments": assignment_list,
+
+        }, status=200)
 
     except Exception as e:
-        return Response(
-            {
-                "success": False,
-                "error": str(e)
-            },
-            status=500
-        )
+        return Response({
+            "success": False,
+            "error": str(e)
+        }, status=500)
+
 
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 @parser_classes([MultiPartParser, FormParser])
+@transaction.atomic
 def submit_assignment_api(request, assignment_id):
-    try:
-        # -----------------------------------
-        # Get logged-in student
-        # -----------------------------------
-        student = (
-            Student.objects
-            .select_related(
-                "academic_year",
-                "school_class",
-                "section",
-            )
-            .filter(user=request.user)
-            .first()
-        )
 
-        if not student:
-            return Response(
-                {
-                    "success": False,
-                    "error": "Student profile not found."
-                },
-                status=404
-            )
+    student = Student.objects.filter(
+        user=request.user
+    ).select_related(
+        "school_class",
+        "section",
+    ).first()
 
-        # -----------------------------------
-        # Get assignment
-        # -----------------------------------
-        assignment = (
-            Assignment.objects
-            .select_related(
-                "school_class",
-                "section",
-                "subject",
-                "teacher",
-            )
-            .filter(id=assignment_id)
-            .first()
-        )
+    if not student:
+        return Response({
+            "success": False,
+            "error": "Student profile not found."
+        }, status=404)
 
-        if not assignment:
-            return Response(
-                {
-                    "success": False,
-                    "error": "Assignment not found."
-                },
-                status=404
-            )
+    assignment = Assignment.objects.filter(
+        id=assignment_id
+    ).select_related(
+        "school_class",
+        "section",
+        "subject",
+        "teacher",
+    ).first()
 
-        # -----------------------------------
-        # Check student's class + section
-        # -----------------------------------
-        if (
-            assignment.school_class_id != student.school_class_id
-            or assignment.section_id != student.section_id
-        ):
-            return Response(
-                {
-                    "success": False,
-                    "error": (
-                        "Access denied. This assignment "
-                        "is not assigned to your class and section."
-                    )
-                },
-                status=403
-            )
+    if not assignment:
+        return Response({
+            "success": False,
+            "error": "Assignment not found."
+        }, status=404)
 
-        # -----------------------------------
-        # Get submission data
-        # -----------------------------------
-        answer_text = request.data.get("answer_text", "")
-        uploaded_file = request.FILES.get("file")
+    # Class and section validation
+    if (
+        assignment.school_class_id != student.school_class_id
+        or assignment.section_id != student.section_id
+    ):
+        return Response({
+            "success": False,
+            "error": "You cannot submit this assignment."
+        }, status=403)
 
-        if not answer_text and not uploaded_file:
-            return Response(
-                {
-                    "success": False,
-                    "error": (
-                        "Please provide an answer or upload "
-                        "a submission file."
-                    )
-                },
-                status=400
-            )
+    # Submission data
+    answer_text = request.data.get("answer_text", "").strip()
+    uploaded_file = request.FILES.get("file")
 
-        # -----------------------------------
-        # Check existing submission
-        # -----------------------------------
-        submission = AssignmentSubmission.objects.filter(
+    if not answer_text and not uploaded_file:
+        return Response({
+            "success": False,
+            "error": "Provide an answer or upload a file."
+        }, status=400)
+
+    # Existing submission
+    submission = AssignmentSubmission.objects.filter(
+        assignment=assignment,
+        student=student,
+    ).first()
+
+    # Do not overwrite reviewed work
+    if submission and submission.status == "Reviewed":
+        return Response({
+            "success": False,
+            "error": "This assignment has already been reviewed."
+        }, status=400)
+
+    # Determine submission status
+    today = timezone.localdate()
+
+    submission_status = (
+        "Late"
+        if today > assignment.due_date
+        else "Submitted"
+    )
+
+    if submission:
+        submission.answer_text = answer_text
+
+        if uploaded_file:
+            submission.file = uploaded_file
+
+        submission.status = submission_status
+
+        submission.save()
+
+        message = "Assignment resubmitted successfully."
+
+    else:
+        submission = AssignmentSubmission.objects.create(
             assignment=assignment,
             student=student,
-        ).first()
-
-        # -----------------------------------
-        # Create submission
-        # -----------------------------------
-        if not submission:
-            submission = AssignmentSubmission.objects.create(
-                assignment=assignment,
-                student=student,
-                answer_text=answer_text,
-                file=uploaded_file,
-                status="Submitted",
-            )
-
-            message = "Assignment submitted successfully."
-
-        # -----------------------------------
-        # Update existing submission
-        # -----------------------------------
-        else:
-            submission.answer_text = answer_text
-
-            if uploaded_file:
-                submission.file = uploaded_file
-
-            submission.status = "Submitted"
-            submission.teacher_feedback = None
-            submission.marks = None
-            submission.reviewed_at = None
-
-            submission.save()
-
-            message = "Assignment resubmitted successfully."
-
-        # -----------------------------------
-        # Response
-        # -----------------------------------
-        return Response(
-            {
-                "success": True,
-                "message": message,
-                "data": {
-                    "submissionId": submission.id,
-
-                    "assignmentId": assignment.id,
-                    "assignmentTitle": assignment.title,
-
-                    "studentId": student.student_id,
-
-                    "subjectId": assignment.subject.id,
-                    "subject": assignment.subject.name,
-
-                    "status": submission.status,
-
-                    "answerText": submission.answer_text,
-
-                    "file": (
-                        request.build_absolute_uri(
-                            submission.file.url
-                        )
-                        if submission.file
-                        else None
-                    ),
-
-                    "submittedAt": submission.submitted_at,
-
-                    "marks": submission.marks,
-
-                    "teacherFeedback": submission.teacher_feedback,
-                }
-            },
-            status=201
+            answer_text=answer_text,
+            file=uploaded_file,
+            status=submission_status,
         )
 
-    except Exception as e:
-        return Response(
-            {
-                "success": False,
-                "error": str(e)
-            },
-            status=500
-        )
+        message = "Assignment submitted successfully."
+
+    return Response({
+        "success": True,
+        "message": message,
+        "data": {
+            "submissionId": submission.id,
+            "assignmentId": assignment.id,
+            "assignmentTitle": assignment.title,
+            "studentId": student.student_id,
+            "status": submission.status,
+            "answerText": submission.answer_text,
+            "file": (
+                request.build_absolute_uri(submission.file.url)
+                if submission.file else None
+            ),
+            "submittedAt": submission.submitted_at,
+            "marks": submission.marks,
+            "teacherFeedback": submission.teacher_feedback,
+            "totalMarks": assignment.total_marks,
+        }
+    }, status=201)
+
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])

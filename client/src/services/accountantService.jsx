@@ -189,6 +189,14 @@ export const deleteBankDetails = async (id) => {
   );
 };
 
+export const verifyBankDetails = async (id) => {
+  return await apiRequest(
+    `/api/auth/payroll/bank-details/${id}/verify/`,
+    {
+      method: "POST",
+    }
+  );
+};
 // =========================================================
 // DEFAULT SERVICE
 // =========================================================
@@ -218,7 +226,7 @@ const accountantService = {
   getBankDetail,
   updateBankDetails,
   deleteBankDetails,
-
+verifyBankDetails,
 
   getFeeDashboard,
   getFeeInvoices,

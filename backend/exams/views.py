@@ -410,6 +410,7 @@ def student_admit_cards_api(request):
             "examName": exam.name,
             "academicYear": exam.academic_year.name,
             "studentId": student.student_id,
+            "roll_number": student.roll_number,
             "studentName": " ".join(
                 part for part in [
                     student.first_name,
@@ -530,6 +531,7 @@ def teacher_exam_marks_api(request, class_id, section_id, subject_id):
 
             result.append({
                 "studentId": student.id,
+                 "roll_number": student.roll_number,
                 "admissionId": student.student_id,
                 "name": " ".join(
                     part for part in [
@@ -603,6 +605,7 @@ def teacher_exam_marks_api(request, class_id, section_id, subject_id):
             "exam_id": exam.id,
             "exam_name": exam.name,
             "student_id": student.id,
+            "roll_number": student.roll_number,
             "subject_id": subject.id,
             "marks_obtained": mark.marks_obtained,
             "total_marks": mark.total_marks,
@@ -909,6 +912,7 @@ def student_published_results_api(request):
 
     return Response({
         "studentId": student.student_id,
+        "rollNumber": student.roll_number,
         "studentName": " ".join(
             part for part in [
                 student.first_name,

@@ -28,6 +28,7 @@ class ExamSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "name",
+            "roll_number"
 
             "academic_year",
             "academic_year_name",
@@ -120,6 +121,7 @@ class ExamMarkSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "student",
+            "roll_number",
             "student_name",
             "subject",
             "exam_name",

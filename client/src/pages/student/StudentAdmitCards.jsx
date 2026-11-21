@@ -14,7 +14,6 @@ function StudentAdmitCards() {
       setError("");
 
       const response = await admitCardService.getStudentAdmitCards();
-
       // Support the actual API response and common wrapped responses.
       const data =
         response?.admitCards ??
@@ -156,6 +155,11 @@ function StudentAdmitCards() {
                 <div>
                   <span>Student Name</span>
                   <strong>{card.studentName || "—"}</strong>
+                </div>
+
+                <div>
+                  <span>Roll Number</span>
+                  <strong>{card.roll_number || "—"}</strong>
                 </div>
 
                 <div>

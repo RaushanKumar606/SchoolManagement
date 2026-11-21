@@ -994,3 +994,929 @@
   }
 }
 
+
+/* Teacher Salary */
+
+
+
+.salary-page {
+  padding: 28px;
+  background: #f5f7fb;
+  min-height: 100vh;
+  color: #172033;
+}
+
+.salary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 28px;
+}
+
+.salary-eyebrow {
+  color: #2563eb;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+}
+
+.salary-header h1 {
+  font-size: 27px;
+  margin: 8px 0;
+  font-weight: 750;
+}
+
+.salary-header p,
+.salary-panel-heading p {
+  color: #64748b;
+  margin: 0;
+  font-size: 14px;
+}
+
+.salary-primary-btn {
+  background: #2563eb;
+  color: #fff;
+  border: 0;
+  border-radius: 9px;
+  padding: 11px 17px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.salary-primary-btn:hover {
+  background: #1d4ed8;
+}
+
+.salary-primary-btn:disabled,
+.salary-outline-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.salary-outline-btn {
+  background: #fff;
+  color: #334155;
+  border: 1px solid #dce3ed;
+  border-radius: 8px;
+  padding: 10px 15px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.salary-alert {
+  padding: 13px 16px;
+  border-radius: 9px;
+  margin-bottom: 18px;
+  font-size: 13px;
+}
+
+.salary-alert.error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.salary-alert.success {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.salary-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 17px;
+  margin-bottom: 25px;
+}
+
+.salary-stats article {
+  background: #fff;
+  padding: 21px;
+  border: 1px solid #e8edf4;
+  border-radius: 12px;
+  box-shadow: 0 3px 12px rgba(15, 23, 42, 0.035);
+}
+
+.salary-stats article span {
+  display: block;
+  color: #64748b;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.salary-stats article strong {
+  display: block;
+  font-size: 23px;
+  color: #172033;
+  font-weight: 750;
+}
+
+.salary-stats article small {
+  display: block;
+  color: #94a3b8;
+  font-size: 12px;
+  margin-top: 8px;
+}
+
+.salary-panel {
+  background: #fff;
+  border: 1px solid #e8edf4;
+  border-radius: 13px;
+  padding: 22px;
+  box-shadow: 0 3px 12px rgba(15, 23, 42, 0.035);
+}
+
+.salary-panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  margin-bottom: 22px;
+}
+
+.salary-panel-heading h2 {
+  margin: 0 0 7px;
+  font-size: 19px;
+}
+
+.salary-filters {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.salary-filters input,
+.salary-filters select,
+.salary-payment-modal input,
+.salary-payment-modal select {
+  width: 100%;
+  min-width: 0;
+  height: 42px;
+  border: 1px solid #dce3ed;
+  border-radius: 8px;
+  padding: 0 12px;
+  background: #fff;
+  color: #172033;
+  outline: none;
+  font-size: 13px;
+}
+
+.salary-filters input:focus,
+.salary-filters select:focus,
+.salary-payment-modal input:focus,
+.salary-payment-modal select:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.salary-bulk-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 13px 15px;
+  background: #f8fafc;
+  border: 1px solid #edf1f6;
+  border-radius: 9px;
+  margin-bottom: 17px;
+}
+
+.salary-bulk-toolbar label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #475569;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.salary-bulk-toolbar input,
+.salary-table input {
+  width: 16px;
+  height: 16px;
+  accent-color: #2563eb;
+  cursor: pointer;
+}
+
+.salary-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.salary-table {
+  width: 100%;
+  min-width: 950px;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.salary-table th {
+  padding: 14px 12px;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid #e8edf4;
+  white-space: nowrap;
+}
+
+.salary-table td {
+  padding: 15px 12px;
+  border-bottom: 1px solid #edf1f6;
+  font-size: 13px;
+  color: #475569;
+  white-space: nowrap;
+}
+
+.salary-table tbody tr:hover {
+  background: #fafcff;
+}
+
+.salary-table td strong {
+  color: #172033;
+}
+
+.salary-table td small {
+  display: block;
+  color: #94a3b8;
+  margin-top: 5px;
+  font-size: 11px;
+}
+
+.salary-status {
+  display: inline-block;
+  padding: 5px 9px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.salary-status.draft {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.salary-status.approved {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.salary-status.paid {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.salary-actions {
+  display: flex;
+  gap: 7px;
+}
+
+.salary-actions button {
+  border: 1px solid #dce3ed;
+  border-radius: 6px;
+  padding: 6px 9px;
+  background: #fff;
+  color: #2563eb;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.salary-actions button:hover {
+  background: #eff6ff;
+}
+
+.salary-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.salary-empty {
+  padding: 45px 15px;
+  text-align: center;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.salary-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+}
+
+.salary-payment-modal {
+  position: relative;
+  width: 100%;
+  max-width: 430px;
+  padding: 27px;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+}
+
+.salary-payment-modal h2 {
+  margin: 0 0 9px;
+  font-size: 21px;
+}
+
+.salary-payment-modal p {
+  margin: 0 0 23px;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.salary-payment-modal label {
+  display: block;
+  margin: 15px 0 7px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #475569;
+}
+
+.salary-payment-modal .salary-primary-btn {
+  width: 100%;
+  margin-top: 22px;
+}
+
+.salary-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 15px;
+  border: 0;
+  background: transparent;
+  color: #64748b;
+  font-size: 25px;
+  cursor: pointer;
+}
+
+@media (max-width: 1000px) {
+  .salary-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .salary-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .salary-page {
+    padding: 16px;
+  }
+
+  .salary-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .salary-header h1 {
+    font-size: 22px;
+  }
+
+  .salary-header .salary-primary-btn {
+    width: 100%;
+  }
+
+  .salary-stats {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .salary-stats article {
+    padding: 15px;
+  }
+
+  .salary-stats article strong {
+    font-size: 17px;
+  }
+
+  .salary-panel {
+    padding: 14px;
+  }
+
+  .salary-panel-heading {
+    align-items: flex-start;
+  }
+
+  .salary-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .salary-bulk-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .salary-bulk-toolbar .salary-primary-btn {
+    width: 100%;
+  }
+}
+
+
+
+
+
+
+
+/* Fee payment success message */
+.collect-fee-success {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 16px;
+  margin-bottom: 18px;
+  border: 1px solid #86efac;
+  border-radius: 8px;
+  background: #f0fdf4;
+  color: #166534;
+  font-weight: 600;
+}
+
+.collect-fee-success button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+/* Payment modal */
+.fee-payment-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.6);
+  overflow-y: auto;
+}
+
+.fee-payment-modal {
+  width: 100%;
+  max-width: 580px;
+  max-height: 92vh;
+  overflow-y: auto;
+  padding: 24px;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+}
+
+.fee-payment-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.fee-payment-modal-header h2 {
+  margin: 0 0 5px;
+  color: #172b4d;
+}
+
+.fee-payment-modal-header p {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.fee-modal-close {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 7px;
+  background: #f1f5f9;
+  color: #334155;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.fee-payment-student {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px;
+  margin-bottom: 16px;
+  border-radius: 9px;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 13px;
+}
+
+.fee-payment-student strong {
+  color: #172b4d;
+  font-size: 16px;
+}
+
+.fee-payment-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.fee-payment-summary > div {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+}
+
+.fee-payment-summary span {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.fee-payment-summary strong {
+  color: #172b4d;
+  font-size: 15px;
+}
+
+.fee-payment-summary .fee-summary-due {
+  color: #dc2626;
+}
+
+.fee-payment-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.fee-payment-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.fee-payment-form input,
+.fee-payment-form select,
+.fee-payment-form textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 11px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  outline: none;
+  background: #fff;
+  color: #172b4d;
+  font: inherit;
+}
+
+.fee-payment-form input:focus,
+.fee-payment-form select:focus,
+.fee-payment-form textarea:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.fee-payment-form textarea {
+  resize: vertical;
+}
+
+.fee-payment-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 5px;
+}
+
+.fee-payment-form-actions button {
+  padding: 11px 18px;
+  border: 0;
+  border-radius: 7px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.fee-payment-form-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.fee-cancel-btn {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.fee-submit-btn {
+  background: #2563eb;
+  color: #fff;
+}
+
+@media (max-width: 520px) {
+  .fee-payment-modal {
+    padding: 17px;
+  }
+
+  .fee-payment-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .fee-payment-form-actions {
+    flex-direction: column-reverse;
+  }
+
+  .fee-payment-form-actions button {
+    width: 100%;
+  }
+}
+
+
+
+/* FeePaymentHistory.css */
+
+
+.fee-history-page {
+  padding: 24px;
+  color: #172b4d;
+}
+
+.fee-history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 24px;
+}
+
+.fee-history-header h1 {
+  margin: 0 0 7px;
+  font-size: 26px;
+}
+
+.fee-history-header p {
+  margin: 0;
+  color: #64748b;
+}
+
+.fee-history-refresh,
+.fee-receipt-view-btn {
+  border: 0;
+  border-radius: 7px;
+  padding: 10px 16px;
+  background: #2563eb;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.fee-history-refresh:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.fee-history-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.fee-history-stats > div {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.fee-history-stats span {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.fee-history-stats strong {
+  font-size: 23px;
+}
+
+.fee-history-card {
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 11px;
+  background: #fff;
+}
+
+.fee-history-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 18px;
+}
+
+.fee-history-toolbar h2 {
+  margin: 0;
+  font-size: 19px;
+}
+
+.fee-history-toolbar input {
+  width: min(360px, 100%);
+  padding: 11px 13px;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  outline: none;
+}
+
+.fee-history-toolbar input:focus {
+  border-color: #2563eb;
+}
+
+.fee-history-table-scroll {
+  overflow-x: auto;
+}
+
+.fee-history-table {
+  width: 100%;
+  border-collapse: collapse;
+  white-space: nowrap;
+}
+
+.fee-history-table th,
+.fee-history-table td {
+  padding: 13px 12px;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+  font-size: 13px;
+}
+
+.fee-history-table th {
+  background: #f8fafc;
+  color: #475569;
+  font-weight: 700;
+}
+
+.fee-history-table td strong,
+.fee-history-table td small {
+  display: block;
+}
+
+.fee-history-table td small {
+  margin-top: 4px;
+  color: #64748b;
+}
+
+.fee-history-empty {
+  padding: 30px !important;
+  text-align: center !important;
+  color: #64748b;
+}
+
+.fee-receipt-view-btn {
+  padding: 8px 12px;
+  font-size: 12px;
+}
+
+.fee-receipt-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(15, 23, 42, 0.6);
+  overflow-y: auto;
+}
+
+.fee-receipt-modal {
+  width: 100%;
+  max-width: 620px;
+  max-height: 92vh;
+  overflow-y: auto;
+  padding: 24px;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.fee-receipt-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.fee-receipt-modal-header h2 {
+  margin: 0 0 5px;
+}
+
+.fee-receipt-modal-header p {
+  margin: 0;
+  color: #64748b;
+}
+
+.fee-receipt-close {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 6px;
+  background: #f1f5f9;
+  font-size: 23px;
+  cursor: pointer;
+}
+
+.fee-receipt-preview {
+  padding: 24px;
+  border: 1px solid #dbe2ea;
+  background: #fff;
+}
+
+.fee-receipt-preview h3 {
+  margin: 0 0 5px;
+  color: #1e3a8a;
+  text-align: center;
+}
+
+.fee-receipt-preview > p:first-of-type {
+  margin-top: 0;
+  text-align: center;
+  color: #64748b;
+}
+
+.fee-receipt-preview p {
+  margin: 12px 0;
+  font-size: 13px;
+}
+
+.fee-receipt-preview-amount {
+  margin-top: 20px;
+  padding: 15px;
+  border-radius: 7px;
+  background: #eff6ff;
+  color: #1e40af;
+  font-size: 18px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.fee-receipt-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.fee-receipt-actions button {
+  padding: 11px 16px;
+  border: 0;
+  border-radius: 7px;
+  background: #2563eb;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.fee-receipt-actions button:first-child {
+  background: #0f766e;
+}
+
+@media (max-width: 650px) {
+  .fee-history-page {
+    padding: 14px;
+  }
+
+  .fee-history-header,
+  .fee-history-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .fee-history-toolbar input {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .fee-history-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .fee-receipt-actions {
+    flex-direction: column;
+  }
+
+  .fee-receipt-actions button {
+    width: 100%;
+  }
+}
+
+

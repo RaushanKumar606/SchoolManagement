@@ -42,23 +42,14 @@ from rest_framework.response import Response
 from .serializers import AdminTeacherSerializer
 
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-
 from rest_framework.decorators import (
     api_view,
     permission_classes,
     parser_classes,
 )
 
-from rest_framework.parsers import (
-    MultiPartParser,
-    FormParser,
-    JSONParser,
-)
-from common.supabase_storage import create_document_signed_url
-from .models import Teacher, TeacherRegistration
 
+from common.supabase_storage import create_document_signed_url
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework import status
@@ -67,8 +58,6 @@ from common.supabase_storage import (
     upload_document,
     delete_document,
 )
-
-from .models import TeacherRegistration
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
@@ -91,11 +80,21 @@ from academics.models import (
 
 from applications.utils import is_teacher_hiring_open
 from rest_framework import status
-
 from students.models import Student
 from rest_framework import generics
 from .models import TeacherSubjectAllocation
 from .serializers import TeacherSubjectAllocationSerializer
+
+
+from django.shortcuts import get_object_or_404
+from django.utils.dateparse import parse_date
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+from .serializers import AssignmentSerializer
+
 
 class TeacherSubjectAllocationListCreateView(
     generics.ListCreateAPIView
@@ -112,15 +111,64 @@ class TeacherSubjectAllocationListCreateView(
                 "section",
                 "subject",
             )
-            .order_by("school_class__display_order", "teacher__name")
+            .order_by(
+                "school_class__display_order",
+                "teacher__name",
+            )
         )
 
-        teacher_id = self.request.query_params.get("teacher")
-        school_class_id = self.request.query_params.get("school_class")
-        section_id = self.request.query_params.get("section")
-        subject_id = self.request.query_params.get("subject")
+        user = self.request.user
 
-        if teacher_id:
+        # =====================================
+        # ROLE BASED FILTERING
+        # =====================================
+
+        user_role = str(
+            getattr(user, "role", "")
+        ).upper()
+
+        if user_role == "TEACHER":
+            teacher = Teacher.objects.filter(
+                user=user
+            ).first()
+
+            if not teacher:
+                return queryset.none()
+
+            queryset = queryset.filter(
+                teacher=teacher
+            )
+
+        elif user_role not in [
+            "SCHOOL_ADMIN",
+            "SUPER_ADMIN",
+        ]:
+            return queryset.none()
+
+        # =====================================
+        # OPTIONAL FILTERS
+        # =====================================
+
+        teacher_id = self.request.query_params.get(
+            "teacher"
+        )
+
+        school_class_id = self.request.query_params.get(
+            "school_class"
+        )
+
+        section_id = self.request.query_params.get(
+            "section"
+        )
+
+        subject_id = self.request.query_params.get(
+            "subject"
+        )
+
+        if teacher_id and user_role in [
+            "SCHOOL_ADMIN",
+            "SUPER_ADMIN",
+        ]:
             queryset = queryset.filter(
                 teacher_id=teacher_id
             )
@@ -142,6 +190,7 @@ class TeacherSubjectAllocationListCreateView(
 
         return queryset
 
+    
 
 @api_view(["POST"])
 @permission_classes([AllowAny])
@@ -1239,10 +1288,6 @@ def teacher_class_students_api(request, employee_id, class_name, section):
             },
             status=500
         )
-
-
-
-
 
 
 @api_view(["GET"])
@@ -2528,6 +2573,8 @@ def create_assignment_api(request):
         title = request.data.get("title")
         description = request.data.get("description", "")
         due_date = request.data.get("due_date")
+        total_marks = request.data.get("total_marks", 100)
+        assignments_pdf = request.FILES.get("assignments_pdf")
 
         # -----------------------------------
         # Validate required fields
@@ -2644,7 +2691,9 @@ def create_assignment_api(request):
             section=allocation.section,
             subject=allocation.subject,
             teacher=teacher,
-            due_date=due_date
+            due_date=due_date,
+            total_marks=total_marks,
+            assignments_pdf=assignments_pdf
         )
 
         # -----------------------------------
@@ -2668,6 +2717,10 @@ def create_assignment_api(request):
                     "teacherId": teacher.id,
                     "employeeId": teacher.employee_id,
                     "teacher": teacher.name,
+                    "assignments_pdf": (
+    request.build_absolute_uri(assignment.assignments_pdf.url)
+    if assignment.assignments_pdf else None
+),
                     "dueDate": assignment.due_date,
                     "createdAt": assignment.created_at
                 }
@@ -2683,6 +2736,367 @@ def create_assignment_api(request):
             },
             status=500
         )
+
+
+class MyAssignmentsView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    parser_classes = [
+        MultiPartParser,
+        FormParser,
+        JSONParser
+    ]
+
+    def get_teacher(self, request):
+        return get_object_or_404(
+            Teacher,
+            user=request.user
+        )
+
+    # --------------------------------
+    # GET: MY ASSIGNMENTS
+    # --------------------------------
+    def get(self, request, pk=None):
+
+        teacher = self.get_teacher(request)
+
+        if pk:
+            assignment = get_object_or_404(
+                Assignment,
+                id=pk,
+                teacher=teacher
+            )
+
+            serializer = AssignmentSerializer(
+                assignment,
+                context={"request": request}
+            )
+
+            return Response({
+                "success": True,
+                "data": serializer.data
+            })
+
+        assignments = Assignment.objects.filter(
+            teacher=teacher
+        ).select_related(
+            "school_class",
+            "section",
+            "subject",
+            "teacher"
+        )
+
+        serializer = AssignmentSerializer(
+            assignments,
+            many=True,
+            context={"request": request}
+        )
+
+        return Response({
+            "success": True,
+            "count": assignments.count(),
+            "data": serializer.data
+        })
+
+    # --------------------------------
+    # PUT / PATCH: UPDATE ASSIGNMENT
+    # --------------------------------
+    def put(self, request, pk):
+
+        return self.update_assignment(request, pk)
+
+    def patch(self, request, pk):
+
+        return self.update_assignment(request, pk)
+
+    def update_assignment(self, request, pk):
+
+        teacher = self.get_teacher(request)
+
+        assignment = get_object_or_404(
+            Assignment,
+            id=pk,
+            teacher=teacher
+        )
+
+        title = request.data.get(
+            "title",
+            assignment.title
+        )
+
+        description = request.data.get(
+            "description",
+            assignment.description
+        )
+
+        due_date_value = request.data.get(
+            "due_date",
+            assignment.due_date
+        )
+
+        total_marks = request.data.get(
+            "total_marks",
+            assignment.total_marks
+        )
+
+        class_id = request.data.get(
+            "school_class",
+            request.data.get(
+                "class_id",
+                assignment.school_class_id
+            )
+        )
+
+        section_id = request.data.get(
+            "section",
+            request.data.get(
+                "section_id",
+                assignment.section_id
+            )
+        )
+
+        subject_id = request.data.get(
+            "subject",
+            request.data.get(
+                "subject_id",
+                assignment.subject_id
+            )
+        )
+
+        if not title:
+            return Response({
+                "success": False,
+                "error": "Assignment title is required."
+            }, status=400)
+
+        if not due_date_value:
+            return Response({
+                "success": False,
+                "error": "Due date is required."
+            }, status=400)
+
+        due_date = (
+            due_date_value
+            if hasattr(due_date_value, "year")
+            else parse_date(str(due_date_value))
+        )
+
+        if not due_date:
+            return Response({
+                "success": False,
+                "error": "Invalid due date."
+            }, status=400)
+
+        # Teacher allocation validation
+        allocation = TeacherSubjectAllocation.objects.filter(
+            teacher=teacher,
+            school_class_id=class_id,
+            section_id=section_id,
+            subject_id=subject_id
+        ).first()
+
+        if not allocation:
+            return Response({
+                "success": False,
+                "error": (
+                    "You are not allocated to this "
+                    "class, section and subject."
+                )
+            }, status=403)
+
+        assignment.title = title
+        assignment.description = description
+        assignment.school_class = allocation.school_class
+        assignment.section = allocation.section
+        assignment.subject = allocation.subject
+        assignment.due_date = due_date
+        assignment.total_marks = total_marks
+
+        # New PDF upload
+        pdf_file = request.FILES.get("assignments_pdf")
+
+        if pdf_file:
+            assignment.assignments_pdf = pdf_file
+
+        # Remove existing PDF if requested
+        if str(request.data.get("remove_pdf", "")).lower() == "true":
+            if assignment.assignments_pdf:
+                assignment.assignments_pdf.delete(save=False)
+
+            assignment.assignments_pdf = None
+
+        assignment.save()
+
+        serializer = AssignmentSerializer(
+            assignment,
+            context={"request": request}
+        )
+
+        return Response({
+            "success": True,
+            "message": "Assignment updated successfully.",
+            "data": serializer.data
+        })
+
+    # --------------------------------
+    # DELETE: DELETE ASSIGNMENT
+    # --------------------------------
+    def delete(self, request, pk):
+
+        teacher = self.get_teacher(request)
+
+        assignment = get_object_or_404(
+            Assignment,
+            id=pk,
+            teacher=teacher
+        )
+
+        assignment.delete()
+
+        return Response({
+            "success": True,
+            "message": "Assignment deleted successfully."
+        })
+
+
+
+class TeacherAssignmentSubmissionsView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get_teacher(self, request):
+        return get_object_or_404(
+            Teacher,
+            user=request.user
+        )
+
+    def get(self, request, assignment_id):
+
+        teacher = self.get_teacher(request)
+
+        assignment = get_object_or_404(
+            Assignment,
+            id=assignment_id,
+            teacher=teacher
+        )
+
+        submissions = AssignmentSubmission.objects.filter(
+            assignment=assignment
+        ).select_related(
+            "student",
+            "assignment"
+        ).order_by("-submitted_at")
+
+        data = []
+
+        for submission in submissions:
+
+            file_url = None
+
+            if submission.file:
+                file_url = request.build_absolute_uri(
+                    submission.file.url
+                )
+
+            data.append({
+                "id": submission.id,
+                "assignmentId": assignment.id,
+                "assignmentTitle": assignment.title,
+                "studentId": str(submission.student),
+                "studentName": str(submission.student),
+                "answerText": submission.answer_text,
+                "file": file_url,
+                "submittedAt": submission.submitted_at,
+                "status": submission.status,
+                "marks": submission.marks,
+                "teacherFeedback": submission.teacher_feedback,
+                "totalMarks": float(assignment.total_marks),
+                "reviewedAt": submission.reviewed_at,
+            })
+
+        return Response({
+            "success": True,
+            "count": len(data),
+            "data": data
+        })
+
+
+class ReviewAssignmentSubmissionView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, assignment_id, submission_id):
+
+        teacher = get_object_or_404(
+            Teacher,
+            user=request.user
+        )
+
+        assignment = get_object_or_404(
+            Assignment,
+            id=assignment_id,
+            teacher=teacher
+        )
+
+        submission = get_object_or_404(
+            AssignmentSubmission,
+            id=submission_id,
+            assignment=assignment
+        )
+
+        marks = request.data.get("marks")
+        teacher_feedback = request.data.get(
+            "teacher_feedback", ""
+        )
+
+        if marks is None:
+            return Response({
+                "success": False,
+                "message": "Marks are required."
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            marks = Decimal(str(marks))
+        except (InvalidOperation, ValueError):
+            return Response({
+                "success": False,
+                "message": "Enter valid marks."
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        if marks < 0 or marks > assignment.total_marks:
+            return Response({
+                "success": False,
+                "message": (
+                    f"Marks must be between 0 and "
+                    f"{assignment.total_marks}."
+                )
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        submission.marks = marks
+        submission.teacher_feedback = teacher_feedback
+        submission.status = "Reviewed"
+        submission.reviewed_at = timezone.now()
+
+        submission.save(update_fields=[
+            "marks",
+            "teacher_feedback",
+            "status",
+            "reviewed_at"
+        ])
+
+        return Response({
+            "success": True,
+            "message": "Assignment evaluated successfully.",
+            "data": {
+                "submissionId": submission.id,
+                "marks": float(submission.marks),
+                "totalMarks": float(assignment.total_marks),
+                "teacherFeedback": submission.teacher_feedback,
+                "status": submission.status,
+                "reviewedAt": submission.reviewed_at
+            }
+        })
 
 
 @api_view(["GET"])
@@ -2738,6 +3152,8 @@ def teacher_assignments_api(request, employee_id):
                     "subjectId": assignment.subject.id,
                     "subject": assignment.subject.name,
                     "subjectCode": assignment.subject.code,
+
+                     "total_marks": assignment.total_marks,
 
                     "teacherId": teacher.id,
                     "employeeId": teacher.employee_id,
@@ -2925,125 +3341,6 @@ def teacher_assignment_submissions_api(request, employee_id, assignment_id):
             },
             status=500
         )
-
-# Teacher  review 
-
-@api_view(["PATCH"])
-@permission_classes([IsAuthenticated])
-def review_assignment_submission_api(
-    request,
-    employee_id,
-    assignment_id,
-    submission_id
-):
-    teacher = Teacher.objects.filter(
-        employee_id=employee_id
-    ).first()
-
-    if not teacher:
-        return Response(
-            {
-                "success": False,
-                "error": "Teacher not found."
-            },
-            status=404
-        )
-
-    assignment = Assignment.objects.filter(
-        id=assignment_id,
-        teacher=teacher
-    ).first()
-
-    if not assignment:
-        return Response(
-            {
-                "success": False,
-                "error": "Assignment not found or access denied."
-            },
-            status=404
-        )
-
-    submission = (
-        AssignmentSubmission.objects
-        .select_related("student")
-        .filter(
-            id=submission_id,
-            assignment=assignment
-        )
-        .first()
-    )
-
-    if not submission:
-        return Response(
-            {
-                "success": False,
-                "error": "Submission not found."
-            },
-            status=404
-        )
-
-    marks = request.data.get("marks")
-    feedback = request.data.get("teacher_feedback", "")
-
-    if marks is None:
-        return Response(
-            {
-                "success": False,
-                "error": "Marks are required."
-            },
-            status=400
-        )
-
-    try:
-        marks = float(marks)
-    except (TypeError, ValueError):
-        return Response(
-            {
-                "success": False,
-                "error": "Marks must be a valid number."
-            },
-            status=400
-        )
-
-    if marks < 0:
-        return Response(
-            {
-                "success": False,
-                "error": "Marks cannot be negative."
-            },
-            status=400
-        )
-
-    submission.marks = marks
-    submission.teacher_feedback = feedback
-    submission.status = "Reviewed"
-    submission.reviewed_at = timezone.now()
-
-    submission.save(
-        update_fields=[
-            "marks",
-            "teacher_feedback",
-            "status",
-            "reviewed_at",
-        ]
-    )
-
-    return Response(
-        {
-            "success": True,
-            "message": "Submission reviewed successfully.",
-            "data": {
-                "submissionId": submission.id,
-                "assignmentId": assignment.id,
-                "studentId": submission.student.student_id,
-                "marks": submission.marks,
-                "teacherFeedback": submission.teacher_feedback,
-                "status": submission.status,
-                "reviewedAt": submission.reviewed_at,
-            }
-        },
-        status=200
-    )
 
 
 @api_view(["GET"])

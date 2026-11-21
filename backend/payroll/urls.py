@@ -11,6 +11,7 @@ from .views import (
     PayrollEmployeeListView,
     EmployeeBankDetailsListCreateView,
     EmployeeBankDetailsDetailView,
+    EmployeeBankDetailsVerifyView,
 )
 
 
@@ -37,6 +38,13 @@ path(
     EmployeeBankDetailsDetailView.as_view(),
     name="employee-bank-details-detail",
 ),
+
+ # VERIFY BANK DETAILS
+    path(
+        "bank-details/<int:pk>/verify/",
+        EmployeeBankDetailsVerifyView.as_view(),
+        name="employee-bank-details-verify",
+    ),
 
     path(
         "salary-structures/",

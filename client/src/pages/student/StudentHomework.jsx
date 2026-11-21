@@ -34,6 +34,7 @@ function StudentHomework() {
       setError("");
 
       const data = await getMyStudentAssignments();
+      console.log(data)
 
       const assignmentData =
         Array.isArray(data)

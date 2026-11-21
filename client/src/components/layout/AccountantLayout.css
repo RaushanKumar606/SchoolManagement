@@ -1,337 +1,515 @@
 
+/* =========================================
+   ACCOUNTANT LAYOUT
+========================================= */
+
 .accountant-layout {
-  --acc-primary: #3158d8;
-  --acc-sidebar: #172744;
-  --acc-text: #1d2939;
-  --acc-muted: #778399;
-  --acc-border: #e7ebf2;
-  display: flex;
+  --accountant-sidebar-width: 270px;
+
   min-height: 100vh;
+  width: 100%;
   background: #f5f7fb;
-  color: var(--acc-text);
-  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #172033;
 }
+
+/* =========================================
+   SIDEBAR
+========================================= */
 
 .accountant-sidebar {
-  width: 255px;
-  flex: 0 0 255px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+
+  width: var(--accountant-sidebar-width);
+  height: 100vh;
+
   display: flex;
   flex-direction: column;
-  padding: 24px 15px 16px;
-  background: var(--acc-sidebar);
-  color: #fff;
-  box-sizing: border-box;
+
+  background: #111c35;
+  color: #ffffff;
+
+  z-index: 1000;
+  overflow: hidden;
+
+  box-shadow: 4px 0 18px rgba(15, 23, 42, 0.08);
 }
 
+/* BRAND */
+
 .accountant-brand {
+  min-height: 82px;
+  padding: 16px 20px;
+
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 0 8px 28px;
+
+  border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+  flex-shrink: 0;
 }
 
 .accountant-brand-icon {
-  display: grid;
-  place-items: center;
   width: 43px;
   height: 43px;
-  flex-shrink: 0;
+  min-width: 43px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
   border-radius: 12px;
-  background: #4267e8;
-  font-size: 24px;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+
+  color: #ffffff;
+  font-size: 23px;
   font-weight: 800;
+}
+
+.accountant-brand-text {
+  min-width: 0;
 }
 
 .accountant-brand h2 {
   margin: 0;
-  font-size: 18px;
-  letter-spacing: -0.3px;
+  font-size: 19px;
+  font-weight: 750;
+  color: #ffffff;
 }
 
 .accountant-brand p {
-  margin: 5px 0 0;
-  color: #aab8d1;
+  margin: 4px 0 0;
+  color: #9eabc4;
   font-size: 11px;
 }
 
+/* MENU LABEL */
+
 .accountant-menu-label {
-  padding: 0 12px 12px;
-  color: #8fa1bf;
+  padding: 25px 22px 12px;
+
+  color: #8190ac;
   font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 1.4px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+
+  flex-shrink: 0;
 }
 
+/* NAVIGATION */
+
 .accountant-nav {
-  display: grid;
-  gap: 7px;
+  flex: 1;
+  min-height: 0;
+
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  padding: 0 13px 18px;
+
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.accountant-nav::-webkit-scrollbar {
+  width: 5px;
+}
+
+.accountant-nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.accountant-nav::-webkit-scrollbar-thumb {
+  background: #354462;
+  border-radius: 10px;
 }
 
 .accountant-nav-link {
+  min-height: 46px;
+  width: 100%;
+
   display: flex;
   align-items: center;
   gap: 13px;
-  min-height: 46px;
-  padding: 0 13px;
-  border-radius: 9px;
-  color: #c6d0e2;
+
+  padding: 10px 13px;
+
+  color: #c0c9d9;
   text-decoration: none;
+
+  border-radius: 9px;
+  border: 1px solid transparent;
+
   font-size: 13px;
-  font-weight: 500;
-  transition: background 0.2s, color 0.2s;
+  font-weight: 550;
+
+  transition: all 0.2s ease;
 }
 
 .accountant-nav-link:hover {
-  background: #263958;
-  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
 }
 
 .accountant-nav-link.active {
-  background: var(--acc-primary);
-  color: #fff;
-  box-shadow: 0 5px 14px #101f4030;
+  background: #2563eb;
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.22);
 }
 
 .accountant-nav-icon {
-  display: inline-grid;
-  place-items: center;
-  width: 23px;
-  flex-shrink: 0;
-  font-size: 19px;
+  width: 25px;
+  min-width: 25px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 18px;
 }
 
+.accountant-nav-text {
+  line-height: 1.4;
+}
+
+/* =========================================
+   SIDEBAR FOOTER
+========================================= */
+
 .accountant-sidebar-footer {
+  min-height: 76px;
+  padding: 13px 15px;
+
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-top: auto;
-  padding: 18px 4px 0;
-  border-top: 1px solid #34445e;
+
+  background: #0d172e;
+  border-top: 1px solid rgba(255, 255, 255, 0.09);
+
+  flex-shrink: 0;
 }
 
 .accountant-avatar {
-  display: grid;
-  place-items: center;
-  width: 38px;
-  height: 38px;
-  flex-shrink: 0;
+  width: 39px;
+  height: 39px;
+  min-width: 39px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: #dbeafe;
+  color: #1d4ed8;
+
   border-radius: 50%;
-  background: #e6edff;
-  color: #3158d8;
+  font-size: 16px;
   font-weight: 800;
 }
 
 .accountant-user-details {
-  display: flex;
   flex: 1;
+  min-width: 0;
+
+  display: flex;
   flex-direction: column;
   gap: 4px;
-  min-width: 0;
 }
 
-.accountant-user-details strong,
-.accountant-topbar-user strong {
+.accountant-user-details strong {
+  color: #ffffff;
+  font-size: 12px;
+
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.accountant-user-details strong {
-  font-size: 12px;
-}
-
 .accountant-user-details span {
-  color: #aab8d1;
+  color: #9eabc4;
   font-size: 11px;
 }
 
 .accountant-logout {
-  border: 0;
-  background: transparent;
-  color: #d8e1ef;
-  font-size: 24px;
+  width: 34px;
+  height: 34px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: none;
+  border-radius: 8px;
+
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+
+  font-size: 23px;
   cursor: pointer;
+  transition: 0.2s;
 }
 
+.accountant-logout:hover {
+  background: #dc2626;
+}
+
+/* =========================================
+   MAIN CONTENT
+========================================= */
+
 .accountant-content {
+  min-height: 100vh;
+  margin-left: var(--accountant-sidebar-width);
+
   display: flex;
-  flex: 1;
   flex-direction: column;
+
   min-width: 0;
 }
 
+/* =========================================
+   TOPBAR
+========================================= */
+
 .accountant-topbar {
+  min-height: 82px;
+  padding: 14px 30px;
+
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-  min-height: 88px;
-  padding: 16px 30px;
-  border-bottom: 1px solid var(--acc-border);
-  background: #fff;
-  box-sizing: border-box;
+
+  background: #ffffff;
+  border-bottom: 1px solid #e8edf4;
+
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.accountant-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
 }
 
 .accountant-topbar-eyebrow {
-  color: var(--acc-muted);
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 1.4px;
+  display: block;
+
+  color: #8490a5;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 1.3px;
 }
 
 .accountant-topbar h1 {
-  margin: 6px 0 0;
-  font-size: 22px;
-  letter-spacing: -0.5px;
+  margin: 5px 0 0;
+
+  color: #172033;
+  font-size: 21px;
+  font-weight: 750;
 }
 
 .accountant-topbar-user {
   display: flex;
   align-items: center;
   gap: 11px;
-  min-width: 0;
 }
 
-.accountant-topbar-user strong,
-.accountant-topbar-user span {
-  display: block;
+.accountant-topbar-user > div:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .accountant-topbar-user strong {
-  max-width: 190px;
+  color: #172033;
   font-size: 12px;
 }
 
 .accountant-topbar-user span {
-  margin-top: 4px;
-  color: var(--acc-muted);
+  color: #8490a5;
   font-size: 11px;
 }
 
+/* =========================================
+   PAGE CONTENT
+========================================= */
+
 .accountant-page-content {
   flex: 1;
+  min-width: 0;
   width: 100%;
-  max-width: 1600px;
-  margin: 0 auto;
-  padding: 28px;
-  box-sizing: border-box;
+
+  padding: 26px 30px;
+
+  overflow-x: auto;
 }
 
+/* =========================================
+   FOOTER
+========================================= */
+
 .accountant-footer {
-  padding: 16px 28px;
-  border-top: 1px solid var(--acc-border);
-  color: var(--acc-muted);
-  background: #fff;
+  padding: 17px 30px;
+
+  background: #ffffff;
+  border-top: 1px solid #e8edf4;
+
+  color: #8490a5;
   font-size: 11px;
   text-align: center;
 }
 
-@media (max-width: 900px) {
-  .accountant-sidebar {
-    width: 220px;
-    flex-basis: 220px;
+/* =========================================
+   MOBILE BUTTONS
+========================================= */
+
+.accountant-menu-toggle,
+.accountant-mobile-close {
+  display: none;
+}
+
+/* =========================================
+   OVERLAY
+========================================= */
+
+.accountant-sidebar-overlay {
+  display: none;
+}
+
+/* =========================================
+   RESPONSIVE - TABLET
+========================================= */
+
+@media (max-width: 1024px) {
+  .accountant-layout {
+    --accountant-sidebar-width: 240px;
   }
 
   .accountant-topbar {
-    padding: 16px 20px;
+    padding: 14px 22px;
   }
 
   .accountant-page-content {
-    padding: 22px 20px;
+    padding: 22px;
   }
 }
 
-@media (max-width: 650px) {
-  .accountant-layout {
-    flex-direction: column;
-  }
+/* =========================================
+   RESPONSIVE - MOBILE
+========================================= */
 
+@media (max-width: 768px) {
   .accountant-sidebar {
+    width: 270px;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+
+  .accountant-sidebar.sidebar-open {
+    transform: translateX(0);
+  }
+
+  .accountant-content {
+    margin-left: 0;
     width: 100%;
-    flex: 0 0 auto;
-    padding: 13px 12px 10px;
   }
 
-  .accountant-brand {
-    padding: 0 4px 14px;
-  }
+  .accountant-menu-toggle {
+    width: 40px;
+    height: 40px;
 
-  .accountant-brand-icon {
-    width: 36px;
-    height: 36px;
-    font-size: 20px;
-  }
-
-  .accountant-brand h2 {
-    font-size: 16px;
-  }
-
-  .accountant-menu-label {
-    display: none;
-  }
-
-  .accountant-nav {
     display: flex;
-    gap: 7px;
-    overflow-x: auto;
-    padding: 4px 0 8px;
-    scrollbar-width: thin;
+    align-items: center;
+    justify-content: center;
+
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+
+    background: #ffffff;
+    color: #172033;
+
+    font-size: 22px;
+    cursor: pointer;
   }
 
-  .accountant-nav-link {
-    flex: 0 0 auto;
-    min-height: 39px;
-    gap: 7px;
-    padding: 0 11px;
-    font-size: 12px;
-    white-space: nowrap;
+  .accountant-mobile-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 30px;
+    height: 30px;
+    margin-left: auto;
+
+    border: none;
+    border-radius: 6px;
+
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+
+    font-size: 23px;
+    cursor: pointer;
   }
 
-  .accountant-nav-icon {
-    width: auto;
-    font-size: 16px;
-  }
+  .accountant-sidebar-overlay {
+    display: block;
 
-  .accountant-sidebar-footer {
-    display: none;
+    position: fixed;
+    inset: 0;
+
+    background: rgba(15, 23, 42, 0.55);
+    z-index: 999;
   }
 
   .accountant-topbar {
     min-height: 72px;
-    padding: 13px 15px;
+    padding: 12px 16px;
+  }
+
+  .accountant-topbar h1 {
+    font-size: 17px;
   }
 
   .accountant-topbar-eyebrow {
     font-size: 8px;
-  }
-
-  .accountant-topbar h1 {
-    font-size: 19px;
+    letter-spacing: 0.8px;
   }
 
   .accountant-topbar-user {
-    gap: 7px;
-  }
-
-  .accountant-topbar-user .accountant-avatar {
-    width: 32px;
-    height: 32px;
-  }
-
-  .accountant-topbar-user strong {
-    max-width: 100px;
-    font-size: 10px;
-  }
-
-  .accountant-topbar-user span {
-    font-size: 9px;
+    display: none;
   }
 
   .accountant-page-content {
-    padding: 17px 12px;
+    padding: 18px 14px;
   }
 
   .accountant-footer {
-    padding: 13px;
+    padding: 14px;
+  }
+}
+
+/* =========================================
+   SMALL MOBILE
+========================================= */
+
+@media (max-width: 400px) {
+  .accountant-topbar {
+    padding: 10px 12px;
+  }
+
+  .accountant-topbar h1 {
+    font-size: 15px;
+  }
+
+  .accountant-page-content {
+    padding: 14px 10px;
   }
 }
